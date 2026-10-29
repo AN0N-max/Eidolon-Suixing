@@ -1,0 +1,36 @@
+{
+  "version": "0.9.4",
+  "versionCode": 30,
+  "package": "com.eidolon.sc.mobile",
+  "upgrade_target": "original 0.8.8-dev / com.eidolon.sc.mobile / versionCode 21",
+  "same_certificate_as_original_0_8_8": true,
+  "certificate_sha256": "d576e97cae45aca6dedb80064e56a2aae97553fdaa8705904b63420b1d4503db",
+  "manifest_components_defined_in_dex": [
+    "com.eidolon.sc.mobile.WebActivity",
+    "com.eidolon.sc.mobile.ReachJob",
+    "com.eidolon.sc.mobile.WritingJob"
+  ],
+  "resources_arsc_uncompressed": true,
+  "promise_classes_defined_in_dex": true,
+  "bundled_ui_matches_current_sources": true,
+  "unchanged_0_9_voice_theme_sources": {
+    "FishClient.java": true,
+    "PcmSpool.java": true,
+    "PlaybackControl.java": true,
+    "ThemePrefs.java": true,
+    "TtsTrace.java": true,
+    "VoiceCache.java": true,
+    "VoiceLibrary.java": true,
+    "VoicePlayer.java": true
+  },
+  "apk_sha256": "1b24241dd628705ac9aa0a561805c0a758f27feb9199c884500dd89c99321f7e",
+  "device_or_live_api_test": false,
+  "automated_checks": {
+    "core": 45,
+    "existing_features": 67,
+    "schedules": 33,
+    "promises": 61,
+    "ui_dom_bridge_mocks": 33,
+    "sqlite_check_groups": 6
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "version": "0.9.1",
+  "versionCode": 27,
+  "package": "com.eidolon.sc.mobile.voicetest",
+  "same_certificate_as_supplied_0_9": true,
+  "certificate_sha256": "1e08a903aef9c3a721510b64ec764d01d3d094eb954161b62544ea8f187b5953",
+  "manifest_components_defined_in_dex": [
+    "com.eidolon.sc.mobile.WebActivity",
+    "com.eidolon.sc.mobile.ReachJob",
+    "com.eidolon.sc.mobile.WritingJob"
+  ],
+  "resources_arsc_uncompressed": true,
+  "unchanged_0_9_voice_theme_sources": {
+    "FishClient.java": true,
+    "PcmSpool.java": true,
+    "PlaybackControl.java": true,
+    "ThemePrefs.java": true,
+    "TtsTrace.java": true,
+    "VoiceCache.java": true,
+    "VoiceLibrary.java": true,
+    "VoicePlayer.java": true
+  },
+  "apk_sha256": "e1961b4210e7bc777769c6c76e8311bc1cf1a20eefad2bf128b33473444853a0",
+  "device_or_live_api_test": false
+}

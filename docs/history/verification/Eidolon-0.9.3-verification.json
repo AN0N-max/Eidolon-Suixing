@@ -1,0 +1,26 @@
+{
+  "version": "0.9.3",
+  "versionCode": 29,
+  "package": "com.eidolon.sc.mobile",
+  "upgrade_target": "original 0.8.8-dev / com.eidolon.sc.mobile / versionCode 21",
+  "same_certificate_as_original_0_8_8": true,
+  "certificate_sha256": "d576e97cae45aca6dedb80064e56a2aae97553fdaa8705904b63420b1d4503db",
+  "manifest_components_defined_in_dex": [
+    "com.eidolon.sc.mobile.WebActivity",
+    "com.eidolon.sc.mobile.ReachJob",
+    "com.eidolon.sc.mobile.WritingJob"
+  ],
+  "resources_arsc_uncompressed": true,
+  "unchanged_0_9_voice_theme_sources": {
+    "FishClient.java": true,
+    "PcmSpool.java": true,
+    "PlaybackControl.java": true,
+    "ThemePrefs.java": true,
+    "TtsTrace.java": true,
+    "VoiceCache.java": true,
+    "VoiceLibrary.java": true,
+    "VoicePlayer.java": true
+  },
+  "apk_sha256": "27ab6789baba54546910bd5b583bb4bdfb514704f2fc4c246116a6e2ddfe5611",
+  "device_or_live_api_test": false
+}
