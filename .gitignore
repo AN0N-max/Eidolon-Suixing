@@ -33,3 +33,33 @@ deploy/event-names.toml
 /.scratch/photos/prototype/tags/contact_sheet.png
 
 __pycache__/
+
+# Eidolon Suixing Android
+# Android local files and private material
+work/
+dist/
+node_modules/
+.gradle/
+**/.gradle/
+**/build/
+**/__pycache__/
+*.pyc
+local.properties
+.env
+.env.*
+!.env.example
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+*.db
+*.db-*
+*.sqlite*
+*.apk
+*.aab
+*.log
+*.backup
+.codex-remote-attachments/
+outputs/ui-*.png
+outputs/eidolon-android/tests/ui-*.png

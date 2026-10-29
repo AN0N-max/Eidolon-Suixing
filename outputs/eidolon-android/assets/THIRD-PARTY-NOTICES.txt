@@ -1,0 +1,20 @@
+Eidolon 随行 1.2
+
+Project sources and Hibi content attribution remain under the existing project
+LICENSE and HIBI attribution documents bundled in this application.
+
+This version uses AndroidX WorkManager 2.9.1 and its transitive AndroidX
+components (including Room, SQLite, Startup, Lifecycle, Core, concurrent futures),
+Kotlin standard library/coroutines and Guava listenablefuture. These components
+are used under their upstream Apache License, Version 2.0. A copy is bundled as
+ANDROIDX-LICENSE.txt. Upstream META-INF LICENSE and NOTICE resources are merged
+and preserved by the Android build when provided by the dependencies.
+
+Sources and notices:
+https://android.googlesource.com/platform/frameworks/support/
+https://github.com/JetBrains/kotlin
+https://github.com/Kotlin/kotlinx.coroutines
+https://github.com/google/guava
+
+Dependency versions are resolved by Gradle from the declared WorkManager
+dependency; build tools and dependencies are not signed with different app keys.

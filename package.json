@@ -1,0 +1,9 @@
+{
+  "name": "eidolon-suixing-ui-checks",
+  "private": true,
+  "version": "1.11.0",
+  "description": "Mock UI regression tests; the Android application does not need Node.js at runtime.",
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

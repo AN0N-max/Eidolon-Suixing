@@ -1,0 +1,35 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" package="com.eidolon.sc.mobile">
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <application android:name="com.eidolon.sc.mobile.EidolonApp" android:label="Eidolon 随行" android:icon="@drawable/icon" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false" android:usesCleartextTraffic="false" android:supportsRtl="true">
+        <provider android:name="androidx.startup.InitializationProvider" android:authorities="${applicationId}.androidx-startup" android:exported="false" tools:node="merge">
+            <meta-data android:name="androidx.work.WorkManagerInitializer" android:value="androidx.startup" tools:node="remove" />
+        </provider>
+        <receiver android:name="com.eidolon.sc.mobile.ReachAlarmReceiver" android:exported="false" />
+        <service android:name="com.eidolon.sc.mobile.WritingJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true" />
+        <service android:name="com.eidolon.sc.mobile.WritingMorningJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true" />
+        <service android:name="com.eidolon.sc.mobile.LetterJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true" />
+        <service android:name="com.eidolon.sc.mobile.PendingReplyJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true" />
+        <service android:name="com.eidolon.sc.mobile.ReplyWorkService" android:foregroundServiceType="dataSync" android:exported="false" />
+        <service android:name="com.eidolon.sc.mobile.ReplyTestService" android:foregroundServiceType="shortService" android:exported="false" />
+        <receiver android:name="com.eidolon.sc.mobile.ReplyRescheduleReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+        <activity android:name="com.eidolon.sc.mobile.WebActivity" android:exported="true" android:configChanges="orientation|screenSize|keyboardHidden" android:windowSoftInputMode="adjustResize">
+            <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+        </activity>
+    </application>
+</manifest>
