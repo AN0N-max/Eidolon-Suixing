@@ -32,11 +32,9 @@ final class ReplyManager {
             WebActivity activity=WebActivity.foregroundActivity;
             try{if(!test&&activity!=null&&ReachOut.foreground&&activity.visibleForReply()){
                 if(activity.current!=null&&activity.current.optString("id").equals(message.optString("character"))&&activity.conversation.equals(message.optString("session"))&&"chat".equals(activity.visiblePage))activity.event("refresh","");
-                else {activity.event("delayedReply",message.toString());try(ChatStore badges=new ChatStore(app)){UnreadNotifications.sync(app,badges);}}trace(app,"回复已投放到应用内");return;
+                else {activity.event("delayedReply",message.toString());ReachOut.notify(app,message,false);}trace(app,"回复已投放到应用内");return;
             }}catch(RuntimeException e){android.util.Log.w("EidolonDelay","Visible reply route unavailable",e);}
-            boolean shown=false;try{shown=OverlayBanner.show(app,message);}catch(RuntimeException e){android.util.Log.w("EidolonDelay","Overlay unavailable",e);}
-            // addView success does not prove a vendor OS actually displayed the overlay.
-            try{boolean notified=ReachOut.notify(app,message,shown);trace(app,(shown?"悬浮窗已提交":"悬浮窗不可用／锁屏")+"；"+(notified?"系统通知已提交":"通知未允许或提醒通道已关闭"));}catch(RuntimeException e){android.util.Log.e("EidolonDelay","Notification unavailable",e);}
+            try{boolean notified=ReachOut.notify(app,message,false);trace(app,notified?"系统通知已提交":"通知未允许或提醒通道已关闭");}catch(RuntimeException e){android.util.Log.e("EidolonDelay","Notification unavailable",e);}
         },250L);
     }
     static void trace(Context c,String text){ReplyTrace.record(c,text);c.getSharedPreferences("settings",0).edit().putString("replyDeliveryTrace",new java.text.SimpleDateFormat("HH:mm:ss",java.util.Locale.ROOT).format(new java.util.Date())+" · "+text).apply();}

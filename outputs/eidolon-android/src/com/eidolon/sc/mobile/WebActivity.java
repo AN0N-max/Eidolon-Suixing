@@ -317,7 +317,7 @@ public final class WebActivity extends MainActivity {
             if(!opened)throw new IOException("无法打开系统设置，请在手机设置中搜索“显示在其他应用上层”，找到 Eidolon 随行并管理权限");
             return snapshot();
         }
-        if(action.equals("overlayPreview")){if(!OverlayBanner.allowed(this))throw new Exception("请先允许显示在其他应用上层");OverlayBanner.show(this,new JSONObject().put("name","Eidolon · 预览").put("text","消息弹窗预览；按已保存的停留时长自动收起").put("character",characters.getJSONObject(0).getString("id")).put("session",""));return new JSONObject();}
+        if(action.equals("overlayPreview"))throw new Exception("已取消自绘弹窗，请在系统通知设置中开启悬浮通知");
         if(action.equals("reachOpen")){String who=a.getString("character"),sid=a.getString("session");for(ChatStore.Conversation c:store.conversations(who))if(c.id.equals(sid)){current=character(who);conversation=sid;return new SnapshotRequest("chat");}throw new Exception("该对话已删除");}
 
         if(action.equals("modelService")){

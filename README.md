@@ -6,7 +6,7 @@ Eidolon 随行是基于 [Eidolon-SC](https://github.com/Sallyn0225/eidolon-sc) �
 
 你可以随手发一句今天发生的事，等她回消息；隔一会儿再打开，接着之前的话题聊。开启相应功能后，她也可能先发来消息，说起自己的安排，或写下一封信。聊天列表、消息气泡、时间分段、未读提醒和通知，把这些零碎的往来留在一起，让熟悉感在一次次对话中慢慢积累。
 
-> 本项目为非官方粉丝作品，角色由 AI 扮演，与原作版权方无关。需要自行配置模型服务，调用可能产生费用。当前开发版本为 **1.11**。
+> 本项目为非官方粉丝作品，角色由 AI 扮演，与原作版权方无关。需要自行配置模型服务，调用可能产生费用。当前开发版本为 **1.12**。
 
 ## 像日常发消息那样交流
 
@@ -31,7 +31,7 @@ Eidolon 随行是基于 [Eidolon-SC](https://github.com/Sallyn0225/eidolon-sc) �
 
 ## 如何开始
 
-Android 8.0 及以上。安装包请查看本仓库的 Releases；若尚无 Release，可按[构建指南](docs/BUILD.md)从源码构建。
+Android 8.0 及以上。安装包使用下方1.12直接下载链接，也可按[构建指南](docs/BUILD.md)从源码构建。
 
 1. 安装应用，在「设置 → 模型与接口」填写服务地址、模型名和自己的 API 密钥。
 2. 完善称呼、时区等个人档案，选择角色开始聊天。
@@ -41,13 +41,11 @@ Android 8.0 及以上。安装包请查看本仓库的 Releases；若尚无 Rele
 
 ## 当前版本
 
-1.11 将原每天 05:00 的自动检查与安排时间调整为 03:00。按档案时区，行程页在凌晨 03:00 前继续显示上一日安排，03:00 起切换当天，保留历史数据。
+**1.12** 取消应用内与跨应用自绘消息卡，仅保留Android系统通知；补充Vivo/iQOO桌面包兼容更新，修正桌面角标状态误报。具体横幅、数字及圆点显示由手机系统控制。
 
-近期还调整了主动搭话的等待条件，修复本地计划重排时的数据库锁争用，并优化设置页的数据读取与导航。
+[下载1.12原签名升级APK](https://github.com/AN0N-max/Eidolon-Suixing/raw/refs/heads/main/downloads/Eidolon-1.12-original-upgrade.apk) · [更新记录](outputs/eidolon-android/RELEASE-1.12.md)
 
-Android 后台可能被系统延迟或限制，03:00 是检查与显示切换的边界，不保证所有内容准点生成。现有离线规则、数据库和模拟界面检查已通过；真实服务及不同手机系统的表现仍需验证。
-
-本版的介绍以 Android 聊天体验为准，完整实时语音通话、动态立绘等上游能力不作为本版已实现功能宣传。
+离线构建、规则、数据库与模拟界面验证通过，OriginOS实际通知和角标显示需手机验收。
 
 ## 来源与许可
 
@@ -64,5 +62,5 @@ Android 应用位于 `outputs/eidolon-android/`。本仓库保留上游 fork 关
 - [安装与配置](docs/GETTING-STARTED.md)
 - [编译与测试](docs/BUILD.md)
 - [公开资源范围](docs/ASSETS.md)
-- [1.11 更新记录](outputs/eidolon-android/RELEASE-1.11.md)
+- [1.12 更新记录](outputs/eidolon-android/RELEASE-1.12.md)
 - [Android 开发历史](outputs/eidolon-android/FULL-MIGRATION.md)（含历史阶段描述，当前状态以版本记录为准）

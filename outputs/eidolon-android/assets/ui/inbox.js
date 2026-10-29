@@ -74,8 +74,10 @@ async function refreshDesktopBadge(force=false){
  const view=desktopBadgeView;if(page!=='desktopBadge'||!view?.area.isConnected)return;
  const label=el('p','muted',force?'正在同步桌面角标…':'正在读取角标状态…');view.status.replaceChildren(label);
  try{const data=await api(force?'desktopBadgeSync':'desktopBadgeStatus');if(page!=='desktopBadge'||desktopBadgeView!==view||!view.area.isConnected)return;
-  view.status.replaceChildren(el('strong','','本机未读：'+(data.unread||0)+' 条'),el('p',data.notifications?'muted':'danger',data.notifications?'系统通知已允许':'系统通知未允许，请到系统设置开启'),el('p',data.channelBadge?'muted':'danger',data.channelBadge?'未读通知类别允许显示角标':'未读通知类别的角标已关闭，请在系统设置开启'));
+  view.status.replaceChildren(el('strong','','本机未读：'+(data.unread||0)+' 条'),el('p',data.notifications?'muted':'danger',data.notifications?'系统通知已允许':'系统通知未允许，请到系统设置开启'),el('p','muted','桌面角标总开关：系统未提供可靠查询，请以系统设置为准'),el('p','muted',data.channelBadge?'Android接口报告：未读通知类别允许角标':'Android接口报告：未读通知类别未允许角标；这不代表Vivo／iQOO桌面角标总开关已关闭'));
   view.status.append(el('p','muted',data.vivo?'Vivo／iQOO兼容模式：'+(data.status||'等待同步'):'使用Android标准通知角标'));
+  if(data.unread===0)view.status.append(el('p','notice','当前没有未读消息，不显示角标属于正常情况。'));
+  if(data.channelEnabled===false)view.status.append(el('p','danger','未读通知类别已禁用，请检查系统通知类别。'));
   if(data.vivo&&data.lastAt)view.status.append(el('small','', '最近提交：'+new Date(data.lastAt).toLocaleString('zh-CN')+(data.submittedCount>=0?' · '+data.submittedCount+' 条':'')));
  }catch(e){if(page==='desktopBadge'&&desktopBadgeView===view)view.status.replaceChildren(el('p','danger',e.message));}
 }

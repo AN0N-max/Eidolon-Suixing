@@ -14,7 +14,15 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   assert(!(await page.evaluate(()=>calls.some(q=>q.action==='chatRead'))),'badge inspection never marks messages read');assert((await page.locator('.content').textContent()).includes('是否显示由系统桌面决定'));
   await page.evaluate(()=>{badge.unread=0;return refreshDesktopBadge(true);});assert(await page.getByText('本机未读：0 条',{exact:true}).isVisible());assert.equal(await page.evaluate(()=>badge.submittedCount),0);
   await page.evaluate(()=>{badge.notifications=false;badge.channelBadge=false;return refreshDesktopBadge();});assert(await page.getByText('系统通知未允许，请到系统设置开启',{exact:true}).isVisible());await page.getByRole('button',{name:'打开通知与角标设置',exact:true}).click();assert.equal(await page.evaluate(()=>calls.filter(q=>q.action==='desktopBadgeSettings').length),1);
-  await page.evaluate(()=>applyTheme({dark:true}));await page.setViewportSize({width:320,height:740});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.resolve(__dirname,'../../ui-1.10-desktop-badge.png')});
+  await page.evaluate(()=>{badge.notifications=true;badge.channelBadge=false;return refreshDesktopBadge();});
+  assert((await page.locator('.content').textContent()).includes('这不代表Vivo／iQOO桌面角标总开关已关闭'));
+  assert(!(await page.locator('.content').textContent()).includes('角标已关闭，请'));
+  await page.evaluate(()=>showReach({character:state.characters[0].id,name:'本地测试',text:'不应创建自绘卡片'}));assert.equal(await page.locator('.reach-popup').count(),0);
+  await page.evaluate(()=>navigate('reachSettings'));await page.getByText('系统通知与提示',{exact:true}).waitFor();
+  assert.equal(await page.getByRole('button',{name:'预览跨应用弹窗',exact:true}).count(),0);
+  assert.equal(await page.getByRole('button',{name:'预览应用内弹窗',exact:true}).count(),0);
+  await page.evaluate(()=>navigate('desktopBadge'));await page.getByText('本机未读：0 条',{exact:true}).waitFor();
+  await page.evaluate(()=>applyTheme({dark:true}));await page.setViewportSize({width:320,height:740});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.resolve(__dirname,'../../ui-1.12-desktop-badge.png')});
   assert.deepEqual(errors,[]);assert(!(await page.evaluate(()=>calls.some(q=>['send','writingGenerate','modelList','judgeTest'].includes(q.action)))));console.log('PASS desktop badge mock UI: settings entry, actual count display, explicit sync and zero clearing, permission/channel diagnostics, settings link, dark/narrow layout, no read acknowledgements or model calls. No real launcher execution.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

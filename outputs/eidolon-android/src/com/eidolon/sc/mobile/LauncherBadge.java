@@ -20,14 +20,18 @@ final class LauncherBadge {
         NotificationManager manager=c.getSystemService(NotificationManager.class);int count=LauncherBadgeRules.count(unread,manager!=null&&manager.areNotificationsEnabled());long now=System.currentTimeMillis();
         if(lastCount==count&&now>=lastAt&&now-lastAt<10000)return;
         try{
-            Intent intent=new Intent("launcher.action.CHANGE_APPLICATION_NOTIFICATION_NUM").setPackage("com.vivo.launcher");
+            android.content.pm.ResolveInfo home=c.getPackageManager().resolveActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
+            java.util.Set<String> targets=new java.util.LinkedHashSet<>();targets.add("com.bbk.launcher2");targets.add("com.vivo.launcher");
+            if(home!=null&&home.activityInfo!=null&&home.activityInfo.packageName!=null&&!home.activityInfo.packageName.equals("android"))targets.add(home.activityInfo.packageName);
+            Intent intent=new Intent("launcher.action.CHANGE_APPLICATION_NOTIFICATION_NUM");
             intent.putExtra("packageName",c.getPackageName()).putExtra("className",new ComponentName(c,WebActivity.class).getClassName()).putExtra("notificationNum",count);
-            c.sendBroadcast(intent);lastCount=count;lastAt=now;result="兼容更新请求已提交，是否显示由系统桌面决定";
+            for(String target:targets)c.sendBroadcast(new Intent(intent).setPackage(target));lastCount=count;lastAt=now;result="兼容更新请求已提交，是否显示由系统桌面决定";
         }catch(RuntimeException e){lastCount=-1;lastAt=now;result="系统未接受兼容更新，仍使用标准通知角标";android.util.Log.w("EidolonBadge","Vivo bridge unavailable",e);}
     }
     static JSONObject status(Context c,ChatStore s)throws Exception{
         NotificationManager manager=c.getSystemService(NotificationManager.class);NotificationChannel channel=manager.getNotificationChannel(UnreadNotifications.CHANNEL);
         return new JSONObject().put("unread",UnreadState.counts(s).getInt("total")).put("notifications",manager.areNotificationsEnabled()).put("channelBadge",channel==null||channel.canShowBadge())
+            .put("launcherBadgeKnown",false).put("channelEnabled",channel==null||channel.getImportance()!=NotificationManager.IMPORTANCE_NONE)
             .put("vivo",LauncherBadgeRules.vivo(Build.MANUFACTURER,Build.BRAND)).put("lastAt",lastAt).put("submittedCount",lastCount).put("status",result);
     }
     static JSONObject resync(Context c)throws Exception{

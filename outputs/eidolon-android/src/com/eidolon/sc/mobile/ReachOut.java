@@ -28,7 +28,7 @@ final class ReachOut {
  private static boolean notifyLocked(Context c,JSONObject message,boolean overlayShown){
   NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
   if(message.optBoolean("proactive")&&!ReachConfig.read(c.getSharedPreferences("settings",0)).flag("notifications"))return false;
-  String channel=ReachAlert.channel(c,nm,overlayShown);if(!nm.areNotificationsEnabled()||nm.getNotificationChannel(channel).getImportance()==NotificationManager.IMPORTANCE_NONE)return false;
+  String channel=ReachAlert.channel(c,nm,false);if(!nm.areNotificationsEnabled()||nm.getNotificationChannel(channel).getImportance()==NotificationManager.IMPORTANCE_NONE)return false;
   PendingIntent open=ChatEntry.pending(c,message.optString("character"),message.optString("session"));
   String text=ReachConfig.read(c.getSharedPreferences("settings",0)).flag("privacy")?"有一条新的角色消息":preview(message);int unread=0;try(ChatStore store=new ChatStore(c)){unread=UnreadState.count(store,message.optString("character"));}
   if(unread<=0&&!message.optBoolean("test")){nm.cancel(message.optString("character").hashCode());return false;}
