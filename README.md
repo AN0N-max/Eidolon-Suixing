@@ -6,7 +6,7 @@ Eidolon 随行是基于 [Eidolon-SC](https://github.com/Sallyn0225/eidolon-sc)�
 
 你可以随手发一句今天发生的事，等她回消息；隔一会儿再打开，接着之前的话题聊。开启相应功能后，她也可能先发来消息，说起自己的安排，或写下一封信。聊天列表、消息气泡、时间分段、未读提醒和通知，把这些零碎的往来留在一起，让熟悉感在一次次对话中慢慢积累。
 
-> 本项目为非官方粉丝作品，角色由 AI 扮演，与原作版权方无关。需要自行配置模型服务，调用可能产生费用。当前开发版本为 **1.12**。
+> 本项目为非官方粉丝作品，角色由 AI 扮演，与原作版权方无关。需要自行配置模型服务，调用可能产生费用。当前开发版本为 **1.13**。
 
 ## 手机上独立运行，记录留在本机
 
@@ -74,11 +74,9 @@ Android 8.0 及以上。安装包使用下方1.12直接下载链接，也可按[
 
 ## 当前版本
 
-**1.12** 取消应用内与跨应用自绘消息卡，仅保留Android系统通知；补充Vivo/iQOO桌面包兼容更新，修正桌面角标状态误报。具体横幅、数字及圆点显示由手机系统控制。
+**1.13** 补齐Vivo角标读写权限声明，将桌面计数更新放在标准通知同步之后，并在角标页显示厂商权限、实际消息通知数量和通道状态。保留1.12仅使用系统通知的行为，不恢复自绘弹窗。权限声明与广播提交不等于OriginOS桌面已经展示，仍需手机验证。
 
-[下载1.12原签名升级APK](https://github.com/AN0N-max/Eidolon-Suixing/raw/refs/heads/main/downloads/Eidolon-1.12-original-upgrade.apk) · [更新记录](outputs/eidolon-android/RELEASE-1.12.md)
-
-离线构建、规则、数据库与模拟界面验证通过，OriginOS实际通知和角标显示需手机验收。
+[下载1.13原签名升级APK](https://github.com/AN0N-max/Eidolon-Suixing/raw/refs/heads/main/downloads/Eidolon-1.13-original-upgrade.apk) · [更新记录](outputs/eidolon-android/RELEASE-1.13.md)
 
 ## 来源与许可
 
@@ -99,5 +97,5 @@ Android 应用位于 `outputs/eidolon-android/`。本仓库保留上游 fork 关
 - [安装与配置](docs/GETTING-STARTED.md)
 - [编译与测试](docs/BUILD.md)
 - [公开资源范围](docs/ASSETS.md)
-- [1.12 更新记录](outputs/eidolon-android/RELEASE-1.12.md)
+- [1.13 更新记录](outputs/eidolon-android/RELEASE-1.13.md)
 - [Android 开发历史](outputs/eidolon-android/FULL-MIGRATION.md)（含历史阶段描述，当前状态以版本记录为准）

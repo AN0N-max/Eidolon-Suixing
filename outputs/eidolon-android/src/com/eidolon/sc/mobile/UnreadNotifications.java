@@ -12,7 +12,7 @@ final class UnreadNotifications {
     static final Object LOCK=new Object();
     static final String CHARACTER="eidolonUnreadCharacter",SESSION="eidolonUnreadSession",CHANNEL="eidolon-unread-count-v1";
     static void sync(Context c,ChatStore store){synchronized(LOCK){try{
-        NotificationManager manager=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);JSONObject unread=UnreadState.counts(store);JSONObject counts=unread.getJSONObject("characters");LauncherBadge.apply(c,unread.getInt("total"));
+        NotificationManager manager=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);JSONObject unread=UnreadState.counts(store);JSONObject counts=unread.getJSONObject("characters");
         Map<String,StatusBarNotification> current=new HashMap<>();for(StatusBarNotification active:manager.getActiveNotifications()){Bundle extras=active.getNotification().extras;String who=extras==null?"":extras.getString(CHARACTER,"");if(who.isEmpty()&&extras!=null&&Notification.CATEGORY_MESSAGE.equals(active.getNotification().category)&&"Eidolon 随行".equals(extras.getString(Notification.EXTRA_SUB_TEXT))){for(Iterator<String> keys=counts.keys();keys.hasNext();){String key=keys.next();if(key.hashCode()==active.getId()){who=key;break;}}if(who.isEmpty()){manager.cancel(active.getId());continue;}}if(!who.isEmpty()){if(counts.optInt(who)==0)manager.cancel(active.getId());else current.put(who,active);}}
         if(!manager.areNotificationsEnabled())return;NotificationChannel channel=manager.getNotificationChannel(CHANNEL);if(channel==null){channel=new NotificationChannel(CHANNEL,"未读消息角标",NotificationManager.IMPORTANCE_LOW);channel.setShowBadge(true);channel.setSound(null,null);channel.enableVibration(false);channel.setDescription("静默保留未读数量，不重复播放消息提醒；桌面角标由启动器控制");manager.createNotificationChannel(channel);}
         boolean quietAllowed=channel.getImportance()!=NotificationManager.IMPORTANCE_NONE;
@@ -30,6 +30,6 @@ final class UnreadNotifications {
             }
             manager.notify(who.hashCode(),builder.build());
         }}
-    }catch(Exception e){android.util.Log.w("EidolonUnread","Badge notification sync unavailable",e);}}}
+    }catch(Exception e){android.util.Log.w("EidolonUnread","Badge notification sync unavailable",e);}finally{try{LauncherBadge.apply(c,UnreadState.counts(store).getInt("total"));}catch(Exception e){android.util.Log.w("EidolonUnread","Launcher badge sync unavailable",e);}}}}
     private UnreadNotifications(){}
 }

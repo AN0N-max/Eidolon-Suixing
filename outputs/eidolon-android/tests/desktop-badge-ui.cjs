@@ -22,7 +22,12 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   assert.equal(await page.getByRole('button',{name:'预览跨应用弹窗',exact:true}).count(),0);
   assert.equal(await page.getByRole('button',{name:'预览应用内弹窗',exact:true}).count(),0);
   await page.evaluate(()=>navigate('desktopBadge'));await page.getByText('本机未读：0 条',{exact:true}).waitFor();
-  await page.evaluate(()=>applyTheme({dark:true}));await page.setViewportSize({width:320,height:740});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.resolve(__dirname,'../../ui-1.12-desktop-badge.png')});
+  await page.evaluate(()=>{badge.vivoBadgePermissionKnown=true;badge.vivoBadgePermission=false;badge.homePackage='com.bbk.launcher2';badge.activeMessageNotifications=[{channel:'reach-message-v2-sv',number:3,enabled:true,badge:true}];return refreshDesktopBadge();});
+  await page.getByText('Vivo角标读写权限：系统未授予（与通知总开关不同）',{exact:true}).waitFor();await page.getByText('当前系统消息通知：1 条',{exact:true}).waitFor();
+  assert((await page.locator('.content').textContent()).includes('com.bbk.launcher2'));
+  await page.evaluate(()=>{badge.vivoBadgePermission=true;return refreshDesktopBadge();});await page.getByText('Vivo角标读写权限：系统已授予',{exact:true}).waitFor();
+
+  await page.evaluate(()=>applyTheme({dark:true}));await page.setViewportSize({width:320,height:740});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:path.resolve(__dirname,'../../ui-1.13-desktop-badge.png')});
   assert.deepEqual(errors,[]);assert(!(await page.evaluate(()=>calls.some(q=>['send','writingGenerate','modelList','judgeTest'].includes(q.action)))));console.log('PASS desktop badge mock UI: settings entry, actual count display, explicit sync and zero clearing, permission/channel diagnostics, settings link, dark/narrow layout, no read acknowledgements or model calls. No real launcher execution.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

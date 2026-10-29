@@ -30,7 +30,16 @@ final class LauncherBadge {
     }
     static JSONObject status(Context c,ChatStore s)throws Exception{
         NotificationManager manager=c.getSystemService(NotificationManager.class);NotificationChannel channel=manager.getNotificationChannel(UnreadNotifications.CHANNEL);
+        JSONArray active=new JSONArray();for(android.service.notification.StatusBarNotification item:manager.getActiveNotifications()){
+            Notification n=item.getNotification();if(n.extras==null||n.extras.getString(UnreadNotifications.CHARACTER,"").isEmpty())continue;
+            NotificationChannel actual=manager.getNotificationChannel(n.getChannelId());
+            active.put(new JSONObject().put("channel",n.getChannelId()).put("number",n.number).put("badge",actual!=null&&actual.canShowBadge()).put("enabled",actual!=null&&actual.getImportance()!=NotificationManager.IMPORTANCE_NONE));
+        }
+        boolean known=true;try{c.getPackageManager().getPermissionInfo("com.vivo.notification.permission.BADGE_ICON",0);}catch(android.content.pm.PackageManager.NameNotFoundException e){known=false;}
+        android.content.pm.ResolveInfo home=c.getPackageManager().resolveActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
+        String launcher=home!=null&&home.activityInfo!=null?home.activityInfo.packageName:"系统未提供桌面包信息";
         return new JSONObject().put("unread",UnreadState.counts(s).getInt("total")).put("notifications",manager.areNotificationsEnabled()).put("channelBadge",channel==null||channel.canShowBadge())
+            .put("activeMessageNotifications",active).put("homePackage",launcher).put("vivoBadgePermissionKnown",known).put("vivoBadgePermission",known&&c.checkSelfPermission("com.vivo.notification.permission.BADGE_ICON")==android.content.pm.PackageManager.PERMISSION_GRANTED)
             .put("launcherBadgeKnown",false).put("channelEnabled",channel==null||channel.getImportance()!=NotificationManager.IMPORTANCE_NONE)
             .put("vivo",LauncherBadgeRules.vivo(Build.MANUFACTURER,Build.BRAND)).put("lastAt",lastAt).put("submittedCount",lastCount).put("status",result);
     }

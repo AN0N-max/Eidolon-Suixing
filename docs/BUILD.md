@@ -15,7 +15,7 @@
 gradle --no-daemon -p outputs/eidolon-android assembleDebug
 ```
 
-Gradle 首次会从 Google Maven/Maven Central 下载依赖，应用运行时不需要电脑后台。产物位于 work/android-build-1.12/gradle/outputs/apk/debug/；该目录不进版本库。也可在 Windows 执行：
+Gradle 首次会从 Google Maven/Maven Central 下载依赖，应用运行时不需要电脑后台。产物位于 work/android-build-1.13/gradle/outputs/apk/debug/；该目录不进版本库。也可在 Windows 执行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File outputs/eidolon-android/build.ps1
@@ -45,6 +45,6 @@ node outputs/eidolon-android/tests/schedule-rollover-ui.cjs
 
 ## 源码对应
 
-当前 Android 版本为1.12/code65。src、res、assets 和 AndroidManifest.xml 对应现有本地1.12；本版通知与角标修复见RELEASE-1.12.md。完整性清单见 docs/android-1.12-files.json。
+首次公开的 Android 版本为1.13/code66。src、res、assets 和 AndroidManifest.xml 对应现有本地1.12；本次只整理公开副本的说明和工具路径，不改应用行为。完整性清单见 docs/android-1.13-files.json。
 
 outputs/eidolon-android 下的历史发布说明保留原开发记录，一些旧脚本路径和工具前提已由本指南替代。

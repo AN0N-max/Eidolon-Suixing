@@ -1,0 +1,802 @@
+[
+  {
+    "path": "src/com/eidolon/sc/mobile/Anniversaries.java",
+    "sha256": "177562c791aee3e460b7068daf920afd0d6f6a6abfde0687be443a1df6b2a1da"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/AppealData.java",
+    "sha256": "2ceb011b4c1d03f187f65b8a1105518fd500f9511493f3735cd660a4c08f2dcb"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/AppealStore.java",
+    "sha256": "77f1929a623b2f822105524a444d2bd1b32934802fa77ebcba20332c125c5e76"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/BackupCrypto.java",
+    "sha256": "345104af1404e3481d437efbdaf01d2286f01073b6afb5ac61be518020a21eb6"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/BackupValidator.java",
+    "sha256": "4084cd78ce945ff487141823f9e798c4348a68a79c37a51b0d0645275dc6bad1"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/BilingualReply.java",
+    "sha256": "3d13a6998d616e3c870ef3f984a1aee1b18f3ed6e4e7c2e176517b5c8932d85c"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/CalendarEvents.java",
+    "sha256": "5c704924d4f0baec3afea29515c7e6c3eaf2f4620ee34f16d4b284373e01baa1"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/CharacterPrompts.java",
+    "sha256": "e686e4685c035ad09427774aecc04fcb9eff43d8a0012275b321b2060263c9c0"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ChatEntry.java",
+    "sha256": "459b816c4178dae5a2097ba310a9c23fa3014995d9c469477787abcc5485a732"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ChatStore.java",
+    "sha256": "a1f16a06ec89f351be87a248ee36b6aa5327487eb7a77e1670bf3cd9b3985fe2"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/DailyScheduleClock.java",
+    "sha256": "9715606c4e3224a8e07dbf94d89d2f868b84c2c6e50f41b8ea622ad1b9f41b13"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/DiaryData.java",
+    "sha256": "65cd57f154bf8d6d85bfbecea933f68ac0234f5a03e87689c97c16289e2f243e"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/DiaryStore.java",
+    "sha256": "abbf2b48f395c6faaf259a1ed8d3e95bde6e00e00541211faa993361ded2be87"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/EidolonApp.java",
+    "sha256": "e01bbce6cecbcc415e1bca3be3c684560f8959426802556a5c5b0692dc961fa4"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/FishClient.java",
+    "sha256": "6c65609e9fef6a24f33002d180b7b264ab56f90f1fca3767cc0b535a3e736ed6"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/GiftRecord.java",
+    "sha256": "6354c81acb26a4d7c460526519b693925ab7415a64ad89ee4d32d741d30198aa"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/Hearts.java",
+    "sha256": "49e2bc0f0ab00b9cb81d6f748369c701df96f9ce0f27e8dddd0596221c9605fc"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/HeartScenes.java",
+    "sha256": "3af04118cb03a01a166bf8dfb523bbf5fbf3ed70efd3e8c00d4cd942b211ba28"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/HeartsData.java",
+    "sha256": "e76a26c8b66e21b0141476419003ede0ccca48196e06a43fe9db555bbc0753e0"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/JevClient.java",
+    "sha256": "d8f1f7f355ffdf0a05f8b0c8c56c06671bcfe2e5116f94d783a13d004324c672"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/LauncherBadge.java",
+    "sha256": "713bab4e641dfcb5e6995678085b01f8775bc7c84e741cec844056c18995055f"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/LauncherBadgeRules.java",
+    "sha256": "b2aa8875c3170cac3acfc9ba42dc36eb219652b6aa83ad9a6b3cbf46d33d1606"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/LetterJob.java",
+    "sha256": "dc15f3e252d77376f374878e39f26c0076dde3ba766e0bc744896f3c05b22f62"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/LetterPlanData.java",
+    "sha256": "0cad060bc444347ebb8adb500b20e350613e7ca1fd31e8588c71ec03877b948c"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/LetterPlanStore.java",
+    "sha256": "9717eeaba91f028f141d672c78b0679b139b9eb26a282551ae8e4c7a7441a6d8"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/LettersEngine.java",
+    "sha256": "d24abab929159d17d0a77d2896ab3d11d9ecd8101a3dc9d8c7d96a7f32f89ae3"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/LocalDbRetry.java",
+    "sha256": "2d4825cb2acd8a952a1c65d5bc3fd3a4f998e4d204ff4fce74e787872a9b149c"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/MainActivity.java",
+    "sha256": "3e5d7416097477f979be7ef6d848210ea319fb90232dfef676660949930cf12a"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/MemoryNotebook.java",
+    "sha256": "f335e650a42430e7f9edb363a2843af092c93f8850c5c454c3c1f0ff1d16c3b2"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/MessageTime.java",
+    "sha256": "df497eb2b06020f922bab2205d3675b535d146be620868b23c3e4e731dcb05af"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ModelClient.java",
+    "sha256": "e5a58857327132e88945a1762181e0531a1ca3e9c769bb08b14ac92926c2387a"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/NotebookEngine.java",
+    "sha256": "4e534604809f1f55cc58843ec22aaa30517813db7e4a0e8a945f25ffbf8a2b83"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/OverlayBanner.java",
+    "sha256": "3e2c3d4e312aba16757f37d02cf08bf116e52f1d16d701d1d78c78086ec44c8f"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/PcmSpool.java",
+    "sha256": "91c8e1ba93c72382faffc6dcb8bd3d794f320cf1d1ef4d7cd97d15f662fabc76"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/PendingReplyJob.java",
+    "sha256": "77537c4cecb1b75f3b79c6eed034be8daee31ab6f2a4b3c7d7ff6e2a22e71624"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/PersonalData.java",
+    "sha256": "68f36f3b4acae01526fd692fab26da9c8cfec176ccdbab6555a8dcfe0168aa8c"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/PersonalMerge.java",
+    "sha256": "7ac00cb5b00034d09965d7bb37001f07a014e4af48e941670703fd4da5adb066"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/PlaybackControl.java",
+    "sha256": "653a3ade6077778d5f3ff4ba5d9b3faed7d78d9c64494bafd821661acf1901fb"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ProducerAvatar.java",
+    "sha256": "50e4b6299d9819ae6db44edd7f233ecf1445b14174d5e26695e5d0c090725b83"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ProducerProfile.java",
+    "sha256": "d03fb67bdad37f17ec18507357a8849f20bd70f17af500aecabd7c055cdc0187"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/Progression.java",
+    "sha256": "11b95bdd6ab573c6cd360f71c64c07b8539f70d85a620e829db587b531d044d9"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/PromiseData.java",
+    "sha256": "ab79265430d7cb94e8017083e9b313f7930a97a5925d65a79f78edc266044d2b"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/PromiseDate.java",
+    "sha256": "a98d743bf68030bc3876278ea5a03e9b43278010e77d2b6e706631977649d2fa"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachAlarmReceiver.java",
+    "sha256": "55c708d03fcc18f2e363f99b1a7cafdb0a152a2d84ce41331d09aad63896d45d"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachAlert.java",
+    "sha256": "a698721cbed2d61028de85b98fda2a250c0f5f4a92a0a75701774f5ba71d654e"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachBudget.java",
+    "sha256": "434283bea5c88d34afabb712e2ff104529c1f21ae8219100d12500eb3cf29947"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachConfig.java",
+    "sha256": "c26c0ca54f34137be5180c10fc685ac805bff76261c1528349789f06353c2af0"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachExecution.java",
+    "sha256": "18d12829b73b26454a28c362f3c1d41c8709f75f18b3a2b61f5bd641244f5e60"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachFairness.java",
+    "sha256": "fc85cec0a27a8610533b815de541a64095c388a93eb72f5eea2a8894e51bff71"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachJob.java",
+    "sha256": "219fbbb4cd071be6e6a9d263fe66022a08b4b2f50002db9804db8c9ab0929c24"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachOut.java",
+    "sha256": "eb8603cf03cc553a693a996fd11c31b87771ed5a5157a3eff5b71557c26478d9"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachPlanCheck.java",
+    "sha256": "0f129afd1b2446e2d5046fe4d6811d4f0e3cd1202bd0c194148133a034841b2d"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachPlanCheckRules.java",
+    "sha256": "5618ff385774a579c0341284e7ee91a23ead5c1dba1e7510bdabde6ce3d7a00c"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachPlanRules.java",
+    "sha256": "281b3fe117683ed1c8f434e343b9feffe4a5b3e29694b2f3191bb2a4c6610743"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachPlans.java",
+    "sha256": "6a5804180ef475294af3c583171b834028b4cd2e386ce62f58a7f147b5e9f197"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachPlanStore.java",
+    "sha256": "2ca7035f14dddf9b084ee8a00e003a022e1e147259fe0a8e453e0236380a6a6c"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachPlanWorker.java",
+    "sha256": "cf17ac62afd77c3e5ac05a6153fec0d60ed9a0afefab800f1df46301c526a12d"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachPolicy.java",
+    "sha256": "0bc9b5bb09ef7e6de996ac66d2305224a1b2a7dacf3fd2b11b500a6c86c65b5b"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachScheduler.java",
+    "sha256": "a3aab74d97e3ca8e0c74f8bab76bf479f12966c36d1740208e7ea035f0e57a64"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReachWorker.java",
+    "sha256": "86aa74231d3534826c1793203bc8ee7416ef7c67d3ea7a2dd9c44108ec63794a"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/Recall.java",
+    "sha256": "518bfb6460f97e3b70e379fbb4d3010fd62e0202b5875f20538ac2f4ec60fa9a"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReplyDelay.java",
+    "sha256": "b321b5a31e81619cc64d6f2046c589556ee6b4a00573322ee92523a14c29dd6e"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReplyFallback.java",
+    "sha256": "ee82b91e6a96629f18adb55783107d841fa6087d1928e09443a1e70e9555eb58"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReplyManager.java",
+    "sha256": "555d1d733dbf134272213cf99dcb467626698b913220cd782fe17f9b1c92290d"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReplyRescheduleReceiver.java",
+    "sha256": "5abe0c551c97832276b3dfb1ac938a0471e48651e21fc1c25f60f70c0c1f7a7e"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReplyTestService.java",
+    "sha256": "e6d436d33614339b067fe2d2344ad0bf7be5d1fcfcb0d14cc786609a748bedbb"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReplyText.java",
+    "sha256": "b30483e72221980bc7dfe7a7457436e4e4a30c3dcbe5b3c907755ad48ad56cd3"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReplyTrace.java",
+    "sha256": "e2589bc446b002620f47d74e80d4a6fb6c3e90139f234086154f2c2eb5807d4f"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReplyWorkPolicy.java",
+    "sha256": "1b3306a3adaf3201f96ac4d262ae50678b4944736a75dd9bc90eb281a5c90ca2"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ReplyWorkService.java",
+    "sha256": "b54b09a25537f76cd78583b8334dac4e3e36df9aea9a135be8730e826df450ae"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ScheduleData.java",
+    "sha256": "79cbe02e4712e2dbe61370eda95b6890c27a81b040e6bb67a3ebf7e013605c8b"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ScheduleEngine.java",
+    "sha256": "7df7fc0e66ba1ebc39473d0032ad7c5ff44e43da50e9189e6aecd81804e08a78"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ScheduleGeneration.java",
+    "sha256": "cebfaa7adc0e80f996c305241aea9c6367e0d504d16d079d684f36b496ecc7b7"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ScheduleRuntime.java",
+    "sha256": "b924c3573320ca8ded04858c5ff96a8d8b4e604f97ec4cacc9e285a6da8e3a57"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ScheduleStore.java",
+    "sha256": "ec8028fd1d7c5ad36eab493a983e1da346db8392b07c0a3cd1b478d648a215fa"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/StoryFiles.java",
+    "sha256": "208d83607a06971baea01da719ceb2b1549e0902a7948a5a2a1b989f822340db"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/StoryRetrieval.java",
+    "sha256": "cc7520f56718c63f3049585eb754ddfcbc88e6ea5c39be27bd070f97427f5c23"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/ThemePrefs.java",
+    "sha256": "17f083a8dd5401a29a6f0442bccd5794b66289968c5b04b8221ecfeb66c5928d"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/TtsTrace.java",
+    "sha256": "ac93e69ca73b11398c0310eb399ad2dd33f38694da581732ad7584289b287a3e"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/UiReadScope.java",
+    "sha256": "6772121c656f6ad605e86eb7f34a6dcec7bb620171ba352eb43826f72b8c53b7"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/UiSnapshots.java",
+    "sha256": "ce7ac9a1559a28a0bd7100bbf7ec2c061601613c4820e21c2a69ef3cba0a14a8"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/UnreadNotifications.java",
+    "sha256": "3fa7319b2c133ef99e9d66ad72c2d94716e9d8c7933f4777e467f6da517fb0ef"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/UnreadState.java",
+    "sha256": "0018960b45fb31d59e7bd0b02b5754fb1d1c46049d5b18ce4c6f2077e4b2ccb2"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/Vault.java",
+    "sha256": "0b99508a945ab3be7c0d1f06850a178e4fe43d785f3c5411d8e2a15655d4c75a"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/VoiceCache.java",
+    "sha256": "e3a2b5ca3d5597b58443f550e3fb5c6796f79af2433ca80b63a27b4608a0527e"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/VoiceLibrary.java",
+    "sha256": "0997bdfdb58c06089b0e72554960a9dc6ed85019600830700dbde20d5259730c"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/VoicePlayer.java",
+    "sha256": "ecd1f5476535649b9f4f826d7b887cf445df7124f75465e32b0164056f350625"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/WebActivity.java",
+    "sha256": "f9712efa6b5ca51c004d14e74e413c55cfe68d8aca100c28fcf3620f1da0d8b3"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/WritingData.java",
+    "sha256": "abdf4272c1cfa51e4bf7b880eb6e05e8772f6cfece1b605b0ca74c9b07e82447"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/WritingEngine.java",
+    "sha256": "e4823de45c63be22d48abf4c6ac7b496b685ffd82ad6aff9a3aac3105f1dd339"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/WritingJob.java",
+    "sha256": "fcade6b5335f0a53d0ae919df51d7ad8bc1269bc59c7268b14993b50e171419b"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/WritingMorningJob.java",
+    "sha256": "703f89f0da223a5867b730e615f4d2a838329acbe72860217759d424a10d65df"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/WritingMorningRules.java",
+    "sha256": "1163c4ec91fa371e9b3f7917f8aa910a0ed429aac0e948a447b03df6bd4f83c5"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/WritingPlanView.java",
+    "sha256": "59ab3604465877220ab9ebf84db985b16d57883f9a3b6ff8b845f859affd8fc7"
+  },
+  {
+    "path": "src/com/eidolon/sc/mobile/WritingStore.java",
+    "sha256": "85f9e97f38b15731dd5d10e338b905ee709d2d01560fc3fe877e91a552360d20"
+  },
+  {
+    "path": "res/drawable/icon.xml",
+    "sha256": "7d9d1ce131965c676dd2ae69017a9c6becc7756bfafb4fcfbc0303101e9d5934"
+  },
+  {
+    "path": "assets/ANDROIDX-LICENSE.txt",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  {
+    "path": "assets/calendar.json",
+    "sha256": "14146048134227ba49b468964edd6721a92efc2c7eca60158a7f9365ac20d874"
+  },
+  {
+    "path": "assets/characters.json",
+    "sha256": "7ba1bae0c53ac81a8e4e7cd2541093d7f528e3b9af16b7d3ba1f1d85b208f790"
+  },
+  {
+    "path": "assets/gifts.json",
+    "sha256": "826196469a5e8f4b1cdbec67be88d483bef1534c28e7be45f75faef9609aa21c"
+  },
+  {
+    "path": "assets/hearts.json",
+    "sha256": "7f3413a6ac4e88959fd03b0d1fc8cdea119668f72b6acf49f5b799eb29883230"
+  },
+  {
+    "path": "assets/HIBI-ATTRIBUTION.md",
+    "sha256": "8e55ceb2099e4262d254d9720b042d5684b4ae2858bcc630247c25a295b7f371"
+  },
+  {
+    "path": "assets/hibi-calendar-source.toml",
+    "sha256": "315b77bc448e50d6472234244fd171ab955cbbad231ccb87916ca9c9c85ed81f"
+  },
+  {
+    "path": "assets/LICENSE",
+    "sha256": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0"
+  },
+  {
+    "path": "assets/pronunciation.json",
+    "sha256": "b6d05957e54f089868f44131f03832ee4557a64ef4549e61de4792042e7c7201"
+  },
+  {
+    "path": "assets/routines.json",
+    "sha256": "fb24959d932ce31956e8be811a241ecbdef20a7412ee25f2910582f5a89b92b4"
+  },
+  {
+    "path": "assets/THIRD-PARTY-NOTICES.txt",
+    "sha256": "457ad5538d41270cb10cbd2d2c613048b23677d7a987ff8a144f2eed727c6853"
+  },
+  {
+    "path": "assets/avatars/amana.jpg",
+    "sha256": "33822d1f77589e2c70c40ed3a6a6f352e9be4266c824d3b1474994da7ca58890"
+  },
+  {
+    "path": "assets/avatars/asahi.jpg",
+    "sha256": "c95bc71913fd13a7d0b1fd2436ed4c3057a84be73ff86f879099abaf95fa3051"
+  },
+  {
+    "path": "assets/avatars/chiyoko.jpg",
+    "sha256": "24ea9096058a9edf53a8f50af44b19e630f07fe350e2c6a117e3991654514cea"
+  },
+  {
+    "path": "assets/avatars/chiyuki.jpg",
+    "sha256": "9e0e5eece8ca5df92340cb13cd58d6db229ba6569cdfd98345e8ce9b74bdca1d"
+  },
+  {
+    "path": "assets/avatars/fuyuko.jpg",
+    "sha256": "7626437a9b3555207106c4a3925144a3307520b8e333f03cf77197e731a91810"
+  },
+  {
+    "path": "assets/avatars/hana.jpg",
+    "sha256": "66b25dee5485dacf01f852aa0b9b70d822631db796cd2522815a28cce0990bad"
+  },
+  {
+    "path": "assets/avatars/haruki.jpg",
+    "sha256": "1d71e7fa93d09530abefb9a1d4d51d66c9a4e9a4e995da8446a6a29d5cc5351f"
+  },
+  {
+    "path": "assets/avatars/hazuki.jpg",
+    "sha256": "5570c57bc2d3f7916a43930ec85fb14cce3332b6be6134fc6877ddd87f1be639"
+  },
+  {
+    "path": "assets/avatars/hinana.jpg",
+    "sha256": "e4039ac6276809e3a5018210061d659784a649d3208161d50a2d717f6d7a195b"
+  },
+  {
+    "path": "assets/avatars/hiori.jpg",
+    "sha256": "387487fe3958db7491ed37ac128eec86a8febc13be29860755ad7e89f34bb944"
+  },
+  {
+    "path": "assets/avatars/juri.jpg",
+    "sha256": "db6b38f890e66b6c5ac94122f65b1ab8718b5192cb60c84ac96d1e1eef3f794c"
+  },
+  {
+    "path": "assets/avatars/kaho.jpg",
+    "sha256": "8b309b3b046c065e42e04920d55c2cd502c62ea3dc596e477c4c2b2f204bf853"
+  },
+  {
+    "path": "assets/avatars/kiriko.jpg",
+    "sha256": "3edba29c8651352dd3b23daba6362a646a10db58132d2367445e0926e6038825"
+  },
+  {
+    "path": "assets/avatars/kogane.jpg",
+    "sha256": "d49a6051344112715256ee39e4bf7f024e283e8d6b7f0a08996c35df83f81a04"
+  },
+  {
+    "path": "assets/avatars/koito.jpg",
+    "sha256": "570bc79c3375d9143950d65bd97227d642ab1e8d34eb8059d7272d306693dcde"
+  },
+  {
+    "path": "assets/avatars/luca.jpg",
+    "sha256": "4f81202912f85051a73c34b0315e41995410c6adacb40f4ce40276514b5557e7"
+  },
+  {
+    "path": "assets/avatars/madoka.jpg",
+    "sha256": "e23a0a14a7d8afd30ae93f36bdde34ee12f9e2a1d25c7b61ad6d800c79a09511"
+  },
+  {
+    "path": "assets/avatars/mamimi.jpg",
+    "sha256": "648bcec01eb43ec5305ad7cdc626b241f0a0e5030490dc93e31d55751d42a4b8"
+  },
+  {
+    "path": "assets/avatars/mano.jpg",
+    "sha256": "fb2986dfeb7f5bcc21258c0ba365ed70b37a862a57e4dbec92139d70d2cbc556"
+  },
+  {
+    "path": "assets/avatars/meguru.jpg",
+    "sha256": "654b830efedad710eaf39854036135c64d2b85328394c456292489cb60e51b8b"
+  },
+  {
+    "path": "assets/avatars/mei.jpg",
+    "sha256": "c45dc0023c6bc4c4525f4cb5b861b63042099882c205dd5ec8851c8cf63823d5"
+  },
+  {
+    "path": "assets/avatars/mikoto.jpg",
+    "sha256": "314c94d6ed6ca144d84998b22d01dd3e19d7e26dccd05ae8462ee6c58c847913"
+  },
+  {
+    "path": "assets/avatars/natsuha.jpg",
+    "sha256": "c97c31b52ebdc4f780cf87e6cb94843ec089b4fbd17fe26bd2464d3e2f9a2bf4"
+  },
+  {
+    "path": "assets/avatars/nichika.jpg",
+    "sha256": "d6b6e2114c0e768ae04e5bda6eef483c1cb7abb4a8f8280d81319c21e2ab6819"
+  },
+  {
+    "path": "assets/avatars/rinze.jpg",
+    "sha256": "f2a3462d93fd28b63631049af68f1cb4e50fd5d47b69a2c6ff3d76f547832361"
+  },
+  {
+    "path": "assets/avatars/sakuya.jpg",
+    "sha256": "ac41ccf51ca63c00a5e4091cdf6ef08af7f18a6b35707725906549b90c689e5b"
+  },
+  {
+    "path": "assets/avatars/tenka.jpg",
+    "sha256": "afc2743c67a66fc5132825e4d56e656aff04f92e0a82418b1d965aba9c891941"
+  },
+  {
+    "path": "assets/avatars/toru.jpg",
+    "sha256": "cca020eed68cbeddf391e00b9eb300c4425456fb891b9ab7abfeb15b19f3d2f2"
+  },
+  {
+    "path": "assets/avatars/yuika.jpg",
+    "sha256": "31bea422845945857f6125dc660eb221c18fe6bf42c09dfd61c605874caf610e"
+  },
+  {
+    "path": "assets/gifts/black-tea.webp",
+    "sha256": "666c8bac5f24681dd20e8930855e5ef854fd513fcc86e94e6ac967d1ea3d416a"
+  },
+  {
+    "path": "assets/gifts/book.webp",
+    "sha256": "87f8b560b9790cec95a060838b191a7a8a6b148871e2ae8f8c31b66024d65028"
+  },
+  {
+    "path": "assets/gifts/bouquet.webp",
+    "sha256": "e5611f44c1787b9b5bd9b25a49f3a1264f0fef871ab57a9a4a5e0776be82304d"
+  },
+  {
+    "path": "assets/gifts/cake.webp",
+    "sha256": "0f14bdc18576e67e3f87a1ec508075ba7a3dc1ea9203a38e2dc9668af1c43e17"
+  },
+  {
+    "path": "assets/gifts/candy.webp",
+    "sha256": "0c4ec637d14ff4ce4ba7da6059a9f9609b3bbf9b936f5566ba3156981f1fe7aa"
+  },
+  {
+    "path": "assets/gifts/chocolate.webp",
+    "sha256": "a8c28540781f2b3cd565defe1c0dcc4026b08a3cdc47bc42097d64268b7bd472"
+  },
+  {
+    "path": "assets/gifts/cocoa.webp",
+    "sha256": "f0e4f748dce95c0ce7c6aabc5a39be8116f54e75ec82078d127a027092b002a2"
+  },
+  {
+    "path": "assets/gifts/coffee.webp",
+    "sha256": "19284191f8363d7fb5b5248bfd6fa13d1f22de686d185aee35b7c172d7a77e3d"
+  },
+  {
+    "path": "assets/gifts/CREDITS.md",
+    "sha256": "3e9e29a69feaf60818732da215f3b24785050d3c6b12c06f8d05386a33e7931c"
+  },
+  {
+    "path": "assets/gifts/honey-drink.webp",
+    "sha256": "d437c3e075e42aeefc0860b408fd84dfc3ffffe039cc7c460b4473295578c240"
+  },
+  {
+    "path": "assets/gifts/ice-cream.webp",
+    "sha256": "ae1c2770b6de19f806ecc599dc78c5729eb17438c87de8e4d15f6047089cfd0c"
+  },
+  {
+    "path": "assets/gifts/jewelry.webp",
+    "sha256": "982bac06e2932328192eeaabfe6d949e5d89855a0ffe0b761af26754e7f1d6a3"
+  },
+  {
+    "path": "assets/gifts/meat-bun.webp",
+    "sha256": "2a2cc4540500be516904ffddf839ce30f12e334b3d9d587bac9e4b2afd431704"
+  },
+  {
+    "path": "assets/gifts/milk-tea.webp",
+    "sha256": "84a3d83bf7e3dcbdd58a18e108a3ead885f4adea5c6e3ad49392861391faaedf"
+  },
+  {
+    "path": "assets/gifts/music-cd.webp",
+    "sha256": "fa777d4ee57938cd77d774336dd68281ce25f94e56c674f056f2da3c47cda6e2"
+  },
+  {
+    "path": "assets/gifts/plush.webp",
+    "sha256": "f6677581b4a27b5aec1dc26d803da814118018e14c039edf9435ae14b9e357af"
+  },
+  {
+    "path": "assets/gifts/potted-plant.webp",
+    "sha256": "dcbf8d92f05244cb6d926f4493c9c1dbed631a2cfe0cb627ddd1da3fbdf95d8b"
+  },
+  {
+    "path": "assets/gifts/preserved-flower.webp",
+    "sha256": "bffee2b5222d5b0d04b95a3c2e194ef79cf85858758c6173b87091366f7e42b8"
+  },
+  {
+    "path": "assets/gifts/pudding.webp",
+    "sha256": "5ab68225f39d3340fa3e293d27f1bc83f25108499ed59dd2d370a2e9c517e99f"
+  },
+  {
+    "path": "assets/gifts/wagashi.webp",
+    "sha256": "619c810afb7da61a125209aaf46ca1b37d594118dbf4f068f892f207ec6ef48c"
+  },
+  {
+    "path": "assets/hibi-hearts-source/amana.toml",
+    "sha256": "d640a5e12dcba0ea04fc2bf695929ed591fb9fcfea00a04bd25ad66c2149c0c2"
+  },
+  {
+    "path": "assets/hibi-hearts-source/asahi.toml",
+    "sha256": "1185fb55cf13013ed096923492362de171e9f2981e35fc9ec14ddae9511909f8"
+  },
+  {
+    "path": "assets/hibi-hearts-source/chiyoko.toml",
+    "sha256": "c61f4014b9cb7bcfbb5a6c639ec346abcdd93ad92c852b16f550659740bac587"
+  },
+  {
+    "path": "assets/hibi-hearts-source/chiyuki.toml",
+    "sha256": "445100d9b6664b4fa6f0035ce5e872b8a4583526df41df33530bf605bc926dd5"
+  },
+  {
+    "path": "assets/hibi-hearts-source/fuyuko.toml",
+    "sha256": "accd263348351adefa25df67b3144de7c93a63221f385da1d9b48831526c4da1"
+  },
+  {
+    "path": "assets/hibi-hearts-source/hana.toml",
+    "sha256": "64ec8b4d368051e0f33ed81d9eeba599d5e519c412ad943f7caa08f3f3600187"
+  },
+  {
+    "path": "assets/hibi-hearts-source/haruki.toml",
+    "sha256": "cf3f188164789df372615b5f40648b16840e8468bf30bce1eff9a61ba0073c20"
+  },
+  {
+    "path": "assets/hibi-hearts-source/hinana.toml",
+    "sha256": "ffbac29f101154d7c48b193f7dd9bff13b221372fef973648e4f4f8a72a5312d"
+  },
+  {
+    "path": "assets/hibi-hearts-source/hiori.toml",
+    "sha256": "8ba72b66949cd38d3d785517f5c13075263bb9c6e312c84706b46469861c1110"
+  },
+  {
+    "path": "assets/hibi-hearts-source/juri.toml",
+    "sha256": "ac4a519e66a9285556ce5ab08ec9b000869c2341090a688e0f8a894ec302202a"
+  },
+  {
+    "path": "assets/hibi-hearts-source/kaho.toml",
+    "sha256": "9be60921de947f0011f45275ca6eb4b513d217249c37a89f731cfc21792c9d24"
+  },
+  {
+    "path": "assets/hibi-hearts-source/kiriko.toml",
+    "sha256": "88415c69dee757589249ac266c47a224e91989dc9ef3f66036964cb7b00a1cc6"
+  },
+  {
+    "path": "assets/hibi-hearts-source/kogane.toml",
+    "sha256": "6451d4f575cc4a9ff8fcf5b451b21e0e3588abaa62fa03ac20ab5ab8a0b7e69d"
+  },
+  {
+    "path": "assets/hibi-hearts-source/koito.toml",
+    "sha256": "89d16e608c596db5ddd49506cabffff191b8cb751893d5717c9027f128d96a52"
+  },
+  {
+    "path": "assets/hibi-hearts-source/luca.toml",
+    "sha256": "2333e14b04ba5a2be89b751fb75a43c1469590109caa72167c733330716c8d24"
+  },
+  {
+    "path": "assets/hibi-hearts-source/madoka.toml",
+    "sha256": "95674b57c813761caa84714537501a1895a502b9e99f33710846dabbb5a5e5bc"
+  },
+  {
+    "path": "assets/hibi-hearts-source/mamimi.toml",
+    "sha256": "3db0d77785339f9005dae4cdb555488ae9bd5a1dd69f83dc06f03f6150e4a44f"
+  },
+  {
+    "path": "assets/hibi-hearts-source/mano.toml",
+    "sha256": "8869addae4b1d94351cc66d7fabafb23e9e38451076c213f2fe21315ff8573a4"
+  },
+  {
+    "path": "assets/hibi-hearts-source/meguru.toml",
+    "sha256": "72646c5ed7cad79920966fd7254bf9849589a9ac9e746efe67758f617842805c"
+  },
+  {
+    "path": "assets/hibi-hearts-source/mei.toml",
+    "sha256": "9ed9c290e96543994bb1f90d3fcb497805452067d5c2864e4873295635b31df8"
+  },
+  {
+    "path": "assets/hibi-hearts-source/mikoto.toml",
+    "sha256": "969cd9a9dfc7341a4a1becfe914e964afcf0c99721ef1a6c9087973c2dc820a4"
+  },
+  {
+    "path": "assets/hibi-hearts-source/natsuha.toml",
+    "sha256": "1f2c6215b21de9c333dc297e1a56de424d648b3d37e02b5d5dc4e014c7533ff6"
+  },
+  {
+    "path": "assets/hibi-hearts-source/nichika.toml",
+    "sha256": "f5a2860689c744aefa5fc64b67a9cc01d25f9ce5b45c9e03912f7dd4d5e60294"
+  },
+  {
+    "path": "assets/hibi-hearts-source/rinze.toml",
+    "sha256": "d9fc90ea8c447fac6c20e1a8825c9bb320a03c402adbc8a8f0e6590cbcd6fb90"
+  },
+  {
+    "path": "assets/hibi-hearts-source/sakuya.toml",
+    "sha256": "209a2ba99eaafdcb56a608268b6fec826dea8aa180625fa87889aadc03a030c6"
+  },
+  {
+    "path": "assets/hibi-hearts-source/tenka.toml",
+    "sha256": "89800bfac2cf60de3306bc42119333880be6b9c41d59a85a51524f66dd79d5e1"
+  },
+  {
+    "path": "assets/hibi-hearts-source/toru.toml",
+    "sha256": "1fee7216eaf745bba5e676795f3bc21eaab7579bd2bc80d5f22b96fbc8318089"
+  },
+  {
+    "path": "assets/hibi-hearts-source/yuika.toml",
+    "sha256": "1e069df3d7d9914c4abdefa22e2d428c575b09a64ae5ab185e5a071b78a20c59"
+  },
+  {
+    "path": "assets/licenses/shortcutbadger-notice.txt",
+    "sha256": "84d9a085c10ec0fd72bdb4092eed8b95d0d8f5fdfcadb04f3a5d7498e65f005d"
+  },
+  {
+    "path": "assets/ui/anniversaries.js",
+    "sha256": "bfd6aebbe6b2b73ac00e98e66887bd78afe0225c63d22f9b2360417db8833ae7"
+  },
+  {
+    "path": "assets/ui/app.js",
+    "sha256": "dbe039138f596f280b83939f97ab1c5da23b8aae851693c9fa5085e600058e42"
+  },
+  {
+    "path": "assets/ui/chat-time.js",
+    "sha256": "3d535bd113fcd74f2909de109ffd5204dfaba3314824d5cb9b0691bdbde8c08a"
+  },
+  {
+    "path": "assets/ui/inbox.js",
+    "sha256": "3676b104573b8946486f765957b7042535cdf23d14452fc38e4d1044694350cf"
+  },
+  {
+    "path": "assets/ui/index.html",
+    "sha256": "ee3d7c0ed7ad39331981d7de832786d7acf8f3185a40ab7afe1ab7edfcc5e19e"
+  },
+  {
+    "path": "assets/ui/notebook.js",
+    "sha256": "12c446f90bf50de05186fabd12a55ed1658e1f2bb13dba1af65ef05e86568710"
+  },
+  {
+    "path": "assets/ui/promises.js",
+    "sha256": "221290f2f5cbc0edc03bbb7e84af59b3d3828b5c74ad6252ccd45296ee9658ef"
+  },
+  {
+    "path": "assets/ui/role-prompts.js",
+    "sha256": "7f7626d241dc252d628d2e9f24290976ea553afb13f95021a4b13319a782d83f"
+  },
+  {
+    "path": "assets/ui/schedules.js",
+    "sha256": "c548cec6dee706e19d4f1e3d7064e9a7506c7fecefe9fccdc9b96efb31714fd7"
+  },
+  {
+    "path": "assets/ui/settings.js",
+    "sha256": "36a7c233f13a13bef00d4f17fde13a6ae0760c75759a246eb9f30f2ebcf7da01"
+  },
+  {
+    "path": "assets/ui/style.css",
+    "sha256": "cfb429c5f75625b8122776c92537431e32dd970a4aa357f2a52dc96aea1a0af8"
+  },
+  {
+    "path": "assets/ui/view-position.js",
+    "sha256": "dd7e4a1a05df3934c44c6177a3e1dc9ede0914518521ee4d2bb45223a0e551f3"
+  },
+  {
+    "path": "assets/ui/writing-plans.js",
+    "sha256": "456af9c32006dd689ee618333c463694660398286121b55c1b7a280ec74e32d6"
+  },
+  {
+    "path": "assets/ui/writings.js",
+    "sha256": "e6737881af6a8ae4ffd5c57abc633bc84e4ed2310b842ac3e0016a95731a4412"
+  },
+  {
+    "path": "AndroidManifest.xml",
+    "sha256": "f922eb9914954d76fb571f051cb7d6d1ecc8822d8351e179c047ba8af6850405"
+  }
+]
