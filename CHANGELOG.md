@@ -1,9 +1,10 @@
 # 更新记录与开发文档
 
-当前可安装版本：**1.13/code66**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
+当前可安装版本：**1.14/code67**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
 
 | 版本 | 主要变化 | 完整记录 |
 | --- | --- | --- |
+| 1.14（基础版） | 角色时区、最终请求时间快照、冻结延迟、证据分层及恢复 | [RELEASE-1.14](outputs/eidolon-android/RELEASE-1.14.md) |
 | 1.13 | Vivo角标权限声明、同步顺序与实际通知诊断 | [RELEASE-1.13](outputs/eidolon-android/RELEASE-1.13.md) |
 | 1.12 | 系统通知单一路径、Vivo角标兼容及权限提示修正 | [RELEASE-1.12](outputs/eidolon-android/RELEASE-1.12.md) |
 | 1.11 | 每日03:00检查与行程显示切换 | [RELEASE-1.11](outputs/eidolon-android/RELEASE-1.11.md) |

@@ -9,8 +9,10 @@ final class ReplyManager {
     static boolean enqueue(Context c,ChatStore.PendingReply row,long at,boolean network){return PendingReplyJob.schedule(c,row.id,at,network);}
     static boolean enqueue(Context c,String id,long at,boolean network){return PendingReplyJob.schedule(c,id,at,network);}
     static long dueAt(Context c,ChatStore store,ChatStore.PendingReply row,JSONObject personal)throws Exception{
+        if(row==null)throw new Exception("回复任务已删除");if(row.immediate)return System.currentTimeMillis();if(row.dueAt>0)return row.dueAt;
         JSONObject status=ScheduleRuntime.state(c,store,personal,row.character,row.lastAt);JSONObject plan=status.optJSONObject("plan");
-        return prefs(c).getBoolean("replyDelay.enabled",false)?ReplyDelay.choose(prefs(c),status,plan,personal,row.lastAt):row.lastAt;
+        long due=prefs(c).getBoolean("replyDelay.enabled",false)?ReplyDelay.choose(prefs(c),status,plan,personal,row.lastAt):row.lastAt;
+        store.getWritableDatabase().execSQL("UPDATE pending_replies SET due_at=? WHERE id=? AND revision=? AND status='generating' AND due_at=0 AND immediate=0",new Object[]{due,row.id,row.revision});ChatStore.PendingReply saved=store.pending(row.id);return saved!=null&&saved.revision==row.revision&&saved.dueAt>0?saved.dueAt:due;
     }
     private static android.content.SharedPreferences prefs(Context c){return c.getSharedPreferences("settings",0);}
     static void run(Context context,String id)throws Exception{

@@ -49,9 +49,12 @@ function scheduleCompose(who){
 function scheduleSettings(){
  header('行程与作息设置',true);const area=content(),options=state.scheduleOptions||{};
  const check=(title,checked)=>{const row=el('label','check'),input=el('input');input.type='checkbox';input.checked=checked;row.append(input,document.createTextNode(title));area.append(row);return input;};
+ const role=choiceField(area,'角色独立时区',state.characters.map(c=>[c.id,c.name]),state.current||state.characters[0].id),zone=field(area,'角色时区（留空沿用现有档案）','','text'),zoneNote=el('p','muted');area.append(zoneNote);let zoneEpoch=0;
+ const loadZone=async()=>{const epoch=++zoneEpoch;zone.disabled=true;try{const d=await api('roleTimeZoneGet',{character:role.value});if(epoch!==zoneEpoch||!zone.isConnected)return;zone.value=d.override||'';zoneNote.textContent='当前有效时区：'+d.effective+'。已保存日程按所选时区的当地钟表时间解释，不把时区变更当作已发生的经历。';}catch(e){toast(e.message);}finally{if(epoch===zoneEpoch)zone.disabled=false;}};role.onchange=loadZone;loadZone();area.append(btn('保存角色时区',async()=>{const d=await api('roleTimeZoneSave',{character:role.value,zone:zone.value});zoneNote.textContent='当前有效时区：'+d.effective;toast('角色时区已保存');},'pill wide'));
+ const temp=el('details');temp.append(el('summary','','临时实际状态（手动记录）'));const activity=field(temp,'当前活动（留空清除覆盖）','','text'),duration=field(temp,'有效分钟数',30,'number');duration.min=1;duration.max=1440;temp.append(btn('保存临时状态',async()=>{await api('temporalOverrideSave',{character:role.value,name:activity.value,minutes:Number(duration.value)});toast('临时状态已保存；到期自动失效');},'pill'),el('p','notice','这是你明确记录的实际状态，优先于聊天中的计划参考；到期后只重新查询当前计划，不补造已完成经历。不会单凭模型台词创建生活事件，也不改写已有待投放回答。'));area.append(temp);
  const enabled=check('开启角色行程',options.enabled),rest=check('开启睡觉、起床与洗澡状态',options.rest!==false);
  const limit=choiceField(area,'每天自动安排角色数量上限',[['1','1 位'],['3','3 位'],['5','5 位'],['10','10 位'],['28','28 位']],String(options.limit||3));
- area.append(el('p','notice','按制作人档案的时区，每天 03:00 后为最近七天聊过的角色安排，优先最近聊天的角色。每位每天成功生成一次，手机后台运行可能延迟。行程页在03:00前保留上一日安排，03:00后切换当天，不删除历史记录。'));
+ area.append(el('p','notice','按角色有效时区（默认沿用档案），每天 03:00 后为最近七天聊过的角色安排，优先最近聊天的角色。每位每天成功生成一次，手机后台运行可能延迟。行程页在03:00前保留上一日安排，03:00后切换当天，不删除历史记录。'));
  area.append(el('p','notice','开启作息后，睡着时仍会回复，语气可以困倦；连续聊醒后不再反复提睡觉。每天安排行程时会本地随机生成睡前泡澡/淋浴时段，正在洗澡时聊天状态会提示；在洗澡期间收到的消息会等到预计结束后再投放回复（需同时开启延迟回复）。她睡觉或洗澡时会暂停主动搭话。洗澡仅作日常安排参考，不描写过程或身体。行程关闭时，作息效果也会关闭。'));
  area.append(el('p','notice','每天生成行程会调用后台模型，日常读取状态不调用模型。同一角色当天自动失败后不会反复尝试，可以去行程页手动重试。'));
  area.append(btn('保存设置',async()=>{state=await api('scheduleSettings',{enabled:enabled.checked,rest:rest.checked,limit:Number(limit.value)});toast('已保存');render();},'pill primary wide'));

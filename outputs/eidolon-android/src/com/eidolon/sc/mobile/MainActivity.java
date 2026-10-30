@@ -270,7 +270,7 @@ public class MainActivity extends Activity {
             });
         }));dialog.show();
     }
-    void about(){new AlertDialog.Builder(this).setTitle("Eidolon 随行 · 1.13")
+    void about(){new AlertDialog.Builder(this).setTitle("Eidolon 随行 · 1.14")
         .setMessage("吸收 0.9 功能，沿用 0.8.8 原版的包名和签名。角色资料来自 Sallyn0225/eidolon-sc，日历与写作玩法参考 Eidolon-Hibi。当前包含 "+characters.length()+" 位角色。\n\n已包含：本机聊天、日中双语与显示开关、剧情检索、记忆、好感与礼物、任务成就、主动消息横幅、日历、信箱、事件日记、角色行程与睡眠状态、约定与兑现。\n\n语音沿用 0.9 的流式播放、暂停续播、本地保存管理与夜间模式。自动来信、日记可在设置中开启；后台运行时机由手机系统安排。聊天、信件和日记随加密备份保存；录音文件仍由已保存语音页面管理。\n\n已包含本地每日主动搭话计划、聊天未读、洗澡延迟及可选关键关系剧情。完整双向语音通话与动态立绘尚未接入。\n\n原作角色归 Bandai Namco Entertainment Inc. 所有；这是非官方粉丝作品。代码按 AGPL-3.0-or-later 发布。\n\n来源：https://github.com/Sallyn0225/eidolon-sc\nhttps://github.com/x499806631-commits/Eidolon-Hibi")
         .setPositiveButton("关闭",null).setNeutralButton("开源许可证",(d,w)->{try{ScrollView s=new ScrollView(this);TextView t=label(asset("LICENSE")+"\n\n"+asset("THIRD-PARTY-NOTICES.txt")+"\n\n"+asset("ANDROIDX-LICENSE.txt"),12,INK);t.setPadding(dp(16),dp(16),dp(16),dp(16));s.addView(t);new AlertDialog.Builder(this).setTitle("AGPL-3.0").setView(s).setPositiveButton("关闭",null).show();}catch(Exception ignored){}}).show();}
     String asset(String path)throws Exception{try(InputStream in=getAssets().open(path);ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1)out.write(buffer,0,n);return out.toString("UTF-8");}}

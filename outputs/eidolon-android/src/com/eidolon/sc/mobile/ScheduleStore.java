@@ -10,6 +10,7 @@ final class ScheduleStore {
     static JSONObject entry(ChatStore s,String who,String day)throws Exception{try(Cursor c=s.getReadableDatabase().rawQuery("SELECT body FROM schedules WHERE id=?",new String[]{who+"/"+day})){return c.moveToFirst()?new JSONObject(c.getString(0)):null;}}
     static JSONObject plan(ChatStore s,String who,String day)throws Exception{JSONObject e=entry(s,who,day);return e==null?null:e.optJSONObject("plan");}
     static int count(ChatStore s,String day){try(Cursor c=s.getReadableDatabase().rawQuery("SELECT count(*) FROM schedules WHERE date=?",new String[]{day})){c.moveToFirst();return c.getInt(0);}}
+    static int countGeneratedDay(ChatStore s,String day,java.time.ZoneId zone)throws Exception{int count=0;JSONArray rows=all(s);for(int i=0;i<rows.length();i++){JSONObject e=rows.getJSONObject(i);long at=e.optLong("createdAt");if(at>0?java.time.Instant.ofEpochMilli(at).atZone(zone).toLocalDate().toString().equals(day):e.optString("date").equals(day))count++;}return count;}
     static JSONArray all(ChatStore s)throws Exception{JSONArray a=new JSONArray();try(Cursor c=s.getReadableDatabase().rawQuery("SELECT body FROM schedules ORDER BY date DESC,id",null)){while(c.moveToNext())a.put(new JSONObject(c.getString(0)));}return a;}
     static void save(ChatStore store,JSONObject entry,long epoch)throws Exception{
         SQLiteDatabase db=store.getWritableDatabase();db.beginTransaction();try{

@@ -69,13 +69,14 @@ final class ScheduleData {
         long end=wakeDay.atTime(wake/60,wake%60).atZone(at.getZone()).toInstant().toEpochMilli();
         return new JSONObject().put("start",start).put("end",end).put("sourceDate",source.toString()).put("estimated",early&&yesterday==null).put("startText",Instant.ofEpochMilli(start).atZone(at.getZone()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))).put("endText",Instant.ofEpochMilli(end).atZone(at.getZone()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm")));
     }
+    static boolean asleepAt(JSONObject today,JSONObject yesterday,ZonedDateTime at)throws Exception{JSONObject w=sleepWindow(today,yesterday,at);long now=at.toInstant().toEpochMilli();return w!=null&&now>=w.getLong("start")&&now<w.getLong("end");}
     static String sleepKey(JSONObject today,JSONObject yesterday,ZonedDateTime at)throws Exception{
         JSONObject known=today!=null?today:yesterday;if(known==null)return "";int now=at.getHour()*60+at.getMinute();return (now<minute(known.getString("wake"),false)?at.toLocalDate().minusDays(1):at.toLocalDate()).toString();
     }
     static JSONObject status(JSONObject today,JSONObject yesterday,ZonedDateTime at,boolean rest,long first,long last)throws Exception{
         int now=at.getHour()*60+at.getMinute();JSONObject result=new JSONObject().put("state","no_plan").put("text","今天的行程尚未安排");
         if(rest){JSONObject bath=bathAt(today,yesterday,at);if(bath!=null){long began=bath.getLong("start"),ends=bath.getLong("end");if(at.toInstant().toEpochMilli()>=began&&at.toInstant().toEpochMilli()<ends)return result.put("state","bath").put("text","正在洗澡 🛁").put("bathEndsAt",ends).put("bathKind",bath.optString("kind"));}}
-        if(rest&&asleep(today,yesterday,now)){
+        if(rest&&asleepAt(today,yesterday,at)){
             long stamp=at.toInstant().toEpochMilli();boolean contacted=first>0&&last>=first&&stamp>=last&&stamp-last<HALF_HOUR;
             if(!contacted)return result.put("state","asleep").put("text","在睡觉 💤");
             if(stamp-first<HALF_HOUR)return result.put("state","woken").put("text","被你叫醒了");

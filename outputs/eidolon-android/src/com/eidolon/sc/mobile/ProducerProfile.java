@@ -26,7 +26,7 @@ final class ProducerProfile {
         ZonedDateTime now=ZonedDateTime.now(zone);StringBuilder result=new StringBuilder("\n制作人档案（只影响当下对待制作人的方式，不改写原作剧情）：");
         result.append("称呼：").append(p.optString("address").isEmpty()?"沿用角色原有习惯":p.getString("address"));
         result.append("；性别：").append(p.optString("gender").equals("female")?"女性":p.optString("gender").equals("male")?"男性":"沿用原作设定");
-        result.append("；制作人所在时区：").append(zone.getId()).append("；当前时间：").append(now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm",Locale.ROOT)));
+        result.append("；制作人所在时区：").append(zone.getId()).append("；制作人当前时间（不是角色时区）：").append(now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm",Locale.ROOT)));
         int month=p.optInt("birthMonth"),day=p.optInt("birthDay");
         if(month>0){result.append("；生日：").append(month).append("月").append(day).append("日（不含年份）");
             int thisYearDay=month==2&&day==29&&!now.toLocalDate().isLeapYear()?28:day;
