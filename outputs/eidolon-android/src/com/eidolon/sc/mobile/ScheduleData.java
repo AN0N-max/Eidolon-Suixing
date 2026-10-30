@@ -32,6 +32,7 @@ final class ScheduleData {
         JSONArray input=raw.optJSONArray("twists"),twists=new JSONArray();if(input!=null){if(input.length()>2)throw new Exception("每天最多两个小变数");for(int i=0;i<input.length();i++){Object value=input.get(i);if(!(value instanceof String)||((String)value).trim().isEmpty()||((String)value).length()>120)throw new Exception("行程变数格式无效");twists.put(((String)value).trim());}}
         JSONObject result=new JSONObject().put("wake",wake).put("sleep",sleep).put("slots",slots).put("twists",twists);
         JSONObject bath=raw.optJSONObject("bath");if(bath!=null){String at=text(bath,"at",5,true);int start=minute(at,false),before=Math.floorMod(sleeping-start,1440),minutes=bath.optInt("minutes",-1);if(before<60||before>120||minutes<15||minutes>50||minutes%5!=0)throw new Exception("洗澡时间应在睡前60到120分钟，时长须为5分钟的倍数");String kind=text(bath,"kind",12,false);if(!kind.isEmpty()&&!kind.equals("tub")&&!kind.equals("shower"))throw new Exception("洗澡方式无效");result.put("bath",new JSONObject().put("at",at).put("minutes",minutes).put("kind",kind));}
+        if(raw.optJSONObject("continuity")!=null)result.put("continuity",LifeData.continuity(raw.getJSONObject("continuity"),slots.length()));
         return result;
     }
     static JSONObject withBath(JSONObject plan,String bathKind,long seed)throws Exception{

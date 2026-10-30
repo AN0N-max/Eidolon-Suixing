@@ -1,7 +1,7 @@
 # Android安装包
 
-[1.14.1 离线更新公告](Eidolon-1.14.1-original-upgrade.apk)，code68，原包名和原升级签名。安装前建议备份，覆盖升级不要先卸载。
+[1.15 原签名升级APK](Eidolon-1.15-original-upgrade.apk)，code69。保持包名/原升级签名，覆盖安装不要先卸载；建议先做加密备份。本版SQLite/备份v14，旧备份可导入。
 
-SHA256：DE0985B29590058CB0B65F69C9AA50563FFE3C0F17ED927A76A9496DDC8E6AC7
+SHA256：796942DBA5AB637161AE8563A1DFF86D7E9379D5F349AF1E5765B2F29F59A7AE
 
-本版新增更新公告及发版校验。自主生活系统本次交付审查/设计，未宣称已接入。
+[完整变更](../outputs/eidolon-android/RELEASE-1.15.md) · [实现和测试边界](../docs/LIFE-SYSTEM-1.15.md)

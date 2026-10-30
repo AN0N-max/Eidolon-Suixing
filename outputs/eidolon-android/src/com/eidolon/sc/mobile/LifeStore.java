@@ -1,0 +1,83 @@
+package com.eidolon.sc.mobile;
+
+import android.content.*;import android.database.*;import android.database.sqlite.*;
+import java.time.*;import java.util.*;import org.json.*;
+
+/** One bounded document per role; writes participate in the same SQLite transaction as message delivery. */
+final class LifeStore {
+ static void create(SQLiteDatabase db){db.execSQL("ALTER TABLE messages ADD COLUMN generated_at INTEGER NOT NULL DEFAULT 0");db.execSQL("CREATE TABLE character_life(character TEXT PRIMARY KEY,revision INTEGER NOT NULL,body TEXT NOT NULL)");}
+ static JSONObject read(ChatStore s,String who)throws Exception{try(Cursor c=s.getReadableDatabase().rawQuery("SELECT body FROM character_life WHERE character=?",new String[]{who})){return c.moveToFirst()?new JSONObject(c.getString(0)):null;}}
+ static void put(ChatStore s,JSONObject row)throws Exception{LifeData.validate(row,Collections.singleton(row.getString("character")));ContentValues v=new ContentValues();v.put("character",row.getString("character"));v.put("revision",row.getLong("revision"));v.put("body",row.toString());s.getWritableDatabase().insertWithOnConflict("character_life",null,v,SQLiteDatabase.CONFLICT_REPLACE);}
+ static JSONObject advance(Context c,ChatStore s,JSONObject personal,String who,Clock clock)throws Exception{
+  SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{
+   JSONObject old=read(s,who);if(old==null)old=LifeData.fresh(who,WritingEngine.character(WritingEngine.characters(c),who),clock);
+   try(Cursor contact=db.rawQuery("SELECT coalesce(max(sent_at),0) FROM messages WHERE character=? AND role='user' AND sent_at<=?",new String[]{who,""+clock.millis()})){if(contact.moveToFirst())old.put("awakeUntil",contact.getLong(0)+10*60000L);}
+   ZoneId zone=TemporalRuntime.zone(c,personal,who);LocalDate day=clock.instant().atZone(zone).toLocalDate();JSONObject today=ScheduleStore.entry(s,who,day.toString()),yesterday=ScheduleStore.entry(s,who,day.minusDays(1).toString());
+   if(!c.getSharedPreferences("settings",0).getBoolean("hibiSchedules",false)){today=null;yesterday=null;}
+   JSONObject next=LifeData.advance(old,clock,zone,today,yesterday,TemporalRuntime.override(c,who,clock.millis())!=null);
+   if(!next.toString().equals(old.toString())){next.put("revision",old.getLong("revision")+1);put(s,next);}else if(read(s,who)==null)put(s,next);
+   db.setTransactionSuccessful();return next;
+  }finally{db.endTransaction();}
+ }
+ static JSONObject snapshot(Context c,ChatStore s,JSONObject personal,String who,JSONObject temporal,String user,boolean proactive,Clock clock)throws Exception{
+  JSONObject state=advance(c,s,personal,who,clock);return project(state,temporal,user,proactive,clock.millis(),TemporalRuntime.override(c,who,clock.millis()));
+ }
+ static JSONObject project(JSONObject state,JSONObject temporal,String user,boolean proactive,long now,JSONObject override)throws Exception{
+  JSONObject out=new JSONObject().put("enabled",state.getBoolean("enabled")).put("revision",state.getLong("revision")).put("now",now);
+  if(!state.getBoolean("enabled"))return out;
+  JSONObject actual=state.optJSONObject("actual");if(actual!=null&&(now<actual.getLong("start")||now>=actual.getLong("end")))actual=null;long valid=now+30*60000L;if(actual!=null)valid=Math.min(valid,actual.getLong("end"));if(override!=null)valid=Math.min(valid,override.getLong("until"));
+  JSONObject storedMood=state.getJSONObject("emotion"),mood=new JSONObject();for(String k:new String[]{"valence","energy","at","source","label"})mood.put(k,storedMood.get(k));String planned=temporal.optString("planned_state");double energy=mood.getDouble("energy");if(planned.equals("asleep"))energy=Math.min(energy,30);if(planned.equals("bedtime"))energy=Math.min(energy,45);mood.put("energy",energy);
+  JSONObject projected=new JSONObject(state.toString()).put("emotion",mood);JSONObject cue=LifeData.cue(state,now);
+  JSONArray references=LifeData.relevant(state,user,now),events=new JSONArray();for(int i=0;i<references.length();i++)events.put(projectEvent(references.getJSONObject(i)));if(cue!=null&&LifeData.find(events,cue.getString("id"))==null){if(events.length()==4)events.remove(3);events.put(projectEvent(cue));}
+  out.put("validUntil",valid).put("clockRollback",state.optBoolean("clockRollback")).put("actual_simulated_activity",override!=null?override:actual==null?JSONObject.NULL:actual).put("emotion",mood).put("profile",projectProfile(state.getJSONObject("profile"))).put("goal",projectGoal(LifeData.goal(state))).put("events",events).put("proactive_cue",cue==null?JSONObject.NULL:projectEvent(cue)).put("behavior",BehaviorPlanner.plan(projected,temporal,user,proactive));
+  ZoneId eventZone=ZoneId.of(state.optString("zone").isEmpty()?temporal.optString("timezone","UTC"):state.getString("zone"));for(int i=0;i<events.length();i++)dateEvent(events.getJSONObject(i),eventZone,now);if(out.optJSONObject("proactive_cue")!=null)dateEvent(out.getJSONObject("proactive_cue"),eventZone,now);
+  JSONArray selected=new JSONArray(),all=state.getJSONArray("memories");for(int i=all.length()-1;i>=0&&selected.length()<4;i--){JSONObject m=all.getJSONObject(i);if(m.optLong("at")<=now&&(m.optString("layer").equals("todo")||Recall.score(user,m.optString("text"))>0))selected.put(new JSONObject().put("eventId",m.getString("eventId")).put("layer",m.getString("layer")).put("status",m.getString("status")));}out.put("life_memories",selected);return out;
+ }
+ static void dateEvent(JSONObject e,ZoneId zone,long now)throws Exception{long at=e.optLong("at");if(at<=0)return;ZonedDateTime date=Instant.ofEpochMilli(at).atZone(zone),current=Instant.ofEpochMilli(now).atZone(zone);e.put("localTime",date.toOffsetDateTime().toString()).put("daysBeforeCurrent",java.time.temporal.ChronoUnit.DAYS.between(date.toLocalDate(),current.toLocalDate()));}
+ static JSONObject projectEvent(JSONObject event)throws Exception{JSONObject out=new JSONObject();for(String k:new String[]{"id","title","kind","status","at","parent","source","goalId","resolvedBy"})if(event.has(k))out.put(k,event.get(k));return out;}
+ static JSONObject projectProfile(JSONObject p)throws Exception{return new JSONObject().put("expressiveness",p.getInt("expressiveness")).put("confidence",p.getDouble("confidence")).put("interests",p.getJSONObject("interests")).put("coreSource","CharacterPrompts");}
+ static Object projectGoal(JSONObject g)throws Exception{if(g==null)return JSONObject.NULL;JSONArray steps=new JSONArray();for(int i=0;i<g.getJSONArray("steps").length();i++){JSONObject s=g.getJSONArray("steps").getJSONObject(i);steps.put(new JSONObject().put("title",LifeData.shortText(s.getString("title"),100)).put("external",s.getBoolean("external")));}return new JSONObject().put("id",g.getString("id")).put("title",LifeData.shortText(g.getString("title"),100)).put("progress",g.getInt("progress")).put("status",g.getString("status")).put("steps",steps);}
+ static boolean allowReach(ChatStore s,String who,JSONObject effects,long now)throws Exception{JSONObject state=read(s,who);if(state==null||!state.optBoolean("enabled"))return true;String id=effects==null?"":effects.optString("cueId");if(id.isEmpty())return !state.optBoolean("eventOnlyReach");JSONObject e=LifeData.find(state.getJSONArray("events"),id);if(e==null||e.optLong("mentionedAt")>0||e.optLong("at")>now||!Arrays.asList("completed","open","awaiting_outcome").contains(e.optString("status")))return false;if(state.optBoolean("eventOnlyReach")){JSONArray mentions=effects.optJSONArray("mentions");if(mentions==null)return false;boolean found=false;for(int i=0;i<mentions.length();i++)if(id.equals(mentions.getJSONObject(i).optString("id")))found=true;if(!found)return false;}return true;}
+ static String prompt(JSONObject snapshot,boolean proactive){if(!snapshot.optBoolean("enabled"))return "";return "\n【角色虚拟生活参考；不是现实设备事件，也不是原作既定剧情】\n"+snapshot.toString()+"\n计划与实际模拟状态分开。只有source为virtual_simulation、simulation_rule或明确确认的生活记录才可当作虚拟经历，missed/planned/uncertain不能说成已经发生。生活事件时间戳用于今天/昨天；没有新经历就正常接话，不补造离线活动。情绪有惯性，不为了附和用户瞬间换心情，也不要每次报告状态。目标有前置阶段，external阶段须等待明确确认，不自行宣布比赛/考试结果。预计延迟跨活动边界时避免确定的‘此刻正在’措辞，采用能在等待后仍成立的表达。"+BehaviorPlanner.instruction()+ChatEnvelope.protocol(proactive);}
+ static void delivered(Context c,ChatStore s,String who,JSONObject effect,String answer,long messageId,long now,JSONObject judgment)throws Exception{
+  JSONObject state=read(s,who);if(state==null||!state.optBoolean("enabled"))return;
+  JSONArray mentions=effect==null?null:effect.optJSONArray("mentions");if(mentions!=null)for(int i=0;i<mentions.length();i++){JSONObject m=mentions.getJSONObject(i),e=LifeData.find(state.getJSONArray("events"),m.optString("id"));if(e!=null&&!Arrays.asList("cancelled","missed","uncertain").contains(e.optString("status"))&&e.optString("title").equals(m.optString("title"))&&e.optLong("at")<=now&&answer.contains(m.optString("quote"))&&!m.optString("quote").isEmpty())e.put("mentionedAt",now).put("messageRef","message/"+messageId).put("mentionQuote",m.getString("quote"));}
+  LifeData.decay(state,now);
+  if(judgment!=null){double hurt=judgment.optDouble("hurt");if(hurt>0)LifeData.influence(state,"message/"+messageId,-Math.min(.25,hurt/30),now);}
+  if(judgment!=null&&judgment.optDouble("warmth")>0)LifeData.influence(state,"warmth/"+(now/LifeData.HOUR),Math.min(.08,judgment.optDouble("warmth")/40),now);
+  if(effect!=null&&effect.optJSONObject("behavior")!=null)state.put("lastBehavior",new JSONObject().put("goal",effect.getJSONObject("behavior").optString("goal")).put("at",now).put("messageRef","message/"+messageId));
+  if(effect!=null&&effect.optLong("revision",-1)==state.optLong("revision")&&effect.optLong("validUntil",Long.MAX_VALUE)>=now&&effect.optJSONObject("new_goal")!=null){try{LifeData.seedGoal(state,effect.getJSONObject("new_goal"),now);}catch(Exception invalid){android.util.Log.w("EidolonLife","Ignored invalid goal proposal");}}
+  state.put("revision",state.getLong("revision")+1);LifeData.prune(state,now);put(s,state);
+ }
+ static JSONObject edit(Context c,ChatStore s,JSONObject args)throws Exception{
+  String who=args.getString("character");JSONObject personal=s.personal();JSONObject state;SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{
+   state=read(s,who);if(state==null||args.getLong("revision")!=state.getLong("revision"))throw new Exception("生活状态已变化，请刷新后重试");String action=args.getString("operation");long now=System.currentTimeMillis();
+   if(action.equals("settings")){state.put("enabled",args.getBoolean("enabled")).put("evolution",args.getBoolean("evolution")).put("eventOnlyReach",args.getBoolean("eventOnlyReach"));if(!state.getBoolean("enabled")){JSONArray events=state.getJSONArray("events");for(int i=0;i<events.length();i++){JSONObject e=events.getJSONObject(i);if(e.optString("status").equals("in_progress"))e.put("status","paused").put("source","simulation_disabled");}state.put("actual",JSONObject.NULL);}}
+   else if(action.equals("addGoal")){if(LifeData.goal(state)!=null)throw new Exception("请先推进或取消当前目标");LifeData.seedGoal(state,args.getJSONObject("goal"),now);}
+   else if(action.equals("calibrate")){state.put("observedAt",now).put("clockRollback",false);state.getJSONObject("emotion").put("at",now);JSONArray events=state.getJSONArray("events");for(int i=0;i<events.length();i++){JSONObject e=events.getJSONObject(i);if(e.optLong("at")>now&&!e.optString("status").equals("planned"))e.put("status","uncertain").put("source","clock_recalibration");}state.put("actual",JSONObject.NULL);}
+   else if(action.equals("resetTraits")){state.getJSONObject("profile").put("confidence",50.0).put("interests",new JSONObject()).put("lastEvolutionDay",LifeData.day(now,TemporalRuntime.zone(c,personal,who)));state.put("evolutionLog",new JSONArray());}
+   else {JSONObject e=LifeData.find(state.getJSONArray("events"),args.getString("eventId"));if(e==null)throw new Exception("生活事件不存在");
+    if(action.equals("confirm")){if(!e.getString("status").equals("awaiting_outcome")&&!(e.optString("kind").equals("issue")&&e.optString("status").equals("open")))throw new Exception("只有等待结果或未解决的事件可确认");if(!e.optString("kind").equals("issue"))LifeData.completeGoalStep(state,e,TemporalRuntime.zone(c,personal,who),now,true);e.put("status","completed").put("at",now).put("source","explicit_user_confirmation");LifeData.remember(state,e,"episodic",now);LifeData.remember(state,e,"todo",now);}
+    else if(action.equals("correct")){e.put("previousTitle",e.getString("title")).put("title",LifeData.shortText(args.getString("title"),160)).put("source","explicit_user_correction").put("correctedAt",now);LifeData.remember(state,e,"episodic",now);}
+    else if(action.equals("cancel")){e.put("status","cancelled").put("source","explicit_user_correction").put("at",now);LifeData.remember(state,e,"todo",now);JSONObject g=LifeData.find(state.getJSONArray("goals"),e.getString("id"));if(g!=null)g.put("status","cancelled");}
+    else throw new Exception("未知生活操作");
+   }
+   state.put("revision",state.getLong("revision")+1);put(s,state);db.setTransactionSuccessful();return state;
+  }finally{db.endTransaction();}
+ }
+ static JSONObject planning(Context c,ChatStore s,JSONObject personal,String who,Clock clock)throws Exception{JSONObject state=advance(c,s,personal,who,clock);return state.optBoolean("enabled")?new JSONObject().put("goal",LifeData.goal(state)==null?JSONObject.NULL:LifeData.goal(state)).put("recentEvents",LifeData.relevant(state,"",clock.millis())).put("emotion",state.getJSONObject("emotion")).put("profile",state.getJSONObject("profile")):new JSONObject();}
+ static String diary(Context c,ChatStore s,String who,String date)throws Exception{JSONObject state=read(s,who);if(state==null||!state.optBoolean("enabled"))return "";ZoneId zone=TemporalRuntime.zone(c,s.personal(),who);JSONArray events=state.getJSONArray("events"),out=new JSONArray();for(int i=0;i<events.length()&&out.length()<6;i++){JSONObject e=events.getJSONObject(i);if(e.optLong("at")>0&&LifeData.day(e.getLong("at"),zone).equals(date)&&Arrays.asList("completed","open","awaiting_outcome").contains(e.optString("status")))out.put(e);}return out.length()==0?"":"\n当天已记录的虚拟生活事件（不是现实操作或原作剧情）："+out;}
+ static JSONArray all(ChatStore s)throws Exception{JSONArray a=new JSONArray();try(Cursor c=s.getReadableDatabase().rawQuery("SELECT body FROM character_life ORDER BY character",null)){while(c.moveToNext())a.put(new JSONObject(c.getString(0)));}return a;}
+ static void validateBackup(JSONObject data,Set<String> known)throws Exception{JSONArray a=data.getJSONArray("characterLife");if(a.length()>known.size())throw new Exception("生活备份角色过多");Set<String> seen=new HashSet<>();for(int i=0;i<a.length();i++){JSONObject row=a.getJSONObject(i);LifeData.validate(row,known);if(!seen.add(row.getString("character")))throw new Exception("生活备份角色重复");}}
+ static String restoredRef(String ref,Map<String,Long> ids){if(!ref.startsWith("message/"))return ref;String id=ref.substring(8);Long mapped=ids.get(id);return mapped==null?"imported_missing/"+id:"message/"+mapped;}
+ static void restore(ChatStore s,JSONObject backup,Map<String,Long> messages)throws Exception{
+  s.getWritableDatabase().delete("character_life",null,null);if(backup.optInt("version")<14)return;
+  Map<String,Long> ids=new HashMap<>();for(Map.Entry<String,Long> e:messages.entrySet())ids.put(e.getKey().substring(e.getKey().lastIndexOf('/')+1),e.getValue());
+  JSONArray a=backup.getJSONArray("characterLife");for(int i=0;i<a.length();i++){
+   JSONObject row=new JSONObject(a.getJSONObject(i).toString());JSONArray events=row.getJSONArray("events");for(int j=0;j<events.length();j++){JSONObject event=events.getJSONObject(j);event.put("messageRef",restoredRef(event.optString("messageRef"),ids));}
+   JSONObject emotion=row.getJSONObject("emotion");emotion.put("source",restoredRef(emotion.optString("source"),ids));JSONArray prior=row.getJSONArray("influences"),seen=new JSONArray();for(int j=0;j<prior.length();j++)seen.put(restoredRef(prior.getString(j),ids));row.put("influences",seen);put(s,row);
+  }
+ }
+ private LifeStore(){}
+}
+

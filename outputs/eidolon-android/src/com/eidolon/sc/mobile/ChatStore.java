@@ -25,11 +25,12 @@ final class ChatStore extends SQLiteOpenHelper {
     @Override public synchronized void close(){if(!ownsDatabase)closed=true;}
 
     static final class Message {
-        final long id,sentAt;
+        final long id,sentAt,generatedAt;
         final String role, text,zone;
         Message(String role, String text) { this(0,role,text); }
         Message(long id,String role,String text) { this(id,role,text,0,"Asia/Shanghai"); }
-        Message(long id,String role,String text,long at,String zone){this.id=id;this.role=role;this.text=text;this.sentAt=at;this.zone=zone.isEmpty()?"Asia/Shanghai":zone;}
+        Message(long id,String role,String text,long at,String zone){this(id,role,text,at,zone,0);}
+        Message(long id,String role,String text,long at,String zone,long generated){this.id=id;this.role=role;this.text=text;this.sentAt=at;this.generatedAt=generated;this.zone=zone.isEmpty()?"Asia/Shanghai":zone;}
     }
     static final class Conversation {
         final String id, title;
@@ -42,7 +43,7 @@ final class ChatStore extends SQLiteOpenHelper {
         PendingReply(String id,String character,String session,long revision,long firstUserId,long lastUserId,long lastAt,String status,String answer,String effects,long dueAt,String error,boolean test,boolean immediate,String userText){this.id=id;this.character=character;this.session=session;this.revision=revision;this.firstUserId=firstUserId;this.lastUserId=lastUserId;this.lastAt=lastAt;this.status=status;this.answer=answer;this.effects=effects;this.dueAt=dueAt;this.error=error;this.test=test;this.immediate=immediate;this.userText=userText;}
     }
     ChatStore(Context c){this(c,false);}
-    private ChatStore(Context c,boolean owner){super(c.getApplicationContext(), "eidolon.db", null, 13);appContext=c.getApplicationContext();ownsDatabase=owner;if(owner)super.setWriteAheadLoggingEnabled(true);}
+    private ChatStore(Context c,boolean owner){super(c.getApplicationContext(), "eidolon.db", null, 14);appContext=c.getApplicationContext();ownsDatabase=owner;if(owner)super.setWriteAheadLoggingEnabled(true);}
 
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT, character TEXT NOT NULL, role TEXT NOT NULL, body TEXT NOT NULL, conversation TEXT NOT NULL)");
@@ -57,7 +58,7 @@ final class ChatStore extends SQLiteOpenHelper {
         LetterPlanStore.create(db);
         DiaryStore.create(db);
         AppealStore.create(db);
-        ReachPlanStore.create(db);UnreadState.create(db);MemoryNotebook.create(db);
+        ReachPlanStore.create(db);UnreadState.create(db);MemoryNotebook.create(db);LifeStore.create(db);
     }
     private void createConversations(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE conversations(id TEXT PRIMARY KEY, character TEXT NOT NULL, title TEXT NOT NULL, updated INTEGER NOT NULL)");
@@ -81,6 +82,7 @@ final class ChatStore extends SQLiteOpenHelper {
         if(oldVersion<11)AppealStore.create(db);
         if(oldVersion<12){ReachPlanStore.create(db);UnreadState.create(db);}
         if(oldVersion<13){MemoryNotebook.create(db);if(oldVersion>=12)db.execSQL("ALTER TABLE reach_tasks ADD COLUMN opportunity INTEGER NOT NULL DEFAULT 0");}
+        if(oldVersion<14)LifeStore.create(db);
     }
     private void createPending(SQLiteDatabase db){db.execSQL("CREATE TABLE pending_replies(id TEXT PRIMARY KEY,character TEXT NOT NULL,session TEXT NOT NULL,revision INTEGER NOT NULL,first_user_id INTEGER NOT NULL,last_user_id INTEGER NOT NULL,last_at INTEGER NOT NULL,status TEXT NOT NULL,answer TEXT NOT NULL DEFAULT '',effects TEXT NOT NULL DEFAULT '',due_at INTEGER NOT NULL DEFAULT 0,error TEXT NOT NULL DEFAULT '',test INTEGER NOT NULL DEFAULT 0,immediate INTEGER NOT NULL DEFAULT 0)");db.execSQL("CREATE INDEX pending_due ON pending_replies(status,due_at)");}
     PendingReply beginPendingUser(String who,String session,String text,long now)throws Exception{
@@ -102,7 +104,7 @@ final class ChatStore extends SQLiteOpenHelper {
     PendingReply pending(String id){try(Cursor c=getReadableDatabase().rawQuery("SELECT id,character,session,revision,first_user_id,last_user_id,last_at,status,answer,effects,due_at,error,test,immediate FROM pending_replies WHERE id=?",new String[]{id})){return c.moveToFirst()?pending(c):null;}}
     private PendingReply pending(Cursor c){String user="";if(c.getLong(4)>0)try(Cursor m=getReadableDatabase().rawQuery("SELECT group_concat(body,char(10)) FROM messages WHERE conversation=? AND role='user' AND id>=? AND id<=? ORDER BY id",new String[]{c.getString(2),""+c.getLong(4),""+c.getLong(5)})){if(m.moveToFirst())user=m.getString(0)==null?"":m.getString(0);}return new PendingReply(c.getString(0),c.getString(1),c.getString(2),c.getLong(3),c.getLong(4),c.getLong(5),c.getLong(6),c.getString(7),c.getString(8),c.getString(9),c.getLong(10),c.getString(11),c.getInt(12)!=0,c.getInt(13)!=0,user);}
     List<PendingReply> pendingReplies(){List<PendingReply> out=new ArrayList<>();try(Cursor c=getReadableDatabase().rawQuery("SELECT id,character,session,revision,first_user_id,last_user_id,last_at,status,answer,effects,due_at,error,test,immediate FROM pending_replies",null)){while(c.moveToNext())out.add(pending(c));}return out;}
-    List<Message> historyBefore(String session,long firstUserId,int limit){List<Message> out=new ArrayList<>();try(Cursor c=getReadableDatabase().rawQuery("SELECT id,role,body,sent_at,time_zone FROM messages WHERE conversation=? AND id<? ORDER BY id DESC LIMIT ?",new String[]{session,""+firstUserId,""+limit})){while(c.moveToNext())out.add(0,new Message(c.getLong(0),c.getString(1),c.getString(2),c.getLong(3),c.getString(4)));}return out;}
+    List<Message> historyBefore(String session,long firstUserId,int limit){List<Message> out=new ArrayList<>();try(Cursor c=getReadableDatabase().rawQuery("SELECT id,role,body,sent_at,time_zone,generated_at FROM messages WHERE conversation=? AND id<? ORDER BY id DESC LIMIT ?",new String[]{session,""+firstUserId,""+limit})){while(c.moveToNext())out.add(0,new Message(c.getLong(0),c.getString(1),c.getString(2),c.getLong(3),c.getString(4),c.getLong(5)));}return out;}
     boolean pendingState(String id,long revision,String status){ContentValues v=new ContentValues();v.put("status",status);v.put("error","");return getWritableDatabase().update("pending_replies",v,"id=? AND revision=? AND status IN ('collecting','generating','waiting','failed')",new String[]{id,""+revision})==1;}
     boolean markGenerating(String id,long revision){ContentValues v=new ContentValues();v.put("status","generating");v.put("error","");return getWritableDatabase().update("pending_replies",v,"id=? AND revision=? AND status='collecting'",new String[]{id,""+revision})==1;}
     boolean markReady(String id,long revision,String answer,JSONObject effects,long dueAt){ContentValues v=new ContentValues();v.put("status","waiting");v.put("answer",answer);v.put("effects",effects.toString());v.put("due_at",dueAt);v.put("error","");return getWritableDatabase().update("pending_replies",v,"id=? AND revision=? AND status='generating'",new String[]{id,""+revision})==1;}
@@ -120,7 +122,7 @@ final class ChatStore extends SQLiteOpenHelper {
             if(lastUserId(p.session)!=p.lastUserId){db.delete("pending_replies","id=? AND revision=?",new String[]{id,""+p.revision});db.setTransactionSuccessful();return null;}
             String answer=ReplyText.clean(p.answer);if(answer.replaceAll("(?s)</?(?:ja|zh)>","").trim().isEmpty()){ContentValues bad=new ContentValues();bad.put("status","failed");bad.put("answer","");bad.put("effects","");bad.put("error","回复只有内部时间标记，没有可用台词，请重试");db.update("pending_replies",bad,"id=? AND revision=? AND status='waiting'",new String[]{id,""+p.revision});db.setTransactionSuccessful();ReplyManager.changed(id);return null;}
             if(db.delete("pending_replies","id=? AND revision=? AND status='waiting'",new String[]{id,""+p.revision})!=1)return null;
-            JSONObject effects=new JSONObject(p.effects),generated=effects.getJSONObject("personal"),base=effects.optJSONObject("base"),latestPersonal=personal(),personal=base==null?generated:PersonalMerge.merge(base,generated,latestPersonal);HeartScenes.delivered(latestPersonal,personal,p.character,Progression.session(personal,p.session).optBoolean("ended")?null:effects.optJSONObject("heartScene"));AppealData.delivered(latestPersonal,personal,p.character,effects.optString("appealExplanation"));JSONObject judgment=AppealData.record(effects,now);if(judgment!=null)Progression.session(personal,p.session).put("lastJudgmentKey",judgment.getString("key"));Progression.happened(personal,p.character,0,0,0,PersonalData.today());String milestone="";if(base!=null){int before=base.getJSONObject("affinity").optInt(p.character,50),after=personal.getJSONObject("affinity").optInt(p.character,before);milestone=(before<85&&after>=85)?"今天和制作人的关系进入亲密阶段。":(before<65&&after>=65)?"今天和制作人的关系进入亲近阶段。":"";}ContentValues msg=new ContentValues();msg.put("character",p.character);msg.put("conversation",p.session);msg.put("role","assistant");msg.put("body",answer);stamp(msg,now);msg.put("unread",1);if(judgment!=null)msg.put("judgment",judgment.toString());db.insertOrThrow("messages",null,msg);
+            JSONObject effects=new JSONObject(p.effects),generated=effects.getJSONObject("personal"),base=effects.optJSONObject("base"),latestPersonal=personal(),personal=base==null?generated:PersonalMerge.merge(base,generated,latestPersonal);HeartScenes.delivered(latestPersonal,personal,p.character,Progression.session(personal,p.session).optBoolean("ended")?null:effects.optJSONObject("heartScene"));AppealData.delivered(latestPersonal,personal,p.character,effects.optString("appealExplanation"));JSONObject judgment=AppealData.record(effects,now);if(judgment!=null)Progression.session(personal,p.session).put("lastJudgmentKey",judgment.getString("key"));Progression.happened(personal,p.character,0,0,0,PersonalData.today());String milestone="";if(base!=null){int before=base.getJSONObject("affinity").optInt(p.character,50),after=personal.getJSONObject("affinity").optInt(p.character,before);milestone=(before<85&&after>=85)?"今天和制作人的关系进入亲密阶段。":(before<65&&after>=65)?"今天和制作人的关系进入亲近阶段。":"";}ContentValues msg=new ContentValues();msg.put("character",p.character);msg.put("conversation",p.session);msg.put("role","assistant");msg.put("body",answer);stamp(msg,now);if(effects.optJSONObject("life")!=null)msg.put("generated_at",effects.getJSONObject("life").optLong("generatedAt"));msg.put("unread",1);if(judgment!=null)msg.put("judgment",judgment.toString());long lifeMessageId=db.insertOrThrow("messages",null,msg);LifeStore.delivered(appContext,this,p.character,effects.optJSONObject("life"),answer,lifeMessageId,now,effects.optJSONObject("chatJudgment"));
             ContentValues update=new ContentValues();update.put("updated",now);db.update("conversations",update,"id=?",new String[]{p.session});savePersonal(personal);commitmentEvents(p.character,personal,effects.optJSONArray("events"));JSONObject moment=effects.optJSONObject("diaryMoment");if(moment!=null&&appContext.getSharedPreferences("settings",0).getBoolean("hibiDiary",false)&&appContext.getSharedPreferences("settings",0).getBoolean("autoMemory",true)&&(base==null||base.optLong("memoryEpoch")==personal.optLong("memoryEpoch")))WritingStore.event(this,p.character,moment.getString("date"),moment.getString("text"));if(!milestone.isEmpty())WritingStore.event(this,p.character,WritingData.today(personal).toString(),milestone);ScheduleRuntime.contact(appContext,this,personal,p.character,p.lastAt);if(appContext.getSharedPreferences("settings",0).getBoolean("timelineAuto",false))MemoryNotebook.deliver(this,effects.optJSONArray("timeEvents"),effects.optLong("notebookEpoch",-1));db.setTransactionSuccessful();
             return new JSONObject().put("test",false).put("character",p.character).put("session",p.session).put("name",effects.optString("name")).put("text",answer).put("dueAt",p.dueAt);
         }finally{db.endTransaction();}
@@ -134,14 +136,15 @@ final class ChatStore extends SQLiteOpenHelper {
     boolean addPromiseReach(String who,String session,long contact,String text,long now,JSONObject cue,boolean points,ReachConfig config,long revision)throws Exception{
         return addPlannedReach(who,session,contact,text,now,cue,points,config,revision,"","");
     }
-    boolean addPlannedReach(String who,String session,long contact,String text,long now,JSONObject cue,boolean points,ReachConfig config,long revision,String task,String token)throws Exception{
+    boolean addPlannedReach(String who,String session,long contact,String text,long now,JSONObject cue,boolean points,ReachConfig config,long revision,String task,String token)throws Exception{return addPlannedReach(who,session,contact,text,now,cue,points,config,revision,task,token,null);}
+    boolean addPlannedReach(String who,String session,long contact,String text,long now,JSONObject cue,boolean points,ReachConfig config,long revision,String task,String token,JSONObject lifeEffects)throws Exception{
         SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{
             if(!task.isEmpty()&&!ReachPlanStore.isRunning(this,task,token))return false;
             android.content.SharedPreferences prefs=appContext.getSharedPreferences("settings",0);
             if(lastId(session)!=contact||!prefs.getBoolean("reachEnabled",false)||prefs.getLong("reachSettingsRevision",0)!=revision||!ReachOut.quotaAllowed(this,config,who,now)){db.setTransactionSuccessful();return false;}
             try(Cursor c=db.rawQuery("SELECT id FROM conversations WHERE character=? ORDER BY updated DESC,rowid DESC LIMIT 1",new String[]{who})){if(!c.moveToFirst()||!session.equals(c.getString(0))){db.setTransactionSuccessful();return false;}}
             JSONObject personal=personal();if(Progression.session(personal,session).optBoolean("ended")||Progression.relation(personal,who,now).optBoolean("cooling")||(prefs.getBoolean("affinity",true)?personal.getJSONObject("affinity").optInt(who,50):50)<config.integer("minAffinity")){db.setTransactionSuccessful();return false;}String schedule=ScheduleRuntime.state(appContext,this,personal,who,now).optString("state");if(!ReachPlanRules.suitable(ScheduleRuntime.state(appContext,this,personal,who,now))){db.setTransactionSuccessful();return false;}
-            ContentValues v=new ContentValues();v.put("character",who);v.put("conversation",session);v.put("role","assistant");v.put("body",text);stamp(v,now);v.put("reach_at",now);v.put("unread",1);long messageId=db.insertOrThrow("messages",null,v);
+            if(!LifeStore.allowReach(this,who,lifeEffects,now))return false;ContentValues v=new ContentValues();v.put("character",who);v.put("conversation",session);v.put("role","assistant");v.put("body",text);stamp(v,now);v.put("reach_at",now);v.put("unread",1);if(lifeEffects!=null)v.put("generated_at",lifeEffects.optLong("generatedAt"));long messageId=db.insertOrThrow("messages",null,v);LifeStore.delivered(appContext,this,who,lifeEffects,text,messageId,now,null);
             if(!task.isEmpty()){ContentValues done=new ContentValues();done.put("status","COMPLETED");done.put("finished",now);done.put("message_id",messageId);done.put("token","");if(db.update("reach_tasks",done,"id=? AND status='RUNNING' AND token=?",new String[]{task,token})!=1)throw new IOException("搭话任务已失效");}
             ContentValues updated=new ContentValues();updated.put("updated",now);db.update("conversations",updated,"id=?",new String[]{session});
             JSONArray events=new JSONArray();PromiseData.acknowledge(personal,cue,text,points,events);savePersonal(personal);commitmentEvents(who,personal,events);
@@ -248,8 +251,8 @@ final class ChatStore extends SQLiteOpenHelper {
     }
     List<Message> sessionHistory(String conversation, int limit) {
         List<Message> result=new ArrayList<>();
-        try(Cursor c=getReadableDatabase().rawQuery("SELECT id,role,body,sent_at,time_zone FROM (SELECT id,role,body,sent_at,time_zone FROM messages WHERE conversation=? ORDER BY id DESC LIMIT ?) ORDER BY id",new String[]{conversation,Integer.toString(limit)})) {
-            while(c.moveToNext())result.add(new Message(c.getLong(0),c.getString(1),c.getString(2),c.getLong(3),c.getString(4)));
+        try(Cursor c=getReadableDatabase().rawQuery("SELECT id,role,body,sent_at,time_zone,generated_at FROM (SELECT id,role,body,sent_at,time_zone,generated_at FROM messages WHERE conversation=? ORDER BY id DESC LIMIT ?) ORDER BY id",new String[]{conversation,Integer.toString(limit)})) {
+            while(c.moveToNext())result.add(new Message(c.getLong(0),c.getString(1),c.getString(2),c.getLong(3),c.getString(4),c.getLong(5)));
         }
         return result;
     }
@@ -265,8 +268,8 @@ final class ChatStore extends SQLiteOpenHelper {
     }
     List<Message> history(String character, int limit) {
         List<Message> result = new ArrayList<>();
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT role,body,sent_at,time_zone FROM (SELECT id,role,body,sent_at,time_zone FROM messages WHERE character=? ORDER BY id DESC LIMIT ?) ORDER BY id", new String[]{character, Integer.toString(limit)})) {
-            while(c.moveToNext()) result.add(new Message(0,c.getString(0),c.getString(1),c.getLong(2),c.getString(3)));
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT role,body,sent_at,time_zone,generated_at FROM (SELECT id,role,body,sent_at,time_zone,generated_at FROM messages WHERE character=? ORDER BY id DESC LIMIT ?) ORDER BY id", new String[]{character, Integer.toString(limit)})) {
+            while(c.moveToNext()) result.add(new Message(0,c.getString(0),c.getString(1),c.getLong(2),c.getString(3),c.getLong(4)));
         }
         return result;
     }
@@ -298,16 +301,16 @@ final class ChatStore extends SQLiteOpenHelper {
             try(Cursor c=db.rawQuery("SELECT id,character,title FROM conversations ORDER BY updated",null)) {
                 while(c.moveToNext()) {
                     JSONArray rows=new JSONArray();
-                    try(Cursor m=db.rawQuery("SELECT role,body,reach_at,judgment,unread,sent_at,time_zone,id FROM messages WHERE conversation=? ORDER BY id",new String[]{c.getString(0)})) {
+                    try(Cursor m=db.rawQuery("SELECT role,body,reach_at,judgment,unread,sent_at,time_zone,id,generated_at FROM messages WHERE conversation=? ORDER BY id",new String[]{c.getString(0)})) {
                         while(m.moveToNext()) {
                             characters+=m.getString(1).length();if(characters>4000000)throw new Exception("聊天备份超过本版本的 400 万字限制");
-                            JSONObject row=new JSONObject().put("role",m.getString(0)).put("text",m.getString(1)).put("reachOut",m.getLong(2)>0).put("unread",m.getInt(4)!=0).put("sentAt",m.getLong(5)).put("timeZone",m.getString(6)).put("id",m.getLong(7));if(!m.getString(3).isEmpty())row.put("judgment",new JSONObject(m.getString(3)));rows.put(row);
+                            JSONObject row=new JSONObject().put("role",m.getString(0)).put("text",m.getString(1)).put("reachOut",m.getLong(2)>0).put("unread",m.getInt(4)!=0).put("sentAt",m.getLong(5)).put("timeZone",m.getString(6)).put("id",m.getLong(7)).put("generatedAt",m.getLong(8));if(!m.getString(3).isEmpty())row.put("judgment",new JSONObject(m.getString(3)));rows.put(row);
                         }
                     }
                     sessions.put(new JSONObject().put("id",c.getString(0)).put("character",c.getString(1)).put("title",c.getString(2)).put("messages",rows));
                 }
             }
-            return new JSONObject().put("format","eidolon-android-chats").put("version",13).put("conversations",sessions).put("personal",personal()).put("stories",allStories()).put("writings",WritingStore.all(this)).put("writingEvents",WritingStore.events(this)).put("schedules",ScheduleStore.all(this)).put("letterPlans",LetterPlanStore.all(this)).put("diaryAttempts",DiaryStore.attempts(this)).put("notebook",MemoryNotebook.all(this));
+            return new JSONObject().put("format","eidolon-android-chats").put("version",14).put("characterLife",LifeStore.all(this)).put("conversations",sessions).put("personal",personal()).put("stories",allStories()).put("writings",WritingStore.all(this)).put("writingEvents",WritingStore.events(this)).put("schedules",ScheduleStore.all(this)).put("letterPlans",LetterPlanStore.all(this)).put("diaryAttempts",DiaryStore.attempts(this)).put("notebook",MemoryNotebook.all(this));
         }finally{db.endTransaction();}
     }
     int importChats(JSONObject data, java.util.Set<String> knownCharacters) throws Exception {
@@ -322,7 +325,7 @@ final class ChatStore extends SQLiteOpenHelper {
                 mapping.put(session.optString("id"),id);
                 ContentValues title=new ContentValues();title.put("title",session.getString("title"));db.update("conversations",title,"id=?",new String[]{id});
                 JSONArray rows=session.getJSONArray("messages");
-                for(int j=0;j<rows.length();j++){JSONObject row=rows.getJSONObject(j);insert(db,character,id,row.getString("role"),row.getString("text"));if(data.optInt("version")>=13)messageMapping.put(session.optString("id")+"/"+row.getLong("id"),lastId(id));db.execSQL("UPDATE messages SET sent_at=?,time_zone=? WHERE id=last_insert_rowid()",new Object[]{data.optInt("version")>=13?row.optLong("sentAt"):0,data.optInt("version")>=13?row.optString("timeZone","Asia/Shanghai"):"Asia/Shanghai"});if(data.optInt("version")>=12&&row.optBoolean("unread"))db.execSQL("UPDATE messages SET unread=1 WHERE id=last_insert_rowid() AND role='assistant'");if(row.optBoolean("reachOut"))db.execSQL("UPDATE messages SET reach_at=1 WHERE id=last_insert_rowid()");if(data.optInt("version")>=11&&row.optJSONObject("judgment")!=null){ContentValues savedJudgment=new ContentValues();savedJudgment.put("judgment",row.getJSONObject("judgment").toString());db.update("messages",savedJudgment,"id=last_insert_rowid()",null);}}
+                for(int j=0;j<rows.length();j++){JSONObject row=rows.getJSONObject(j);insert(db,character,id,row.getString("role"),row.getString("text"));if(data.optInt("version")>=13)messageMapping.put(session.optString("id")+"/"+row.getLong("id"),lastId(id));db.execSQL("UPDATE messages SET sent_at=?,time_zone=?,generated_at=? WHERE id=last_insert_rowid()",new Object[]{data.optInt("version")>=13?row.optLong("sentAt"):0,data.optInt("version")>=13?row.optString("timeZone","Asia/Shanghai"):"Asia/Shanghai",data.optInt("version")>=14&&row.getString("role").equals("assistant")?row.optLong("generatedAt"):0});if(data.optInt("version")>=12&&row.optBoolean("unread"))db.execSQL("UPDATE messages SET unread=1 WHERE id=last_insert_rowid() AND role='assistant'");if(row.optBoolean("reachOut"))db.execSQL("UPDATE messages SET reach_at=1 WHERE id=last_insert_rowid()");if(data.optInt("version")>=11&&row.optJSONObject("judgment")!=null){ContentValues savedJudgment=new ContentValues();savedJudgment.put("judgment",row.getJSONObject("judgment").toString());db.update("messages",savedJudgment,"id=last_insert_rowid()",null);}}
             }
             if(data.optInt("version")>=2){JSONObject p=new JSONObject(data.getJSONObject("personal").toString());Progression.upgrade(p);JSONObject old=p.getJSONObject("sessions"),remapped=new JSONObject();for(java.util.Iterator<String> it=old.keys();it.hasNext();){String id=it.next();if(mapping.containsKey(id))remapped.put(mapping.get(id),old.getJSONObject(id));}p.put("sessions",remapped);
                 JSONArray memories=p.getJSONArray("memories");for(int i=0;i<memories.length();i++){JSONObject m=memories.getJSONObject(i);if(m.has("conversation"))m.put("conversation",mapping.getOrDefault(m.optString("conversation"),""));}savePersonal(p);}
@@ -339,7 +342,7 @@ final class ChatStore extends SQLiteOpenHelper {
             if(data.optInt("version")>=9){JSONArray plans=data.getJSONArray("letterPlans");for(int i=0;i<plans.length();i++)LetterPlanStore.insert(this,plans.getJSONObject(i),WritingStore.epoch.get());}
             db.delete("diary_attempts",null,null);
             if(data.optInt("version")>=10){JSONArray attempts=data.getJSONArray("diaryAttempts");for(int i=0;i<attempts.length();i++)DiaryStore.restoreAttempt(this,attempts.getJSONObject(i));}
-            MemoryNotebook.restore(this,data,mapping,messageMapping);db.setTransactionSuccessful();return sessions.length();
+            MemoryNotebook.restore(this,data,mapping,messageMapping);LifeStore.restore(this,data,messageMapping);db.setTransactionSuccessful();return sessions.length();
         }finally{db.endTransaction();}
     }
 }

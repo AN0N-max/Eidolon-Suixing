@@ -1,9 +1,9 @@
 """Exercise production ChatStore ownership with a fake Android helper, not Android SQL."""
 from pathlib import Path
-import subprocess,tempfile,os
+import subprocess,tempfile
 base=Path(__file__).resolve().parents[1];root=base.parents[1]
-jdk=Path(os.environ['JAVA_HOME']);android=Path(os.environ['ANDROID_HOME'])/'platforms/android-35/android.jar';json=Path(os.environ.get('JSON_JAR',str(root/'work/android-test-tools/json.jar')))
-classes=root/'work/android-build-1.14/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
+jdk=next((root/'work/android-tools/jdk').iterdir());android=root/'work/android-tools/platform/android-35/android.jar';json=root/'work/android-test-tools/json.jar'
+classes=root/'work/android-build-1.15/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
 sources={
 'android/content/Context.java':'package android.content;public class Context {public Context getApplicationContext(){return this;}}',
 'android/database/sqlite/SQLiteDatabase.java':'package android.database.sqlite;public class SQLiteDatabase {public interface CursorFactory{}}',
@@ -46,3 +46,4 @@ with tempfile.TemporaryDirectory(prefix='shared-owner-',dir=parent) as folder:
     cp=';'.join(map(str,[classes,json,android]))
     subprocess.run([str(jdk/'bin/javac.exe'),'-encoding','UTF-8','-cp',cp,'-d',str(output),*files],check=True)
     subprocess.run([str(jdk/'bin/java.exe'),'-cp',str(output)+';'+cp,'com.eidolon.sc.mobile.SharedStoreProbe'],check=True)
+

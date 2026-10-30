@@ -89,7 +89,7 @@ web=(src/'WebActivity.java').read_text(encoding='utf-8')
 fallback=(src/'ReplyFallback.java').read_text(encoding='utf-8')
 engine=(src/'WritingEngine.java').read_text(encoding='utf-8')
 data=(src/'WritingData.java').read_text(encoding='utf-8')
-assert 'null, 13)' in chat and 'if(oldVersion<10)DiaryStore.create(db)' in chat
+assert 'null, 14)' in chat and 'if(oldVersion<10)DiaryStore.create(db)' in chat
 assert '"diaryAttempts",DiaryStore.attempts(this)' in chat and 'db.delete("diary_attempts",null,null)' in chat
 assert 'row.remove("secret");row.remove("secretRead")' in data
 assert 'DiaryStore.secret(store,who,day,prefs.getBoolean("affinity",true))' in web
@@ -104,3 +104,4 @@ assert 'DiaryStore.begin(store,who,when' in engine and 'DiaryStore.failed' in en
 assert 'kind.equals("letter")&&BilingualReply.needsChinese(text)' in engine
 assert 'DiaryData.generated(text)' in engine and 'request.put("max_tokens",8192)' in engine
 print('PASS: native-only private-page authorization, both generation paths, reply-delivery and memory-epoch fences, strict diary parsing and backup hooks. Device acceptance is still required.')
+

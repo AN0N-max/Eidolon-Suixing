@@ -5,7 +5,8 @@ import java.util.Set;
 
 final class BackupValidator {
     static void validate(JSONObject data, Set<String> characters) throws Exception {
-        if(!"eidolon-android-chats".equals(data.optString("format")) || data.optInt("version")<1||data.optInt("version")>13)throw new Exception("不支持的备份格式或版本");
+        if(!"eidolon-android-chats".equals(data.optString("format")) || data.optInt("version")<1||data.optInt("version")>14)throw new Exception("不支持的备份格式或版本");
+        if(data.optInt("version")>=14)LifeStore.validateBackup(data,characters);
         if(data.optInt("version")>=13)MemoryNotebook.validateBackup(data,characters);
         if(data.optInt("version")>=9)LetterPlanData.validateBackup(data,characters);
         if(data.optInt("version")>=10)DiaryData.validateAttempts(data,characters);
@@ -25,6 +26,7 @@ final class BackupValidator {
             if(rows.length()>100000)throw new Exception("备份对话不完整");
             int turnRows=0;
             for(int j=0;j<rows.length();j++) {
+                if(data.optInt("version")>=14){long generated=rows.getJSONObject(j).optLong("generatedAt");if(generated<0||generated>253402300799999L)throw new Exception("回复形成时间无效");}
                 JSONObject row=rows.getJSONObject(j);String role=row.getString("role"),text=row.getString("text");
                 if(data.optInt("version")>=5&&role.equals("gift")){
                     if(turnRows%2!=0||row.optBoolean("reachOut"))throw new Exception("送礼记录位置错误");

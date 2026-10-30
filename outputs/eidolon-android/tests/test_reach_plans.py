@@ -47,8 +47,8 @@ expire=re.search(r'execSQL\("(UPDATE reach_tasks SET status=\'SKIPPED\',finished
 db.execute("UPDATE reach_tasks SET status='PENDING',expires=400 WHERE id='broken'")
 db.execute(expire,(500,500))
 assert db.execute("SELECT status FROM reach_tasks WHERE id='broken'").fetchone()==('SKIPPED',)
-assert 'message_id' in chat and 'if(oldVersion<12)' in chat and '.put("version",13)' in chat
-assert 'v.put("unread",1);long messageId=db.insertOrThrow' in chat
+assert 'message_id' in chat and 'if(oldVersion<12)' in chat and '.put("version",14)' in chat
+assert 'v.put("unread",1);if(lifeEffects!=null)v.put("generated_at",lifeEffects.optLong("generatedAt"));long messageId=db.insertOrThrow' in chat
 print('PASS SQLite v11→v12 history preservation, day uniqueness, conditional worker claims, transactional message/task rollback, unread isolation/idempotence, interrupted failure and expiry.')
 
 # Production stop predicate invalidates a running token; completion must no longer match.
@@ -63,3 +63,5 @@ with tempfile.TemporaryDirectory() as d:
     assert restored.execute("SELECT status,message_id FROM reach_tasks WHERE id='t'").fetchone()==('COMPLETED',2)
     restored.close()
 print('PASS actual stop predicate fences old token; unread and completed message linkage persist across SQLite close/reopen. Android recovery remains unverified.')
+
+

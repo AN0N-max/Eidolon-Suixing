@@ -18,6 +18,7 @@ final class ReachPlans {
         long contact=contactAt(s,session);if(contact<=0||contact>now||now-contact>config.integer("contactDays")*24*ReachPolicy.HOUR)return "近期没有互动";
         if(score<config.integer("minAffinity")||Progression.relation(personal,who,now).optBoolean("cooling"))return "关系条件尚未满足";
         if(!ReachOut.quotaAllowed(s,config,who,now))return "今日消息额度已满";
+        JSONObject life=LifeStore.advance(c,s,personal,who,java.time.Clock.fixed(java.time.Instant.ofEpochMilli(now),java.time.ZoneOffset.UTC));if(life.optBoolean("enabled")&&life.optBoolean("eventOnlyReach")&&LifeData.cue(life,now)==null)return "当前没有未分享的生活事件";
         return "";
     }
     static long lastReach(ChatStore s,String who){try(Cursor c=s.getReadableDatabase().rawQuery("SELECT coalesce(max(reach_at),0) FROM messages WHERE character=?",new String[]{who})){c.moveToFirst();return c.getLong(0);}}

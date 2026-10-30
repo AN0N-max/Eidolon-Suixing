@@ -13,7 +13,7 @@ final class ScheduleGeneration {
     static JSONObject generate(String model,String instruction,JSONObject facts,Transport transport,Guard guard)throws Exception{
         for(int attempt=0;attempt<2;attempt++){
             guard.check();
-            String compact="只返回一个完整 JSON 对象，不要 Markdown、说明、复述资料或额外字段。activity 每项最多 24 字，place 最多 16 字，twists 每条最多 40 字。";
+            String compact="只返回一个完整 JSON 对象，不要 Markdown、说明、复述资料，除了已说明的可选continuity不要额外字段。activity 每项最多 24 字，place 最多 16 字，twists 每条最多 40 字。";
             if(attempt==1)compact+="上次输出被长度上限截断；本次只排三段简短安排，twists 用空数组，保持完整结构。";
             JSONObject request=ModelClient.request(model,instruction+"\n"+compact,Collections.emptyList(),facts.toString())
                 .put("max_tokens",attempt==0?INITIAL_TOKENS:RETRY_TOKENS);

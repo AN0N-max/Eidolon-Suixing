@@ -1,9 +1,10 @@
 # 更新记录与开发文档
 
-当前可安装版本：**1.14.1/code68**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
+当前可安装版本：**1.15/code69**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
 
 | 版本 | 主要变化 | 完整记录 |
 | --- | --- | --- |
+| 1.15 | 角色生活连续性、因果事件、情绪/记忆/行为规划、多气泡与备份v14 | [RELEASE-1.15](outputs/eidolon-android/RELEASE-1.15.md) |
 | 1.14.1 | 离线更新公告、历史摘要与发版版本检查 | [RELEASE-1.14.1](outputs/eidolon-android/RELEASE-1.14.1.md) |
 | 1.14（基础版） | 角色时区、最终请求时间快照、冻结延迟、证据分层及恢复 | [RELEASE-1.14](outputs/eidolon-android/RELEASE-1.14.md) |
 | 1.13 | Vivo角标权限声明、同步顺序与实际通知诊断 | [RELEASE-1.13](outputs/eidolon-android/RELEASE-1.13.md) |

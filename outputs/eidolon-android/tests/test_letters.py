@@ -87,7 +87,7 @@ job=(src/'LetterJob.java').read_text(encoding='utf-8')
 chat=(src/'ChatStore.java').read_text(encoding='utf-8')
 receiver=(src/'ReplyRescheduleReceiver.java').read_text(encoding='utf-8')
 web=(src/'WebActivity.java').read_text(encoding='utf-8')
-assert 'null, 13)' in chat and 'if(oldVersion<9)LetterPlanStore.create(db)' in chat
+assert 'null, 14)' in chat and 'if(oldVersion<9)LetterPlanStore.create(db)' in chat
 assert '"letterPlans",LetterPlanStore.all(this)' in chat and 'db.delete("letter_plans",null,null)' in chat
 assert 'LetterPlanStore.ready(store,letterPlan,text,epoch)' in engine
 assert 'false,attempt,epoch)' in letters and 'JSONObject letterPlan,long epoch)' in engine
@@ -101,3 +101,4 @@ assert 'revision=?' in plan_source and 'expectedEpoch!=epoch.get()' in writing_s
 assert 'WritingStore.context' not in letters and 'ModelClient' not in (src/'LetterPlanData.java').read_text(encoding='utf-8')
 assert (root/'AndroidManifest.xml').read_text(encoding='utf-8').count('com.eidolon.sc.mobile.LetterJob') == 1
 print('PASS: offline delivery, separate persistent jobs, stop/data epoch fences, backup clearing and boot/time recovery hooks. Android behavior still needs device acceptance.')
+

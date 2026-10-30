@@ -88,7 +88,7 @@ final class WritingEngine {
         // Prior conversation can inform a letter; an old day's diary uses only its recorded events.
         List<ChatStore.Message> history=kind.equals("letter")||day.equals(WritingData.today(data).toString())?store.history(who,8):Collections.emptyList();
         instruction+=MemoryNotebook.prompt(store,who,source,System.currentTimeMillis(),ScheduleData.zone(data).getId());instruction+="对话没有提供明确日期时，只用作背景，不把它说成记录当天发生的事情。";
-        source+=ScheduleRuntime.diaryContext(store,who,day);
+        source+=ScheduleRuntime.diaryContext(store,who,day)+LifeStore.diary(c,store,who,day);
         if(letterPlan!=null)instruction+="这封信正在提前准备，预定于 "+Instant.ofEpochMilli(letterPlan.getLong("deliverAt")).atZone(ZoneId.of(letterPlan.getString("zone")))+" 送达。未到来的生日只送祝福，不虚构已经发生的庆祝或制作人行为。";
         if(Thread.currentThread().isInterrupted()||epoch!=WritingStore.epoch.get()||(!manual&&(chatting()||!prefs.getBoolean(kind.equals("letter")?"hibiLetters":"hibiDiary",false))))throw new IOException("写作已停止");
         active=new ModelClient();JSONObject request=ModelClient.request(model,instruction,history,"已发生的事件：\n"+(source.isEmpty()?"没有额外事件。只表达最近对话中真实的感受，不补造当天经历。":source));if(kind.equals("diary"))request.put("max_tokens",8192);

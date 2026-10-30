@@ -18,7 +18,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
   const snapshots=await page.evaluate(()=>testCalls.filter(a=>a==='snapshot').length);
   await page.getByRole('button',{name:/^更新公告/}).click();await page.locator('.release-note').first().waitFor();
   assert.equal(await page.locator('.release-note').count(),notes.releases.length);assert.equal(await page.locator('.release-note[open]').count(),1);
-  assert((await page.locator('.release-note[open]').textContent()).includes('1.14.1'));assert.equal(await page.evaluate(()=>testCalls.filter(a=>a==='snapshot').length),snapshots);
+  assert((await page.locator('.release-note[open]').textContent()).includes(notes.releases[0].version));assert.equal(await page.evaluate(()=>testCalls.filter(a=>a==='snapshot').length),snapshots);
   await page.locator('.release-note').nth(1).locator('summary').click();assert.equal(await page.locator('.release-note[open]').count(),2);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   await page.screenshot({path:path.resolve(__dirname,'../../ui-1.14.1-update-notices.png')});

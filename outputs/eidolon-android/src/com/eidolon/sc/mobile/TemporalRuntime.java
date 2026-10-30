@@ -7,13 +7,16 @@ final class TemporalRuntime {
  static JSONObject profile(Context c,JSONObject personal,String who)throws Exception{return new JSONObject().put("character",who).put("override",c.getSharedPreferences("settings",0).getString("roleZone/"+who,"")).put("effective",zone(c,personal,who).getId());}
  static String prompt(Context c,ChatStore store,JSONObject personal,String who,long firstId,long received,long due)throws Exception{return prompt(c,store,personal,who,firstId,received,due,Clock.systemUTC());}
  static String prompt(Context c,ChatStore store,JSONObject personal,String who,long firstId,long received,long due,Clock clock)throws Exception{
+  return TemporalData.prompt(context(c,store,personal,who,firstId,received,due,clock));
+ }
+ static JSONObject context(Context c,ChatStore store,JSONObject personal,String who,long firstId,long received,long due,Clock clock)throws Exception{
   long now=clock.millis(),last=0;try(Cursor row=store.getReadableDatabase().rawQuery("SELECT coalesce(max(sent_at),0) FROM messages WHERE character=? AND role IN ('user','assistant') AND id<? AND sent_at>0",new String[]{who,firstId>0?""+firstId:"9223372036854775807"})){if(row.moveToFirst())last=row.getLong(0);}
   SharedPreferences p=c.getSharedPreferences("settings",0);JSONObject out; synchronized(LOCK){String raw=p.getString("temporal/"+who,"");JSONObject prior=raw.isEmpty()?new JSONObject():new JSONObject(raw);JSONObject status=ScheduleRuntime.state(c,store,personal,who,now);
    out=TemporalData.build(Clock.fixed(Instant.ofEpochMilli(now),ZoneOffset.UTC),zone(c,personal,who),status.optJSONObject("plan"),status,received,due,last,prior.optLong("timestamp"),override(c,who,now));
    long mono=android.os.SystemClock.elapsedRealtime();long oldMono=prior.optLong("elapsed",-1),oldWall=prior.optLong("timestamp",0);boolean sameBoot=oldMono>=0&&mono>=oldMono;out.put("clock_jump_detected",sameBoot&&Math.abs((now-oldWall)-(mono-oldMono))>120000).put("time_zone_changed",!prior.optString("zone",zone(c,personal,who).getId()).equals(zone(c,personal,who).getId()));
    JSONArray known=new JSONArray();String day=Instant.ofEpochMilli(now).atZone(zone(c,personal,who)).toLocalDate().toString();JSONArray rows=new JSONArray(p.getString("temporalEvents/"+who,"[]"));for(int i=0;i<rows.length();i++){JSONObject e=rows.getJSONObject(i);if(e.optLong("at")<=now&&Instant.ofEpochMilli(e.getLong("at")).atZone(zone(c,personal,who)).toLocalDate().toString().equals(day))known.put(e);}out.put("today_events",known);
    out.put("state_version",prior.optLong("state_version")+1);if(!p.edit().putString("temporal/"+who,new JSONObject().put("timestamp",now).put("elapsed",mono).put("zone",zone(c,personal,who).getId()).put("state_version",out.getLong("state_version")).toString()).commit())throw new Exception("时间状态保存失败");
-  }return TemporalData.prompt(out);
+  }return out;
  }
  static JSONObject override(Context c,String who,long now)throws Exception{String raw=c.getSharedPreferences("settings",0).getString("temporalOverride/"+who,"");if(raw.isEmpty())return null;JSONObject row=new JSONObject(raw);return row.optLong("from")<=now&&now<row.optLong("until")?row:null;}
  static JSONObject setOverride(Context c,String who,String name,int minutes,long now)throws Exception{

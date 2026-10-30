@@ -3,12 +3,12 @@ android {
     namespace 'com.eidolon.sc.mobile'
     compileSdk 35
     buildToolsVersion "35.0.0"
-    defaultConfig { applicationId 'com.eidolon.sc.mobile'; minSdk 26; targetSdk 35; versionCode 68; versionName '1.14.1' }
+    defaultConfig { applicationId 'com.eidolon.sc.mobile'; minSdk 26; targetSdk 35; versionCode 69; versionName '1.15' }
     sourceSets { main { manifest.srcFile 'AndroidManifest.xml'; java.srcDirs=['src']; res.srcDirs=['res']; assets.srcDirs=['assets'] } }
     compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
     buildTypes { release { minifyEnabled false } }
     buildFeatures { buildConfig false }
     packaging { resources.excludes += ['META-INF/DEPENDENCIES']; resources.merges += ['META-INF/LICENSE*','META-INF/NOTICE*'] }
 }
-layout.buildDirectory.set(file('../../work/android-build-1.14.1/gradle'))
+layout.buildDirectory.set(file('../../work/android-build-1.15/gradle'))
 dependencies { implementation 'androidx.work:work-runtime:2.9.1' }
