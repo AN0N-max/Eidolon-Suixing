@@ -48,3 +48,7 @@ node outputs/eidolon-android/tests/schedule-rollover-ui.cjs
 首次公开的 Android 版本为1.13/code66。src、res、assets 和 AndroidManifest.xml 对应现有本地1.12；本次只整理公开副本的说明和工具路径，不改应用行为。完整性清单见 docs/android-1.13-files.json。
 
 outputs/eidolon-android 下的历史发布说明保留原开发记录，一些旧脚本路径和工具前提已由本指南替代。
+
+## 维护更新公告
+
+每次发版更新 `outputs/eidolon-android/assets/update-notices.json`，版本/递增code与build.gradle一致。PowerShell构建入口自动执行检查；直接Gradle构建前应手动执行 `tools/check-release-notes.ps1`。更多步骤见[发版说明](../outputs/eidolon-android/RELEASING.md)。

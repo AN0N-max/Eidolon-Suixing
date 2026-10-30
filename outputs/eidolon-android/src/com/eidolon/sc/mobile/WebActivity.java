@@ -349,6 +349,7 @@ public final class WebActivity extends MainActivity {
         if(action.equals("voiceSettings")){voiceSettings();return new JSONObject();}
         if(action.equals("backup")){backupMenu();return new JSONObject();}
         if(action.equals("about")){about();return new JSONObject();}
+        if(action.equals("releaseNotes"))return new JSONObject(asset("update-notices.json"));
         if(action.equals("storyImport")){android.content.Intent intent=new android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT);intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);intent.setType("*/*");startActivityForResult(intent,IMPORT_STORIES);return new JSONObject();}
         if(action.equals("storyDetail"))return store.story(a.getString("storyId"));
         if(action.equals("storyDelete")){store.deleteStory(a.getString("storyId"));return snapshot();}

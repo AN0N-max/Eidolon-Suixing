@@ -1,5 +1,7 @@
 # Android安装包
 
-[1.14 时间上下文基础版](Eidolon-1.14-original-upgrade.apk)，code67，原包名和原签名。见源码发布说明了解实现和未完成边界；覆盖前建议备份，不要先卸载。
+[1.14.1 离线更新公告](Eidolon-1.14.1-original-upgrade.apk)，code68，原包名和原升级签名。安装前建议备份，覆盖升级不要先卸载。
 
-SHA256：72B8B82C844BB936D171D9F41741C7E79CAB3108A49FCDD055D38985A7EF1177
+SHA256：DE0985B29590058CB0B65F69C9AA50563FFE3C0F17ED927A76A9496DDC8E6AC7
+
+本版新增更新公告及发版校验。自主生活系统本次交付审查/设计，未宣称已接入。
