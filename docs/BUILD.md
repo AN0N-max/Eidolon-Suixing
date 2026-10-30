@@ -15,7 +15,7 @@
 gradle --no-daemon -p outputs/eidolon-android assembleDebug
 ```
 
-Gradle 首次会从 Google Maven/Maven Central 下载依赖，应用运行时不需要电脑后台。产物位于 work/android-build-1.13/gradle/outputs/apk/debug/；该目录不进版本库。也可在 Windows 执行：
+Gradle 首次会从 Google Maven/Maven Central 下载依赖，应用运行时不需要电脑后台。产物位于 work/android-build-1.16/gradle/outputs/apk/debug/；该目录不进版本库。也可在 Windows 执行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File outputs/eidolon-android/build.ps1
@@ -43,7 +43,11 @@ node outputs/eidolon-android/tests/schedule-rollover-ui.cjs
 
 其他 *-ui.cjs 测试在同目录，均为假本地桥接；可设置 PLAYWRIGHT_MODULE 指向已有 Playwright 包，CHROME_EXECUTABLE 指向已有浏览器。界面模拟通过不等于 Android 实机后台调度已通过。
 
-## 源码对应
+## 当前源码
+
+当前Android源码与APK为1.16/code71，数据库和加密备份格式v15。变更与验证范围见[架构改进](ARCHITECTURE-1.16.md)。
+
+## 首次公开时的源码对应
 
 首次公开的 Android 版本为1.13/code66。src、res、assets 和 AndroidManifest.xml 对应现有本地1.12；本次只整理公开副本的说明和工具路径，不改应用行为。完整性清单见 docs/android-1.13-files.json。
 

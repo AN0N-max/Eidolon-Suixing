@@ -20,9 +20,9 @@ with db:
  assert db.execute('UPDATE messages SET judgment=? WHERE id=1 AND judgment=?',('consumed',record)).rowcount==1
  db.execute('UPDATE personal SET body=?',(json.dumps({'score':80,'used':1}),))
 assert db.execute('UPDATE messages SET judgment=? WHERE id=1 AND judgment=?',('twice',record)).rowcount==0
-assert 'if(oldVersion<11)AppealStore.create(db)' in chat and 'null, 14)' in chat
+assert 'if(oldVersion<11)AppealStore.create(db)' in chat and 'null, 15)' in chat
 assert chat.index('AppealData.record(effects,now)')>chat.index('if(lastUserId(p.session)!=p.lastUserId)')
-for name in ('WebActivity.java','ReplyFallback.java'):
+for name in ('ConversationEngine.java',):
  code=(src/name).read_text(encoding='utf-8');assert 'chatJudgment' in code and 'AppealData.prompt' in code and 'appealExplanation' in code
 assert 'db.beginTransaction()' in store and 's.hasBlockingPending(who)' in store and 'latest(s,who)!=id' in store
 print('PASS v10 migration preserves old messages without inferred deductions; atomic rollback of refund/quota/message mark; once-only CAS and native latest/pending guards. SQLite model only.')

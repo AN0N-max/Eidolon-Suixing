@@ -46,7 +46,7 @@ final class LifeData {
         String title=shortText(spec.getString("title"),100);for(int i=0;i<goals.length();i++)if(goals.getJSONObject(i).getString("title").equals(title))return;
         JSONArray steps=spec.getJSONArray("steps");if(steps.length()<2||steps.length()>5)throw new Exception("长期目标需要2至5个阶段");JSONArray normalized=new JSONArray();
         for(int i=0;i<steps.length();i++){JSONObject step=steps.getJSONObject(i);String name=shortText(step.getString("title"),100);normalized.put(new JSONObject().put("title",name).put("external",step.optBoolean("external",true)||name.matches(".*(结果|获奖|录取|通过考试|交易|转账|发布|报名|提交作品).*")));}
-        if(goals.length()>=MAX_GOALS){String archived=goals.getJSONObject(0).getString("id");JSONArray next=new JSONArray(),events=new JSONArray(),memories=new JSONArray();Set<String> removed=new HashSet<>();removed.add(archived);for(int i=1;i<goals.length();i++)next.put(goals.get(i));JSONArray old=s.getJSONArray("events");boolean change=true;while(change){change=false;for(int i=0;i<old.length();i++){JSONObject e=old.getJSONObject(i);if(removed.contains(e.optString("parent"))&&removed.add(e.getString("id")))change=true;}}for(int i=0;i<old.length();i++)if(!removed.contains(old.getJSONObject(i).getString("id")))events.put(old.get(i));JSONArray ms=s.getJSONArray("memories");for(int i=0;i<ms.length();i++)if(!removed.contains(ms.getJSONObject(i).optString("eventId")))memories.put(ms.get(i));s.put("events",events).put("memories",memories).put("goals",next);goals=next;}
+        if(goals.length()>=MAX_GOALS){archiveGoal(s,goals.getJSONObject(0),now);goals=s.getJSONArray("goals");}
         String id="goal/"+UUID.randomUUID();JSONObject g=new JSONObject().put("id",id).put("title",title).put("steps",normalized).put("progress",0).put("status","active").put("lastDay","").put("interest",interest(spec.optString("interest")));
         goals.put(g);JSONObject root=event(id,title,"goal",now,now+30*DAY,"").put("status","open").put("at",now).put("source","generated_virtual_goal");s.getJSONArray("events").put(root);remember(s,root,"todo",now);
     }
@@ -79,7 +79,7 @@ final class LifeData {
         int index=g.getInt("progress");if(e.has("goalStep")&&e.getInt("goalStep")!=index)return;JSONObject step=g.getJSONArray("steps").getJSONObject(index);
         if(step.getBoolean("external")&&!confirmed){e.put("status","awaiting_outcome");remember(s,e,"todo",now);return;}
         g.put("progress",index+1).put("lastDay",day(now,zone));String id=g.getString("id")+"/step/"+index;
-        JSONObject child=event(id,step.getString("title"),"goal_step",now,now,g.getString("id")).put("status","completed").put("at",now).put("source",confirmed?"explicit_user_confirmation":"simulation_rule");s.getJSONArray("events").put(child);remember(s,child,"episodic",now);
+        JSONObject child=event(id,step.getString("title"),"goal_step",now,now,g.getString("id")).put("status","completed").put("at",now).put("source",confirmed?"explicit_user_confirmation":"simulation_rule");JSONArray existingEvents=s.getJSONArray("events");for(int k=0;k<existingEvents.length();k++)if(existingEvents.getJSONObject(k).getString("id").equals(id)){existingEvents.remove(k);break;}existingEvents.put(child);remember(s,child,"episodic",now);
         influence(s,id,.15,now);
         if(index+1>=g.getJSONArray("steps").length()){g.put("status","completed");JSONObject root=find(s.getJSONArray("events"),g.getString("id"));if(root!=null){root.put("status","completed").put("at",now);remember(s,root,"todo",now);remember(s,root,"episodic",now);}}
         evolve(s,g,child,zone,now);
@@ -90,7 +90,7 @@ final class LifeData {
         // At least two independently completed steps on distinct dates are required.
         Set<String> days=new HashSet<>();JSONArray events=s.getJSONArray("events");for(int i=0;i<events.length();i++){JSONObject e=events.getJSONObject(i);if(e.optString("kind").equals("goal_step")&&e.optString("status").equals("completed")&&e.optLong("at")<=now)days.add(day(e.getLong("at"),zone));}if(days.size()<2)return;
         double before=p.getDouble("confidence"),after=Math.min(80,before+.5);String tag=g.getString("interest");JSONObject interests=p.getJSONObject("interests");interests.put(tag,Math.min(20,interests.optInt(tag)+1));p.put("confidence",after).put("lastEvolutionDay",date);
-        log.put(new JSONObject().put("at",now).put("before",before).put("after",after).put("eventId",evidence.getString("id")).put("reason","跨日持续推进虚拟目标"));if(log.length()>24){JSONArray next=new JSONArray();for(int i=log.length()-24;i<log.length();i++)next.put(log.get(i));s.put("evolutionLog",next);}
+        log.put(new JSONObject().put("at",now).put("before",before).put("after",after).put("eventId",evidence.getString("id")).put("interest",tag).put("reason","跨日持续推进虚拟目标"));if(log.length()>24){JSONObject oldest=log.getJSONObject(0),base=s.optJSONObject("profileBase");if(base==null)base=new JSONObject().put("at",0).put("confidence",50.0).put("interests",new JSONObject());JSONObject bi=base.getJSONObject("interests");String oldTag=oldest.optString("interest","practice");bi.put(oldTag,Math.min(20,bi.optInt(oldTag)+1));base.put("at",oldest.getLong("at")).put("confidence",oldest.getDouble("after"));s.put("profileBase",base);JSONArray next=new JSONArray();for(int i=log.length()-24;i<log.length();i++)next.put(log.get(i));s.put("evolutionLog",next);}
         remember(s,evidence,"semantic",now);
     }
     static JSONObject advance(JSONObject state,Clock clock,ZoneId zone,JSONObject today,JSONObject yesterday,boolean interrupted)throws Exception{
@@ -100,9 +100,9 @@ final class LifeData {
         JSONArray events=s.getJSONArray("events");JSONObject actual=null;int original=events.length();
         for(int i=0;i<original;i++){
             JSONObject e=events.getJSONObject(i);if(!e.getString("kind").equals("activity"))continue;
-            String status=e.getString("status");long start=e.getLong("start"),end=e.getLong("end");
+            String status=e.getString("status");long start=e.getLong("start"),end=e.getLong("end");if(status.equals("uncertain")&&e.optString("source").equals("clock_recalibration")&&start<=now&&now<end)status="planned";
             if(status.equals("in_progress")&&now>=end){e.put("status","completed").put("at",end).put("source","simulation_rule");remember(s,e,"episodic",now);influence(s,e.getString("id"),.04,end);double delta=e.optBoolean("night")?12:e.getString("title").matches(".*(休息|午休|散步|吃饭|早餐|晚餐).*")?6:-4;JSONObject em=s.getJSONObject("emotion");em.put("energy",clamp(em.getDouble("energy")+delta*Math.exp(-Math.max(0,now-end)/(8.0*HOUR)),0,100));completeGoalStep(s,e,zone,end,false);
-                for(int j=0;j<original;j++){JSONObject issue=events.getJSONObject(j);if(issue.optString("kind").equals("issue")&&issue.optString("status").equals("open")&&!e.optString("goalId").isEmpty()&&issue.optString("goalId").equals(e.optString("goalId"))&&issue.optLong("at")<start){issue.put("status","completed").put("resolvedBy",e.getString("id")).put("resolvedAt",end);remember(s,issue,"todo",now);influence(s,issue.getString("id")+"/resolved",.12,end);}}
+                // Practice completion is not evidence that an unresolved problem has been solved.
             }
             else if((status.equals("planned")||status.equals("paused"))&&now>=end){e.put("status","missed").put("source","unobserved_plan");}
             else if(start<=now&&now<end&&(status.equals("planned")||status.equals("paused")||status.equals("in_progress"))){
@@ -122,7 +122,7 @@ final class LifeData {
         for(int i=0;i<rows.length();i++){JSONObject e=rows.getJSONObject(i);if(protectedIds.contains(e.getString("id"))||Arrays.asList("open","awaiting_outcome","in_progress","planned","paused").contains(e.getString("status")))keep.add(e);}
         for(int j=0;j<keep.size();j++){JSONObject parent=find(rows,keep.get(j).optString("parent"));if(parent!=null&&!keep.contains(parent))keep.add(parent);}
         for(int i=rows.length()-1;i>=0&&keep.size()<MAX_EVENTS;i--){JSONObject e=rows.getJSONObject(i);long age=now-Math.max(e.optLong("at"),e.optLong("end"));if(e.optString("status").equals("missed")&&age>7*DAY||e.optInt("importance")<60&&age>45*DAY)continue;JSONObject parent=find(rows,e.optString("parent"));if(parent!=null&&!keep.contains(parent)){if(keep.size()+2>MAX_EVENTS)continue;keep.add(parent);}if(!keep.contains(e))keep.add(e);}
-        JSONArray next=new JSONArray();for(int i=0;i<Math.min(MAX_EVENTS,keep.size());i++)next.put(keep.get(i));s.put("events",next);
+        Set<String> selectedIds=new HashSet<>();for(int i=0;i<Math.min(MAX_EVENTS,keep.size());i++)selectedIds.add(keep.get(i).getString("id"));JSONArray next=new JSONArray();for(int i=0;i<rows.length();i++)if(selectedIds.contains(rows.getJSONObject(i).getString("id")))next.put(rows.get(i));s.put("events",next);
         JSONArray memories=s.getJSONArray("memories"),valid=new JSONArray();for(int i=0;i<memories.length();i++){JSONObject m=memories.getJSONObject(i);if(find(next,m.optString("eventId"))!=null)valid.put(m);}s.put("memories",valid);
     }
     static JSONObject cue(JSONObject s,long now){JSONArray rows=s.optJSONArray("events");JSONObject best=null;if(!s.optBoolean("enabled")||rows==null)return null;for(int i=0;i<rows.length();i++){JSONObject e=rows.optJSONObject(i);if(e.optLong("mentionedAt")>0||e.optLong("at")<=0||e.optLong("at")>now||now-e.optLong("at")>3*DAY||!Arrays.asList("completed","awaiting_outcome","open").contains(e.optString("status")))continue;if(best==null||e.optInt("importance")>best.optInt("importance"))best=e;}return best;}
@@ -132,7 +132,7 @@ final class LifeData {
     }
     static double relevance(JSONObject e,String query,long now){return Recall.score(query,e.optString("title"))*100+e.optInt("importance")/10.0+Math.max(0,5-(now-e.optLong("at"))/(double)DAY);}
     static void validate(JSONObject s,Set<String> known)throws Exception{
-        if(s.toString().length()>160000||s.getInt("schema")!=1||!known.contains(s.getString("character"))||s.getLong("revision")<0)throw new Exception("生活档案格式无效");
+        LifeHistory.validate(s);if(s.toString().length()>160000||s.getInt("schema")!=1||!known.contains(s.getString("character"))||s.getLong("revision")<0)throw new Exception("生活档案格式无效");
         if(!(s.get("enabled") instanceof Boolean)||!(s.get("evolution") instanceof Boolean)||!(s.get("eventOnlyReach") instanceof Boolean))throw new Exception("生活开关无效");
         if(s.getLong("observedAt")<0)throw new Exception("生活时间无效");if(!s.getString("zone").isEmpty())ZoneId.of(s.getString("zone"));
         JSONObject mood=s.getJSONObject("emotion"),profile=s.getJSONObject("profile");for(String k:new String[]{"valence","energy"}){double v=mood.getDouble(k);if(!Double.isFinite(v)||v<(k.equals("valence")?-1:0)||v>(k.equals("valence")?1:100))throw new Exception("情绪范围无效");}if(mood.getLong("at")<0||profile.getDouble("confidence")<0||profile.getDouble("confidence")>100||!Double.isFinite(profile.getDouble("confidence")))throw new Exception("人格状态无效");
@@ -143,5 +143,9 @@ final class LifeData {
         for(int i=0;i<goals.length();i++){JSONObject g=goals.getJSONObject(i);if(!ids.contains(g.getString("id")))throw new Exception("目标缺少根事件");JSONArray steps=g.getJSONArray("steps");if(steps.length()<2||steps.length()>5||g.getInt("progress")<0||g.getInt("progress")>steps.length()||!Arrays.asList("active","completed","cancelled").contains(g.getString("status")))throw new Exception("目标阶段无效");for(int j=0;j<steps.length();j++){shortText(steps.getJSONObject(j).getString("title"),100);steps.getJSONObject(j).getBoolean("external");}}
         Set<String> memoryIds=new HashSet<>();for(int i=0;i<memories.length();i++){JSONObject m=memories.getJSONObject(i);if(!memoryIds.add(m.getString("id"))||!ids.contains(m.getString("eventId"))||!Arrays.asList("episodic","semantic","todo").contains(m.getString("layer")))throw new Exception("生活记忆来源无效");shortText(m.getString("text"),160);}
     }
+    static String semanticKey(JSONObject s)throws Exception{return LifeHistory.semanticKey(s);}
+    static void archiveGoal(JSONObject s,JSONObject g,long now)throws Exception{LifeHistory.archive(s,g,now);}
+    static JSONArray archivedRelevant(JSONObject s,String query,long now)throws Exception{return LifeHistory.relevant(s,query,now);}
+    static void calibrate(JSONObject s,long now,ZoneId zone)throws Exception{LifeHistory.calibrate(s,now,zone);}
     private LifeData(){}
 }

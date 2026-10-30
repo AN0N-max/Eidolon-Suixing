@@ -5,7 +5,8 @@ import java.util.Set;
 
 final class BackupValidator {
     static void validate(JSONObject data, Set<String> characters) throws Exception {
-        if(!"eidolon-android-chats".equals(data.optString("format")) || data.optInt("version")<1||data.optInt("version")>14)throw new Exception("不支持的备份格式或版本");
+        if(!"eidolon-android-chats".equals(data.optString("format")) || data.optInt("version")<1||data.optInt("version")>15)throw new Exception("不支持的备份格式或版本");
+        if(data.optInt("version")>=15)RuntimeSettings.validateBackup(data,characters);
         if(data.optInt("version")>=14)LifeStore.validateBackup(data,characters);
         if(data.optInt("version")>=13)MemoryNotebook.validateBackup(data,characters);
         if(data.optInt("version")>=9)LetterPlanData.validateBackup(data,characters);

@@ -87,7 +87,7 @@ job=(src/'LetterJob.java').read_text(encoding='utf-8')
 chat=(src/'ChatStore.java').read_text(encoding='utf-8')
 receiver=(src/'ReplyRescheduleReceiver.java').read_text(encoding='utf-8')
 web=(src/'WebActivity.java').read_text(encoding='utf-8')
-assert 'null, 14)' in chat and 'if(oldVersion<9)LetterPlanStore.create(db)' in chat
+assert 'null, 15)' in chat and 'if(oldVersion<9)LetterPlanStore.create(db)' in chat
 assert '"letterPlans",LetterPlanStore.all(this)' in chat and 'db.delete("letter_plans",null,null)' in chat
 assert 'LetterPlanStore.ready(store,letterPlan,text,epoch)' in engine
 assert 'false,attempt,epoch)' in letters and 'JSONObject letterPlan,long epoch)' in engine

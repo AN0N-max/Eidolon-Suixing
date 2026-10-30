@@ -26,7 +26,7 @@ db.execute('CREATE TABLE pending_replies(id TEXT PRIMARY KEY,revision INTEGER,st
 db.executemany('INSERT INTO pending_replies VALUES(?,?,?)',[('a',1,'generating'),('b',1,'collecting')])
 db.execute("UPDATE pending_replies SET revision=revision+1,status='cancelled' WHERE id='b'")
 assert db.execute("SELECT revision,status FROM pending_replies WHERE id='a'").fetchone()==(1,'generating')
-web=(java/'WebActivity.java').read_text(encoding='utf-8');execution=(java/'ReachExecution.java').read_text(encoding='utf-8');plans=(java/'ReachPlans.java').read_text(encoding='utf-8');chat=(java/'ChatStore.java').read_text(encoding='utf-8');fallback=(java/'ReplyFallback.java').read_text(encoding='utf-8')
+web=(java/'WebActivity.java').read_text(encoding='utf-8');execution=(java/'ReachExecution.java').read_text(encoding='utf-8');plans=(java/'ReachPlans.java').read_text(encoding='utf-8');chat=(java/'ChatStore.java').read_text(encoding='utf-8');fallback=(java/'ConversationEngine.java').read_text(encoding='utf-8')
 assert 'ReachOut.generating()' not in execution and 'ReachOut.chatBusy' not in execution
 assert 'ReachPlanStore.defer' in execution and 'schedulingChanged' in web
 assert 'for(int round=' not in plans and 'active(s,who)' in plans and 'opportunity' in plans

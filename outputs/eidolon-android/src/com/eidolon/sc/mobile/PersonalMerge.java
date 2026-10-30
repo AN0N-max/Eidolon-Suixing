@@ -7,7 +7,11 @@ import java.util.Set;
 
 /** Three-way merge staged reply effects onto the latest local profile at delivery time. */
 final class PersonalMerge {
-    static JSONObject merge(JSONObject base,JSONObject generated,JSONObject current)throws Exception{return (JSONObject)value(base,generated,current,"");}
+    static JSONObject merge(JSONObject base,JSONObject generated,JSONObject current)throws Exception{
+        JSONObject out=(JSONObject)value(base,generated,current,"");
+        if(base.has("memoryEpoch")&&base.optLong("memoryEpoch")!=current.optLong("memoryEpoch")){out.put("memories",copy(current.getJSONArray("memories"))).put("memoryEpoch",current.optLong("memoryEpoch"));}
+        return out;
+    }
     private static Object value(Object base,Object generated,Object current,String path)throws Exception{
         if(equal(base,generated))return copy(current);
         if(base instanceof Number&&generated instanceof Number&&current instanceof Number){
@@ -55,6 +59,12 @@ final class PersonalMerge {
         if(a instanceof JSONArray&&b instanceof JSONArray){JSONArray x=(JSONArray)a,y=(JSONArray)b;if(x.length()!=y.length())return false;for(int i=0;i<x.length();i++)if(!equal(x.get(i),y.get(i)))return false;return true;}
         if(a instanceof Number&&b instanceof Number)return Double.compare(((Number)a).doubleValue(),((Number)b).doubleValue())==0;
         return a.equals(b);
+    }
+    /** Keep only changed top-level branches plus the delivery guards. Three-way semantics are unchanged. */
+    static JSONObject stage(JSONObject base,JSONObject generated)throws Exception{
+        JSONObject before=new JSONObject(),after=new JSONObject();Set<String> keys=new HashSet<>();base.keys().forEachRemaining(keys::add);generated.keys().forEachRemaining(keys::add);
+        for(String k:keys)if(k.equals("affinity")||k.equals("memoryEpoch")||!equal(base.opt(k),generated.opt(k))){if(base.has(k))before.put(k,copy(base.get(k)));if(generated.has(k))after.put(k,copy(generated.get(k)));}
+        return new JSONObject().put("base",before).put("personal",after);
     }
     private PersonalMerge(){}
 }

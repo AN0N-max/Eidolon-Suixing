@@ -16,6 +16,12 @@ public final class PersonalMergeTests {
         check(merged.getJSONArray("memories").length()==3,"generated and concurrent memories are merged");
         check(merged.getJSONArray("memories").getJSONObject(0).optString("supersededBy").equals("new"),"memory supersession applies when baseline record is unchanged");
         check(PersonalMerge.merge(base,generated,base).getJSONObject("affinity").getInt("mano")==60,"staged relationship result applies when no concurrent update exists");
+        JSONObject staged=PersonalMerge.stage(base,generated);JSONObject compactMerged=PersonalMerge.merge(staged.getJSONObject("base"),staged.getJSONObject("personal"),current);
+        check(LifeHistory.canonical(merged).equals(LifeHistory.canonical(compactMerged)),"compact effects retain concurrent affinity, inventory and memory merge semantics");
+        check(!staged.getJSONObject("base").has("draws")&&!staged.getJSONObject("personal").has("draws"),"unchanged data branches are not duplicated in pending effects");
+        JSONObject oldEpoch=new JSONObject(base.toString()).put("memoryEpoch",0),newEpoch=new JSONObject(generated.toString()).put("memoryEpoch",0),cleared=new JSONObject(current.toString()).put("memoryEpoch",1).put("memories",new JSONArray());
+        JSONObject guarded=PersonalMerge.merge(oldEpoch,newEpoch,cleared);check(guarded.getJSONArray("memories").length()==0&&guarded.getLong("memoryEpoch")==1,"delayed generation cannot recreate memories cleared while waiting");
+        JSONObject compactEpoch=PersonalMerge.stage(oldEpoch,newEpoch);check(PersonalMerge.merge(compactEpoch.getJSONObject("base"),compactEpoch.getJSONObject("personal"),cleared).getJSONArray("memories").length()==0,"compaction preserves memory epoch guard");
         JSONObject high=new JSONObject("{\"affinity\":{\"mano\":98}}");JSONObject capped=PersonalMerge.merge(new JSONObject("{\"affinity\":{\"mano\":95}}"),new JSONObject("{\"affinity\":{\"mano\":100}}"),high);
         check(capped.getJSONObject("affinity").getInt("mano")==100,"affinity delta respects score ceiling");
     }

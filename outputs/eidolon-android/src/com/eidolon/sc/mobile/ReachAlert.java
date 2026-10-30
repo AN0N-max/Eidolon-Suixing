@@ -18,7 +18,7 @@ final class ReachAlert {
         SharedPreferences p=c.getSharedPreferences("settings",0);
         boolean sound=!quiet&&p.getBoolean("reachSound",true),vibrate=!quiet&&p.getBoolean("reachVibrate",true);
         String id=quiet?"reach-history-v2":"reach-message-v2-"+(sound?"s":"-")+(vibrate?"v":"-");
-        NotificationChannel existing=manager.getNotificationChannel(id);
+        id=BadgeChannels.id(c,id);NotificationChannel existing=manager.getNotificationChannel(id);
         if(existing==null){
             NotificationChannel channel=new NotificationChannel(id,quiet?"角色消息记录":"角色消息提醒",quiet?NotificationManager.IMPORTANCE_LOW:NotificationManager.IMPORTANCE_HIGH);
             channel.setShowBadge(true);

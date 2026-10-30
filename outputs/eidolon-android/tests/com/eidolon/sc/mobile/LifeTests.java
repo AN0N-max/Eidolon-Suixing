@@ -23,7 +23,7 @@ public class LifeTests {
   check(s.getJSONObject("profile").getDouble("confidence")==50,"single event never rewrites personality");
   JSONObject d2=entry("2026-10-31",false,false);s=next(new JSONObject(s.toString()),"2026-10-31T08:30:00",d2,d1);s=next(s,"2026-10-31T09:40:00",d2,d1);
   check(LifeData.goal(s).getInt("progress")==2&&s.getJSONArray("evolutionLog").length()==1&&s.getJSONObject("profile").getDouble("confidence")==50.5,"cross-day causal progress survives restart and evolves only slowly");
-  JSONObject issue=LifeData.find(s.getJSONArray("events"),"slot/mano/2026-10-30/0/issue");check(issue.getString("status").equals("completed")&&!issue.optString("resolvedBy").isEmpty(),"later related activity resolves earlier issue with causal source");
+  JSONObject issue=LifeData.find(s.getJSONArray("events"),"slot/mano/2026-10-30/0/issue");check(issue.getString("status").equals("open")&&issue.optString("resolvedBy").isEmpty(),"later practice does not silently resolve an earlier issue");
   JSONObject d3=entry("2026-11-01",false,false);s=next(s,"2026-11-01T08:30:00",d3,d2);s=next(s,"2026-11-01T09:40:00",d3,d2);
   check(slot(s,"2026-11-01").getString("status").equals("awaiting_outcome")&&LifeData.goal(s).getInt("progress")==2,"external outcomes are not invented from elapsed plans");
   LifeData.completeGoalStep(s,slot(s,"2026-11-01"),Z,clock("2026-11-01T10:00:00").millis(),true);check(s.getJSONArray("goals").getJSONObject(0).getString("status").equals("completed")&&s.getJSONArray("evolutionLog").length()==1,"explicit confirmation completes goal without fast repeated evolution");

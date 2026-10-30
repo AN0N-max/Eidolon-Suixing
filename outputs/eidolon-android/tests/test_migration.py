@@ -166,19 +166,19 @@ root=Path(__file__).parents[1]
 manifest=(root/'AndroidManifest.xml').read_text(encoding='utf-8')
 job=(root/'src/com/eidolon/sc/mobile/PendingReplyJob.java').read_text(encoding='utf-8')
 receiver=(root/'src/com/eidolon/sc/mobile/ReplyRescheduleReceiver.java').read_text(encoding='utf-8')
-fallback=(root/'src/com/eidolon/sc/mobile/ReplyFallback.java').read_text(encoding='utf-8')
+fallback=(root/'src/com/eidolon/sc/mobile/ConversationEngine.java').read_text(encoding='utf-8')
 for name in re.findall(r'readArray\(c,"([^"]+)"\)',fallback):
     assert isinstance(json.loads((root/'assets'/name).read_text(encoding='utf-8')),list),f'Background generation must read {name} using its JSON type'
 web=(root/'src/com/eidolon/sc/mobile/WebActivity.java').read_text(encoding='utf-8')
 assert 'setPersisted(true)' in job and 'setMinimumLatency' in job
 assert 'BOOT_COMPLETED' in receiver and 'TIMEZONE_CHANGED' in receiver and 'requeueInterrupted' in receiver
-assert 'pending.revision!=revision' in web and 'markReady(id,revision' in web
+assert 'pending.revision==revision' in web and 'ConversationEngine.generate(app,taskStore,pending)' in web and 'markReady(p.id,p.revision' in fallback
 assert 'ReplyFallback.stop(id,row.revision)' in job and 'requeueInterrupted(id,row.revision' in job
 assert 'client.cancel()' in fallback and 'row.revision!=revision' in fallback and 'STOPPED.contains(key)' in fallback
 assert 'JevClient.ask(url,token,model,state,questions,client)' in fallback
 store_java=(root/'src/com/eidolon/sc/mobile/ChatStore.java').read_text(encoding='utf-8')
 assert "status='waiting' AND answer<>''" in store_java and "status='failed' AND answer<>''" in store_java
-assert 'markScheduleFailed' in job and 'markScheduleFailed' in web and 'retryReady(conversation,pending.revision' in web
+assert 'markScheduleFailed' in job and 'markScheduleFailed' in fallback and 'retryReady(conversation,pending.revision' in web
 assert 'PendingReplyJob' in manifest and 'RECEIVE_BOOT_COMPLETED' in manifest
 assert "status IN ('collecting','generating','waiting','failed')" in source
 print('PASS: v9 pending-reply schema, immediate user persistence, latest revision wins, stale response fenced, one-shot delivery, persisted recovery, stopped HTTP cancellation, visible scheduler failures and proactive-chat guard.')

@@ -86,15 +86,15 @@ assert db.execute('SELECT count(*) FROM messages_test').fetchone()[0]==1
 print('PASS: staged/cancelled replies leave no diary moment; delivered message and moment commit together once; failure rolls both back.')
 
 web=(src/'WebActivity.java').read_text(encoding='utf-8')
-fallback=(src/'ReplyFallback.java').read_text(encoding='utf-8')
+fallback=(src/'ConversationEngine.java').read_text(encoding='utf-8')
 engine=(src/'WritingEngine.java').read_text(encoding='utf-8')
 data=(src/'WritingData.java').read_text(encoding='utf-8')
-assert 'null, 14)' in chat and 'if(oldVersion<10)DiaryStore.create(db)' in chat
+assert 'null, 15)' in chat and 'if(oldVersion<10)DiaryStore.create(db)' in chat
 assert '"diaryAttempts",DiaryStore.attempts(this)' in chat and 'db.delete("diary_attempts",null,null)' in chat
 assert 'row.remove("secret");row.remove("secretRead")' in data
 assert 'DiaryStore.secret(store,who,day,prefs.getBoolean("affinity",true))' in web
 assert 'DiaryData.shown' in diary and 'db.beginTransaction()' in diary and 'secret_read' in diary
-for source in [web,fallback]:
+for source in [fallback]:
     assert 'remember&&prefs.getBoolean("hibiDiary",false)?DiaryData.momentPrompt()' in source
     assert 'effects.put("diaryMoment",DiaryData.moment(' in source
 delivery=chat[chat.index('JSONObject deliverPending'):chat.index('void deletePending')]

@@ -66,6 +66,8 @@ let desktopBadgeView=null;
 function desktopBadgePage(){
  header('桌面未读角标',true);const area=content(),status=el('section','card');desktopBadgeView={area,status};area.append(status);
  area.append(el('p','notice','有新的未读聊天时同步桌面图标；按实际可见消息确认已读，全部读完后清除。Vivo／iQOO会额外提交兼容更新。数字、红点和位置由手机桌面决定，应用不能强制指定。'));
+ area.append(el('p','notice','Vivo／iQOO：先在应用通知总设置的提醒方式中勾选桌面角标。允许通知与允许角标是两处开关。当前未读为0时不显示角标属正常情况。'),btn('测试桌面角标',async()=>{await api('desktopBadgeTest');toast('本地测试通知已发出，请返回桌面查看；不写聊天、不调用模型');},'pill wide'),btn('用独立类别测试',async()=>{await api('desktopBadgeTest',{independent:true});toast('独立类别测试通知已发出');},'pill wide'),btn('清除角标测试通知',async()=>{await api('desktopBadgeTestClear');toast('测试通知已清除，真实未读不变');},'pill wide'));
+ area.append(btn('修复旧消息类别角标',async()=>{await api('desktopBadgeRepair');await refreshDesktopBadge();toast('已保留提醒偏好并修复旧类别，真实未读不变');},'pill primary wide'));
  area.append(btn('按当前未读数同步',()=>refreshDesktopBadge(true),'pill primary wide'),btn('打开通知与角标设置',()=>api('desktopBadgeSettings'),'pill wide'));
  area.append(el('p','notice','在系统设置中允许Eidolon通知，并开启应用图标角标；若提供“数字／圆点”选项，可选择数字。也检查消息通知类别是否允许显示角标。同步不生成消息、不调用模型，不会将未读清零。'));
  refreshDesktopBadge();
