@@ -36,7 +36,7 @@ final class WritingData {
         if(!row.getString("kind").equals("diary"))return row;
         String shown=DiaryData.shown(score,cooling,affinity);row.put("shown",shown);
         if(shown.equals("closed"))row.put("text","").put("locked",true);
-        else if(shown.equals("opening")){String text=preview(row.getString("text"));row.put("text",text.substring(0,Math.min(100,text.length()))+"…").put("excerpt",true);}
+        else if(shown.equals("opening")){String text=preview(row.getString("text"));String opening=text.substring(0,Math.min(100,text.length()))+"…";boolean chinese=java.util.regex.Pattern.compile("(?s)<zh>\\s*\\S.*?</zh>").matcher(row.getString("text")).find();row.put("text",chinese?"<zh>"+opening+"</zh>":opening).put("excerpt",true);}
         else if(secret&&affinity){row.put("hasHiddenPage",true);if(shown.equals("secret"))row.put("hiddenAvailable",true).put("hiddenUnread",!read);}
         return row;
     }

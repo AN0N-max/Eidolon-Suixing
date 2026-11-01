@@ -58,7 +58,12 @@ final class ModelClient {
     static JSONObject conversationRequest(String model,String system,List<ChatStore.Message> history,List<ChatStore.Message> batch)throws Exception{
         if(batch.isEmpty())throw new IOException("待回复的用户消息不存在");return buildRequest(model,system,history,"",batch);
     }
-    private static JSONObject buildRequest(String model,String system,List<ChatStore.Message> history,String user,List<ChatStore.Message> batch)throws Exception{
+    static JSONObject conversationRequest(String model,String system,List<ChatStore.Message> history,List<ChatStore.Message> batch,java.time.Clock clock,java.time.ZoneId zone)throws Exception{
+        if(batch.isEmpty())throw new IOException("待回复的用户消息不存在");return buildRequest(model,system,history,"",batch,clock,zone);
+    }
+    static JSONObject request(String model,String system,List<ChatStore.Message> history,String user,java.time.Clock clock,java.time.ZoneId zone)throws Exception{return buildRequest(model,system,history,user,java.util.Collections.emptyList(),clock,zone);}
+    private static JSONObject buildRequest(String model,String system,List<ChatStore.Message> history,String user,List<ChatStore.Message> batch)throws Exception{return buildRequest(model,system,history,user,batch,null,null);}
+    private static JSONObject buildRequest(String model,String system,List<ChatStore.Message> history,String user,List<ChatStore.Message> batch,java.time.Clock clock,java.time.ZoneId zone)throws Exception{
         JSONArray messages = new JSONArray();
         messages.put(new JSONObject().put("role", "system").put("content", system));
         List<ChatStore.Message> included=new java.util.ArrayList<>();
@@ -75,7 +80,7 @@ final class ModelClient {
         }
         if(batch.isEmpty())messages.put(new JSONObject().put("role","user").put("content",user));
         else for(ChatStore.Message item:batch){messages.put(new JSONObject().put("role","user").put("content",item.text));included.add(item);}
-        if(!included.isEmpty())messages.getJSONObject(0).put("content",system+MessageTime.context(included));
+        String dated=system+(!included.isEmpty()?MessageTime.context(included,zone):"");if(clock!=null)dated+=RecentTimeFacts.prompt(included,clock,zone);messages.getJSONObject(0).put("content",dated);
         return new JSONObject().put("model",model).put("messages",messages).put("stream",true);
     }
     String chat(String address, String key, JSONObject body, Listener listener) throws Exception {
