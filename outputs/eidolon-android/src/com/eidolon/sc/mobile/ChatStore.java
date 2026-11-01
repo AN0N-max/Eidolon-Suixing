@@ -43,7 +43,7 @@ final class ChatStore extends SQLiteOpenHelper {
         PendingReply(String id,String character,String session,long revision,long firstUserId,long lastUserId,long lastAt,String status,String answer,String effects,long dueAt,String error,boolean test,boolean immediate,String userText){this.id=id;this.character=character;this.session=session;this.revision=revision;this.firstUserId=firstUserId;this.lastUserId=lastUserId;this.lastAt=lastAt;this.status=status;this.answer=answer;this.effects=effects;this.dueAt=dueAt;this.error=error;this.test=test;this.immediate=immediate;this.userText=userText;}
     }
     ChatStore(Context c){this(c,false);}
-    private ChatStore(Context c,boolean owner){super(c.getApplicationContext(), "eidolon.db", null, 15);appContext=c.getApplicationContext();ownsDatabase=owner;if(owner)super.setWriteAheadLoggingEnabled(true);}
+    private ChatStore(Context c,boolean owner){super(c.getApplicationContext(), "eidolon.db", null, 16);appContext=c.getApplicationContext();ownsDatabase=owner;if(owner)super.setWriteAheadLoggingEnabled(true);}
 
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT, character TEXT NOT NULL, role TEXT NOT NULL, body TEXT NOT NULL, conversation TEXT NOT NULL)");
@@ -58,7 +58,7 @@ final class ChatStore extends SQLiteOpenHelper {
         LetterPlanStore.create(db);
         DiaryStore.create(db);
         AppealStore.create(db);
-        ReachPlanStore.create(db);UnreadState.create(db);MemoryNotebook.create(db);LifeStore.create(db);RuntimeSettings.create(db,appContext);
+        ReachPlanStore.create(db);UnreadState.create(db);MemoryNotebook.create(db);LifeStore.create(db);RuntimeSettings.create(db,appContext);CallStore.create(db);
     }
     private void createConversations(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE conversations(id TEXT PRIMARY KEY, character TEXT NOT NULL, title TEXT NOT NULL, updated INTEGER NOT NULL)");
@@ -82,7 +82,7 @@ final class ChatStore extends SQLiteOpenHelper {
         if(oldVersion<11)AppealStore.create(db);
         if(oldVersion<12){ReachPlanStore.create(db);UnreadState.create(db);}
         if(oldVersion<13){MemoryNotebook.create(db);if(oldVersion>=12)db.execSQL("ALTER TABLE reach_tasks ADD COLUMN opportunity INTEGER NOT NULL DEFAULT 0");}
-        if(oldVersion<14)LifeStore.create(db);if(oldVersion<15)RuntimeSettings.create(db,appContext);
+        if(oldVersion<14)LifeStore.create(db);if(oldVersion<15)RuntimeSettings.create(db,appContext);if(oldVersion<16)CallStore.create(db);
     }
     private void createPending(SQLiteDatabase db){db.execSQL("CREATE TABLE pending_replies(id TEXT PRIMARY KEY,character TEXT NOT NULL,session TEXT NOT NULL,revision INTEGER NOT NULL,first_user_id INTEGER NOT NULL,last_user_id INTEGER NOT NULL,last_at INTEGER NOT NULL,status TEXT NOT NULL,answer TEXT NOT NULL DEFAULT '',effects TEXT NOT NULL DEFAULT '',due_at INTEGER NOT NULL DEFAULT 0,error TEXT NOT NULL DEFAULT '',test INTEGER NOT NULL DEFAULT 0,immediate INTEGER NOT NULL DEFAULT 0)");db.execSQL("CREATE INDEX pending_due ON pending_replies(status,due_at)");}
     PendingReply beginPendingUser(String who,String session,String text,long now)throws Exception{
@@ -90,7 +90,7 @@ final class ChatStore extends SQLiteOpenHelper {
             try(Cursor c=db.rawQuery("SELECT character FROM conversations WHERE id=?",new String[]{session})){if(!c.moveToFirst()||!who.equals(c.getString(0)))throw new IOException("该对话已删除");}
             JSONObject personal=personal();if(noteMeeting(personal,who,now))savePersonal(personal);
             long first=0,revision=1;boolean test=false;
-            try(Cursor c=db.rawQuery("SELECT revision,first_user_id,test FROM pending_replies WHERE id=?",new String[]{session})){if(c.moveToFirst()){revision=c.getLong(0)+1;first=c.getLong(1);test=c.getInt(2)!=0;}}
+            try(Cursor c=db.rawQuery("SELECT revision,first_user_id,test,status FROM pending_replies WHERE id=?",new String[]{session})){if(c.moveToFirst()){revision=c.getLong(0)+1;first=c.getString(3).equals("cancelled")?0:c.getLong(1);test=c.getInt(2)!=0;}}
             boolean empty;try(Cursor c=db.rawQuery("SELECT count(*) FROM messages WHERE conversation=? AND role='user'",new String[]{session})){c.moveToFirst();empty=c.getInt(0)==0;}
             ContentValues msg=new ContentValues();msg.put("character",who);msg.put("conversation",session);msg.put("role","user");msg.put("body",text);stamp(msg,now);long userId=db.insertOrThrow("messages",null,msg);if(first==0)first=userId;
             ContentValues update=new ContentValues();update.put("updated",now);if(empty)update.put("title",text.substring(0,text.offsetByCodePoints(0,Math.min(28,text.codePointCount(0,text.length())))));db.update("conversations",update,"id=?",new String[]{session});
@@ -118,6 +118,7 @@ final class ChatStore extends SQLiteOpenHelper {
     void retryPending(String id,long now){getWritableDatabase().execSQL("UPDATE pending_replies SET revision=revision+1,status='collecting',error='',answer='',effects='',due_at=0 WHERE id=? AND status='failed'",new Object[]{id});}
     JSONObject deliverPending(String id,long now)throws Exception{
         SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{PendingReply p=pending(id);if(p==null||!p.status.equals("waiting")||(!p.immediate&&p.dueAt>now))return null;
+            JSONObject callBinding=CallStore.binding(this,p.id,p.revision);if(callBinding!=null&&!callBinding.optBoolean("heard"))return null;
             if(p.test){db.delete("pending_replies","id=? AND revision=? AND status='waiting'",new String[]{id,""+p.revision});db.setTransactionSuccessful();return new JSONObject().put("test",true).put("character",p.character).put("session",p.session).put("name","本地延迟测试").put("text","测试回复：根据当前页面状态与本地任务调度，延迟回复链路正常。此测试没有调用 API，也没有写入聊天记录或关系。");}
             if(lastUserId(p.session)!=p.lastUserId){db.delete("pending_replies","id=? AND revision=?",new String[]{id,""+p.revision});db.setTransactionSuccessful();return null;}
             String answer=ReplyText.clean(p.answer);if(answer.replaceAll("(?s)</?(?:ja|zh)>","").trim().isEmpty()){ContentValues bad=new ContentValues();bad.put("status","failed");bad.put("answer","");bad.put("effects","");bad.put("error","回复只有内部时间标记，没有可用台词，请重试");db.update("pending_replies",bad,"id=? AND revision=? AND status='waiting'",new String[]{id,""+p.revision});db.setTransactionSuccessful();ReplyManager.changed(id);return null;}
@@ -310,11 +311,11 @@ final class ChatStore extends SQLiteOpenHelper {
                     sessions.put(new JSONObject().put("id",c.getString(0)).put("character",c.getString(1)).put("title",c.getString(2)).put("messages",rows));
                 }
             }
-            return new JSONObject().put("format","eidolon-android-chats").put("version",15).put("runtimeSettings",RuntimeSettings.all(this)).put("characterLife",LifeStore.all(this)).put("conversations",sessions).put("personal",personal()).put("stories",allStories()).put("writings",WritingStore.all(this)).put("writingEvents",WritingStore.events(this)).put("schedules",ScheduleStore.all(this)).put("letterPlans",LetterPlanStore.all(this)).put("diaryAttempts",DiaryStore.attempts(this)).put("notebook",MemoryNotebook.all(this));
+            return new JSONObject().put("format","eidolon-android-chats").put("version",16).put("calls",CallStore.all(this)).put("runtimeSettings",RuntimeSettings.all(this)).put("characterLife",LifeStore.all(this)).put("conversations",sessions).put("personal",personal()).put("stories",allStories()).put("writings",WritingStore.all(this)).put("writingEvents",WritingStore.events(this)).put("schedules",ScheduleStore.all(this)).put("letterPlans",LetterPlanStore.all(this)).put("diaryAttempts",DiaryStore.attempts(this)).put("notebook",MemoryNotebook.all(this));
         }finally{db.endTransaction();}
     }
     int importChats(JSONObject data, java.util.Set<String> knownCharacters) throws Exception {
-        BackupValidator.validate(data,knownCharacters);
+        BackupValidator.validate(data,knownCharacters);CallService.stopForRestore();
         WritingStore.epoch.incrementAndGet();
         synchronized(ReachPlans.LOCK){ReachOut.cancel();appContext.getSharedPreferences("settings",0).edit().putLong("reachSettingsRevision",appContext.getSharedPreferences("settings",0).getLong("reachSettingsRevision",0)+1).commit();ReachPlanStore.stop(this,"备份恢复后旧搭话计划已失效",System.currentTimeMillis());}
         JSONArray sessions=data.getJSONArray("conversations");SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
@@ -342,7 +343,7 @@ final class ChatStore extends SQLiteOpenHelper {
             if(data.optInt("version")>=9){JSONArray plans=data.getJSONArray("letterPlans");for(int i=0;i<plans.length();i++)LetterPlanStore.insert(this,plans.getJSONObject(i),WritingStore.epoch.get());}
             db.delete("diary_attempts",null,null);
             if(data.optInt("version")>=10){JSONArray attempts=data.getJSONArray("diaryAttempts");for(int i=0;i<attempts.length();i++)DiaryStore.restoreAttempt(this,attempts.getJSONObject(i));}
-            MemoryNotebook.restore(this,data,mapping,messageMapping);LifeStore.restore(this,data,messageMapping);RuntimeSettings.restore(this,data);RuntimeSettings.clearObservationCache(appContext);db.setTransactionSuccessful();return sessions.length();
+            MemoryNotebook.restore(this,data,mapping,messageMapping);LifeStore.restore(this,data,messageMapping);CallStore.restore(this,data,mapping);RuntimeSettings.restore(this,data);RuntimeSettings.clearObservationCache(appContext);db.setTransactionSuccessful();return sessions.length();
         }finally{db.endTransaction();}
     }
 }

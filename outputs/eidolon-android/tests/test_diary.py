@@ -89,7 +89,7 @@ web=(src/'WebActivity.java').read_text(encoding='utf-8')
 fallback=(src/'ConversationEngine.java').read_text(encoding='utf-8')
 engine=(src/'WritingEngine.java').read_text(encoding='utf-8')
 data=(src/'WritingData.java').read_text(encoding='utf-8')
-assert 'null, 15)' in chat and 'if(oldVersion<10)DiaryStore.create(db)' in chat
+assert 'null, 16)' in chat and 'if(oldVersion<10)DiaryStore.create(db)' in chat
 assert '"diaryAttempts",DiaryStore.attempts(this)' in chat and 'db.delete("diary_attempts",null,null)' in chat
 assert 'row.remove("secret");row.remove("secretRead")' in data
 assert 'DiaryStore.secret(store,who,day,prefs.getBoolean("affinity",true))' in web

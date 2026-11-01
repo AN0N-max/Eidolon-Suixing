@@ -23,7 +23,7 @@ final class ReachExecution {
                 if(!ReachPlanRules.suitable(ScheduleRuntime.state(c,s,data,who,now)))reason="当前正在睡觉、洗澡或忙碌";
                 if(now-ReachPlans.contactAt(s,session)<config.integer("recentMinutes")*60000L)reason="最近已经交流，本次无需再搭话";
                 if(!ReachPlans.deliveryGap(s,config,now))reason="距上一条主动消息过近，本次跳过";
-                if(!reason.isEmpty()){boolean temporary=reason.startsWith("最近已经交流")||reason.startsWith("距上一条")||reason.startsWith("当前正在")||reason.equals("当前处于免打扰");long retry=ReachFairness.deferAt(now,row.getLong("expires"),2);if(temporary&&retry>0)ReachPlanStore.defer(s,task,reason+"；保留计划，稍后重试（未请求模型）",retry);else ReachPlanStore.skip(s,task,temporary?reason+"；有效期内已无重试时间":reason,now);return null;}
+                if(!reason.isEmpty()){boolean temporary=reason.startsWith("角色正在通话")||reason.startsWith("最近已经交流")||reason.startsWith("距上一条")||reason.startsWith("当前正在")||reason.equals("当前处于免打扰");long retry=ReachFairness.deferAt(now,row.getLong("expires"),2);if(temporary&&retry>0)ReachPlanStore.defer(s,task,reason+"；保留计划，稍后重试（未请求模型）",retry);else ReachPlanStore.skip(s,task,temporary?reason+"；有效期内已无重试时间":reason,now);return null;}
                 url=p.getString("url","");key=Vault.read(c);model=p.getString("model","");if(url.isEmpty()||key.isEmpty()||model.isEmpty()){ReachPlanStore.skip(s,task,"尚未配置聊天模型，不调用服务",now);return null;}
                 contact=s.lastId(session);token=ReachPlanStore.claim(s,task,contact,now);if(token.isEmpty())return null;ReplyTrace.record(c,"主动任务已领取，等待本次生成");
             }

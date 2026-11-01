@@ -12,16 +12,16 @@ import java.util.concurrent.*;
 import org.json.*;
 
 final class VoicePlayer {
-    interface Listener { void status(String text); }
+    interface Listener { void status(String text); default void started(){} default void completed(){} default void failed(){} }
     private final Context context;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService network = Executors.newSingleThreadExecutor();
     private final ExecutorService audio = Executors.newSingleThreadExecutor();
     private volatile Session active;
-    private boolean closed;
+    private boolean closed;private boolean externalFocus;
     private static final int RATE = FishClient.SAMPLE_RATE;
     private static final int START_BYTES = RATE * 2 / 10; // 100ms of actual PCM, no full-file wait.
-    private static final AudioAttributes ATTRS = new AudioAttributes.Builder()
+    private AudioAttributes ATTRS = new AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build();
 
     private static final class Session {
@@ -42,6 +42,7 @@ final class VoicePlayer {
         }
     }
     VoicePlayer(Context context) { this.context = context.getApplicationContext(); }
+    VoicePlayer(Context context,boolean call){this(context);externalFocus=call;if(call)ATTRS=new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION).setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build();}
     private boolean current(Session s) { return active == s && !s.cancelled; }
     private void status(Session s, String text) {
         main.post(() -> { if (current(s)) s.listener.status(text); });
@@ -76,6 +77,7 @@ final class VoicePlayer {
         return true;
     }
     void play(String text, String voice, String model, String key, Listener listener) {
+        if(!externalFocus&&CallService.live()){listener.status("通话正在使用音频，请挂断后播放");return;}
         String identity;
         try { identity=VoiceCache.digest(text+"\n"+voice+"\n"+model+"\n"+VoiceCache.digest(key)); }
         catch(Exception e) { listener.status("语音配置无法读取"); return; }
@@ -161,7 +163,7 @@ final class VoicePlayer {
                         : "语音生成失败，请检查配置后重试";
                 cancelSession(s);
                 final String safe = error == null ? "语音生成失败" : error;
-                main.post(() -> { if (active == s) s.listener.status(safe); });
+                main.post(() -> { if (active == s) {s.listener.status(safe);s.listener.failed();} });
             }
             if (playing != null) try { playing.get(); } catch (Exception ignored) { }
         } finally {
@@ -170,6 +172,7 @@ final class VoicePlayer {
         }
     }
     private boolean acquireFocus(Session s) throws InterruptedException {
+        if(externalFocus)return current(s);
         CountDownLatch latch = new CountDownLatch(1);
         boolean[] granted = {false};
         main.post(() -> {
@@ -179,7 +182,7 @@ final class VoicePlayer {
                 s.focus = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                         .setAudioAttributes(ATTRS).setOnAudioFocusChangeListener(change -> {
                             if (change < 0 && current(s)) {
-                                s.listener.status("语音已停止，请重新播放");
+                                s.listener.status("语音已停止，请重新播放");s.listener.failed();
                                 stop();
                             }
                         }, main).build();
@@ -241,7 +244,7 @@ final class VoicePlayer {
                     framesWritten += count / 2;
                     if (!presented && (track.getPlaybackHeadPosition() & 0xffffffffL) > 0) {
                         presented = true;
-                        s.trace.event("first_audio_presented");
+                        s.trace.event("first_audio_presented");main.post(()->{if(current(s))s.listener.started();});
                     }
                     if (count == 0) Thread.sleep(5);
                 }
@@ -256,20 +259,20 @@ final class VoicePlayer {
                 if(!current(s))return;
                 if (android.os.SystemClock.elapsedRealtime() > deadline) throw new IOException("音频播放超时");
                 if (!presented && (track.getPlaybackHeadPosition() & 0xffffffffL) > 0) {
-                    presented = true; s.trace.event("first_audio_presented");
+                    presented = true; s.trace.event("first_audio_presented");main.post(()->{if(current(s))s.listener.started();});
                 }
                 Thread.sleep(10);
             }
             if (current(s)) {
                 s.control.finish();
                 s.trace.event("playback_complete");
-                status(s, "播放结束 · " + s.trace.summary());
+                status(s, "播放结束 · " + s.trace.summary());main.post(()->{if(current(s))s.listener.completed();});
             }
         } catch (Exception e) {
             if (current(s)) {
                 s.trace.event("playback_failed");
                 final String message = e instanceof IOException ? e.getMessage() : "音频无法播放，请重试";
-                main.post(() -> { if (active == s) s.listener.status(message); });
+                main.post(() -> { if (active == s) {s.listener.status(message);s.listener.failed();} });
                 cancelSession(s);
             }
         } finally {

@@ -44,7 +44,7 @@ final class ReachPlanCheck {
                 long finished=System.currentTimeMillis();JSONArray rows=ReachPlanStore.today(s,ReachConfig.read(p),finished);int active=0;
                 for(int i=0;i<rows.length();i++)if(ReachPlanCheckRules.active(rows.getJSONObject(i).getString("status")))active++;
                 p.edit().putLong("reachCheckAt",finished).putString("reachCheckError","").putString("reachCheckResult",p.getBoolean("reachEnabled",false)?"本地检查完成，当前 "+active+" 项安排":"主动搭话已关闭").apply();
-                ReachScheduler.schedule(c,s);return snapshot(c,s,finished);
+                try{CallIncoming.consider(c,s,finished);}catch(Exception incoming){android.util.Log.w("EidolonCall","Incoming opportunity unavailable");}ReachScheduler.schedule(c,s);return snapshot(c,s,finished);
             }catch(Exception e){android.util.Log.w("EidolonReach","Plan committed; result view unavailable",e);throw new Exception("本地计划已检查，结果页面暂未读取成功；请点刷新计划",e);}
         }
     }

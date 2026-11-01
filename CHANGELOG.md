@@ -1,9 +1,10 @@
 # 更新记录与开发文档
 
-当前可安装版本：**1.18/code73**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
+当前可安装版本：**1.19/code74**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
 
 | 版本 | 主要变化 | 完整记录 |
 | --- | --- | --- |
+| 1.19 | 应用内电话试用版、多轮语音、取消与路由、默认关闭的主动来电、备份v16 | [RELEASE-1.19](outputs/eidolon-android/RELEASE-1.19.md) |
 | 1.18 | 中文日记开头显示、跨午夜时间锚点与近期话题时间依据 | [RELEASE-1.18](outputs/eidolon-android/RELEASE-1.18.md) |
 | 1.17 | 日记缺少译文时可按需补译并保存本机 | [RELEASE-1.17](outputs/eidolon-android/RELEASE-1.17.md) |
 | 1.16 | 前后台统一、工作线程保存、历史归档、时间校准、备份v15及角标修复 | [RELEASE-1.16](outputs/eidolon-android/RELEASE-1.16.md) |

@@ -16,7 +16,7 @@ final class ReplyManager {
     }
     private static android.content.SharedPreferences prefs(Context c){return c.getSharedPreferences("settings",0);}
     static void run(Context context,String id)throws Exception{
-        ChatStore store=new ChatStore(context);try{ChatStore.PendingReply row=store.pending(id);if(row==null)return;
+        ChatStore store=new ChatStore(context);try{ChatStore.PendingReply row=store.pending(id);if(row==null)return;if(CallStore.held(store,row))return;
             if(row.test){if(row.status.equals("collecting")){store.markGenerating(id,row.revision);store.markReady(id,row.revision,"测试回复：本地延迟任务正常。未调用 API、未保存聊天内容、未更新记忆或关系。",new JSONObject().put("personal",store.personal()).put("name","本地延迟测试"),System.currentTimeMillis()+3000L);row=store.pending(id);if(!enqueue(context,row,row.dueAt,false))store.markScheduleFailed(id,row.revision,"系统未能安排本地测试提示，请重新开始测试。");return;}if(row.status.equals("waiting")){JSONObject message=store.deliverPending(id,System.currentTimeMillis());if(message!=null)show(context,message,true);}return;}
             if(row.status.equals("collecting")||row.status.equals("generating")){
                 if(WebActivity.isGenerating(id,row.revision)){enqueue(context,id,System.currentTimeMillis()+30000L,true);return;}
