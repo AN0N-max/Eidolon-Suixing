@@ -37,6 +37,11 @@ final class WritingStore {
         }finally{db.endTransaction();}
     }
     static JSONArray all(ChatStore s)throws Exception{JSONArray a=new JSONArray();try(Cursor c=s.getReadableDatabase().rawQuery("SELECT kind,character,date,body,is_read,secret,secret_read FROM writings ORDER BY date DESC,id",null)){while(c.moveToNext())a.put(new JSONObject().put("kind",c.getString(0)).put("character",c.getString(1)).put("date",c.getString(2)).put("text",c.getString(3)).put("read",c.getInt(4)!=0).put("secret",c.getString(5)).put("secretRead",c.getInt(6)!=0));}return a;}
+    static String diaryText(ChatStore s,String who,String date)throws Exception{try(Cursor c=s.getReadableDatabase().rawQuery("SELECT body FROM writings WHERE id=? AND kind='diary'",new String[]{WritingData.key("diary",who,date)})){if(!c.moveToFirst())throw new Exception("这篇日记已不存在，请刷新列表");return c.getString(0);}}
+    static void repairDiary(ChatStore s,String who,String date,String expected,String translated)throws Exception{
+        SQLiteDatabase db=s.getWritableDatabase();ContentValues v=new ContentValues();v.put("body",translated);
+        if(db.update("writings",v,"id=? AND kind='diary' AND body=?",new String[]{WritingData.key("diary",who,date),expected})!=1)throw new Exception("日记已发生变化，请重新打开后再补译");
+    }
     static JSONArray events(ChatStore s)throws Exception{JSONArray a=new JSONArray();try(Cursor c=s.getReadableDatabase().rawQuery("SELECT character,date,body FROM writing_events ORDER BY date DESC,id",null)){while(c.moveToNext())a.put(new JSONObject().put("character",c.getString(0)).put("date",c.getString(1)).put("text",c.getString(2)));}return a;}
     static JSONArray visible(ChatStore s,JSONObject personal,boolean affinity)throws Exception{JSONArray a=all(s),out=new JSONArray();JSONObject relations=personal.optJSONObject("relations");for(int i=0;i<a.length();i++){JSONObject row=a.getJSONObject(i),r=relations==null?null:relations.optJSONObject(row.getString("character"));out.put(WritingData.visible(row,personal.getJSONObject("affinity").optDouble(row.getString("character"),50),r!=null&&r.optBoolean("cooling"),affinity));}return out;}
     static void read(ChatStore s,String kind,String who,String day){setRead(s,kind,who,day,true);}

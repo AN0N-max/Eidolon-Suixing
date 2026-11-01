@@ -54,11 +54,13 @@ async function writingOpen(row){
 function writingRenderReader(row){
  const c=state.characters.find(c=>c.id===row.character);writingReader={kind:row.kind,character:row.character,date:row.date,secret:false};modal.replaceChildren(el('h2','',c.name+' · '+row.date));
  const text=el('article','writing-reader');messageText(text,row.text);modal.append(text);
+ if(row.kind==='diary'&&writingNeedsChinese(row.text))modal.append(el('p','notice','这篇日记缺少中文译文。点击后会把日文发送到你配置的模型翻译，并将译文保存在本机。'),btn('补充中文翻译',async()=>{try{const result=await api('diaryTranslate',{character:row.character,date:row.date});state=result;const latest=(state.writings||[]).find(e=>e.kind==='diary'&&e.character===row.character&&e.date===row.date);if(latest){writingRefresh();writingRenderReader(latest);toast('日记中文译文已保存');}}catch(e){toast(e.message||'补中文失败');}},'pill wide'));
  if(row.excerpt)modal.append(el('p','notice','目前只能看到开头。关系进入亲近后可读正文。'));
  if(row.hiddenAvailable)modal.append(btn('翻开隐藏页',()=>writingSecretOpen(row),'pill wide'));
  else if(row.hasHiddenPage)modal.append(el('p','notice','她还藏着一页没说出口的心事。关系达到亲密后可以翻开。'));
  modal.append(btn('标为未读并关闭',async()=>{state=await api('writingRead',{kind:row.kind,character:row.character,date:row.date,read:false});modal.close();writingRefresh();toast('已标为未读');},'pill wide'),btn('关闭',()=>modal.close(),'pill wide'));
 }
+function writingNeedsChinese(text){const ja=/<ja>([\s\S]*?)<\/ja>/.exec(text||''),zh=/<zh>([\s\S]*?)<\/zh>/.exec(text||'');return !!((ja&&/[\u3040-\u30ff]/.test(ja[1])||/[\u3040-\u30ff]/.test(text||''))&&!(zh&&zh[1].trim()));}
 async function writingSecretOpen(row){
  const token=++writingReaderEpoch,target=page;writingSecretPending=token;let result;try{result=await api('diarySecret',{character:row.character,date:row.date});}finally{if(writingSecretPending===token)writingSecretPending=0;}if(token!==writingReaderEpoch||page!==target||!modal.open)return;state=result.snapshot;
  const latest=(state.writings||[]).find(e=>e.kind==='diary'&&e.character===row.character&&e.date===row.date);

@@ -6,7 +6,7 @@ Eidolon 随行是基于 [Eidolon-SC](https://github.com/Sallyn0225/eidolon-sc)�
 
 你可以随手发一句今天发生的事，等她回消息；隔一会儿再打开，接着之前的话题聊。开启相应功能后，她也可能先发来消息，说起自己的安排，或写下一封信。聊天列表、消息气泡、时间分段、未读提醒和通知，把这些零碎的往来留在一起，让熟悉感在一次次对话中慢慢积累。
 
-> 本项目为非官方粉丝作品，角色由 AI 扮演，与原作版权方无关。需要自行配置模型服务，调用可能产生费用。当前开发版本为 **1.16**。
+> 本项目为非官方粉丝作品，角色由 AI 扮演，与原作版权方无关。需要自行配置模型服务，调用可能产生费用。当前开发版本为 **1.17**。
 
 ## 手机上独立运行，记录留在本机
 
@@ -64,7 +64,7 @@ Eidolon 随行是基于 [Eidolon-SC](https://github.com/Sallyn0225/eidolon-sc)�
 
 ## 如何开始
 
-Android 8.0 及以上。安装包使用下方1.16直接下载链接，也可按[构建指南](docs/BUILD.md)从源码构建。
+Android 8.0 及以上。安装包使用下方1.17直接下载链接，也可按[构建指南](docs/BUILD.md)从源码构建。
 
 1. 安装应用，在「设置 → 模型与接口」填写服务地址、模型名和自己的 API 密钥。
 2. 完善称呼、时区等个人档案，选择角色开始聊天。
@@ -74,11 +74,9 @@ Android 8.0 及以上。安装包使用下方1.16直接下载链接，也可按[
 
 ## 当前版本
 
-**1.16**：统一前后台聊天流程、后台保存和差异暂存；修复生活版本误变、时间校准、旧目标归档和问题解决规则；角色时区与临时状态纳入v15加密备份。桌面角标兼容修复已在iQOO真机验证成功。
+**1.17**：修复日记隐藏日文时缺少中文译文补充入口的问题。点击按钮后才调用已配置模型翻译，并将译文保存到本机。
 
-[下载1.16原签名升级APK](https://github.com/AN0N-max/Eidolon-Suixing/raw/refs/heads/main/downloads/Eidolon-1.16-original-upgrade.apk) · [本版完整变更](outputs/eidolon-android/RELEASE-1.16.md) · [真实回复验收清单](docs/TEMPORAL-EVALUATION.md)
-
-原有离线回归、新增19项架构状态检查及双连接SQLite竞态/回滚检查通过。没有调用付费模型；自然语言体验和1.16完整Android生命周期仍需持续实机验收。系统超时晚投放的已生成答案不自动收费重写。
+[下载1.17原签名升级APK](https://github.com/AN0N-max/Eidolon-Suixing/raw/refs/heads/main/downloads/Eidolon-1.17-original-upgrade.apk) · [本版完整变更](outputs/eidolon-android/RELEASE-1.17.md)
 
 ## 来源与许可
 
