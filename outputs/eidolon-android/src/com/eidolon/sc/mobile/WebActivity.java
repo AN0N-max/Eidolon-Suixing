@@ -252,7 +252,7 @@ public final class WebActivity extends MainActivity {
     String callWho="",callSession="",callIncomingId="";
     void startNativeCall(String who,String session)throws Exception{
         if(CallService.live())throw new IOException("已有通话，请先挂断");character(who);if(store.hasBlockingPending(who))throw new IOException("请先处理这个角色的待回复文字，再拨打电话");
-        if(prefs.getString("callSttUrl","").isEmpty()&&!android.speech.SpeechRecognizer.isRecognitionAvailable(this))throw new IOException("手机没有可用的系统语音识别服务，请先在系统安装/启用语音识别");
+        CallAsrSettings.preflight(this);
         if(Vault.read(this).isEmpty()||Vault.read(this,"fish").isEmpty())throw new IOException("请先配置聊天模型和Fish语音密钥");
         JSONObject c=character(who);FishClient.request("<ja>通話</ja><zh>通话</zh>",prefs.getString("voice-"+who,c.optString("voice_id")),prefs.getString("fish-model","s2.1-pro-free"));
         JSONObject personal=store.personal();Progression.upgrade(personal);if(prefs.getBoolean("affinity",true)&&(Progression.relation(personal,who,System.currentTimeMillis()).optBoolean("cooling")||Progression.session(personal,session).optBoolean("ended")))throw new IOException("当前关系或会话暂不能继续，请先处理关系冷却或新建会话");
@@ -266,7 +266,7 @@ public final class WebActivity extends MainActivity {
         if(action.equals("reset")&&CallService.live())throw new IOException("请先挂断通话，再重置数据");
         if(Arrays.asList("replyNow","pendingCancel","pendingRetry","pendingTest","pendingWorkTest").contains(action)&&current!=null&&CallStore.busy(store,current.getString("id")))throw new IOException("本轮由电话管理，请在通话界面打断或挂断");
         if(Arrays.asList("voice","voiceLibrary").contains(action)&&CallService.live())throw new IOException("通话正在使用音频，请挂断后播放聊天语音");
-        if(action.equals("callConfig")){if(a.has("url")){if(CallService.live())throw new IOException("请挂断后修改识别服务");String url=a.optString("url").trim(),model=a.optString("model").trim();if(!url.isEmpty()){CallHttpAsr.endpoint(url);if(model.isEmpty()||model.length()>100||model.contains("\r")||model.contains("\n"))throw new IOException("请填写正确的识别模型名");if(!a.optString("key").isEmpty())Vault.save(this,"callSttKey",a.getString("key"));if(Vault.read(this,"callSttKey").isEmpty())throw new IOException("请填写识别服务密钥");}prefs.edit().putString("callSttUrl",url).putString("callSttModel",model).putBoolean("callIncoming",a.optBoolean("incoming",false)).commit();}return new JSONObject().put("url",prefs.getString("callSttUrl","")).put("model",prefs.getString("callSttModel","")).put("hasKey",!Vault.read(this,"callSttKey").isEmpty()).put("incoming",prefs.getBoolean("callIncoming",false));}
+        if(action.equals("callConfig"))return CallAsrSettings.config(this,a);
         if(action.equals("callAnswer")){JSONObject incoming=CallIncoming.answer(this,store,a.getString("callId"));callIncomingId=incoming.getString("id");startNativeCall(incoming.getString("character"),incoming.getString("session"));return new JSONObject();}
         if(action.equals("callReject")){CallIncoming.reject(this,a.getString("callId"));return CallService.snapshot(this);}
         if(action.equals("callStatus"))return CallService.snapshot(this);
