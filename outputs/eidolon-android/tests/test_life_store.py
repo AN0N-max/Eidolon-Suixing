@@ -39,9 +39,9 @@ with tempfile.TemporaryDirectory(prefix='eidolon-life-') as folder:
     db.close()
 delivery=chat[chat.index('JSONObject deliverPending'):chat.index('void deletePending')]
 assert delivery.index('db.beginTransaction()')<delivery.index('LifeStore.delivered')<delivery.index('db.setTransactionSuccessful();\n            return')
-assert '.put("version",16)' in chat and 'LifeStore.restore(this,data,messageMapping)' in chat
+assert '.put("version",17)' in chat and 'LifeStore.restore(this,data,messageMapping)' in chat
 for name in ['ConversationEngine.java','ReachExecution.java']:
-    source=(java/name).read_text(encoding='utf-8');assert 'LifeStore.snapshot' in source and 'ChatEnvelope.parse' in source
+    source=(java/name).read_text(encoding='utf-8');assert 'LifeStore.snapshot' in source and 'MediaReply.parse' in source and 'ChatEnvelope.parse' in (java/'MediaReply.java').read_text(encoding='utf-8')
     assert 'lifeAnswer.effects' in source
 for name in ['LifeData.java','LifeStore.java','BehaviorPlanner.java','ChatEnvelope.java']:
     assert 'new ModelClient(' not in (java/name).read_text(encoding='utf-8')

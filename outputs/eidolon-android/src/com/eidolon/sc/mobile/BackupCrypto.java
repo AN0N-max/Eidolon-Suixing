@@ -10,7 +10,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 final class BackupCrypto {
     static final byte[] HEADER={'E','I','D','O','B','K',1};
-    static final int MAX_BYTES=16*1024*1024;
+    static final int MAX_BYTES=32*1024*1024;
     private static SecretKeySpec derive(char[] password,byte[] salt)throws Exception {
         PBEKeySpec spec=new PBEKeySpec(password,salt,210000,256);
         try{return new SecretKeySpec(SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).getEncoded(),"AES");}

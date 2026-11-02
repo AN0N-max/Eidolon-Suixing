@@ -7,7 +7,7 @@ import java.util.*;
 final class MessageTime {
     static final DateTimeFormatter FORMAT=DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss XXX");
     static String label(long at,String zone){return at<=0?"发送时间未知（旧记录）":Instant.ofEpochMilli(at).atZone(ZoneId.of(zone)).format(FORMAT);}
-    static String content(ChatStore.Message m)throws Exception{return m.role.equals("gift")?GiftRecord.context(m.text):m.role.equals("assistant")?ReplyText.clean(m.text).replace(ChatEnvelope.BREAK,"\n\n"):m.text;}
+    static String content(ChatStore.Message m)throws Exception{return ( m.role.equals("gift")?GiftRecord.context(m.text):m.role.equals("assistant")?ReplyText.clean(m.text).replace(ChatEnvelope.BREAK,"\n\n"):m.text)+MediaData.context(m.blocks);}
     static String context(List<ChatStore.Message> messages)throws Exception{return context(messages,null);}
     static String context(List<ChatStore.Message> messages,ZoneId roleZone)throws Exception{
         JSONArray rows=new JSONArray();for(int i=0;i<messages.size();i++){ChatStore.Message m=messages.get(i);String displayZone=roleZone==null?m.zone:roleZone.getId();rows.put(new JSONObject().put("index",i+1).put("role",m.role.equals("gift")?"user":m.role).put("sentAt",label(m.sentAt,displayZone)).put("timeZone",displayZone).put("storedTimeZone",m.zone).put("writtenAt",m.generatedAt>0?label(m.generatedAt,displayZone):JSONObject.NULL));}

@@ -48,10 +48,12 @@ public final class WebActivity extends MainActivity {
 
     JSONArray gifts;
     JSONObject calendar;
-    static final int IMPORT_STORIES=81, PICK_PRODUCER_AVATAR=82;
+    static final int IMPORT_STORIES=81, PICK_PRODUCER_AVATAR=82, PICK_CHAT_MEDIA=83;
+    String mediaPickSession="",mediaPickWho="",mediaPickKind="image";volatile ModelClient mediaAnalysisClient;
     @Override public void onCreate(Bundle state){
         ThemePrefs.beforeCreate(this);
         super.onCreate(state);
+        if(state!=null){mediaPickSession=state.getString("mediaPickSession","");mediaPickWho=state.getString("mediaPickWho","");mediaPickKind=state.getString("mediaPickKind","image");}
         try{gifts=new JSONArray(asset("gifts.json"));calendar=new JSONObject(asset("calendar.json"));
             if(!prefs.getBoolean("profile-migrated-v4",false)){JSONObject data=store.personal();if(data.getString("profile").isEmpty())data.put("profile",prefs.getString("profile",""));store.savePersonal(data);prefs.edit().putBoolean("profile-migrated-v4",true).commit();}
         }catch(Exception e){toast("本机资源无法加载");finish();return;}
@@ -69,9 +71,12 @@ public final class WebActivity extends MainActivity {
                 Uri u=r.getUrl();String p=u.getPath();
                 try{
                     if(!"https".equals(u.getScheme())||!"eidolon.local".equals(u.getHost())||(u.getPort()!=-1&&u.getPort()!=443)||u.getUserInfo()!=null||p==null||p.contains("..")||!p.matches("/[a-zA-Z0-9_./-]+"))throw new IOException("Blocked local resource URL");
-                    String mime=p.endsWith(".html")?"text/html":p.endsWith(".js")?"application/javascript":p.endsWith(".css")?"text/css":p.endsWith(".jpg")?"image/jpeg":p.endsWith(".webp")?"image/webp":null;
+                    String mime=p.endsWith(".html")?"text/html":p.endsWith(".js")?"application/javascript":p.endsWith(".css")?"text/css":p.endsWith(".jpg")?"image/jpeg":p.endsWith(".webp")?"image/webp":p.endsWith(".png")?"image/png":null;
                     if(mime==null)throw new IOException();
                     Map<String,String> headers=new HashMap<>();headers.put("Content-Security-Policy","default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'");headers.put("X-Content-Type-Options","nosniff");
+                    if(p.startsWith("/media/")){
+                        java.util.regex.Matcher match=java.util.regex.Pattern.compile("/media/([a-f0-9]{64})/(image|thumb)\\.(png|jpg|webp)").matcher(p);if(!match.matches())throw new IOException("Invalid media route");String id=match.group(1);boolean thumb=match.group(2).equals("thumb");try(ChatStore mediaDb=new ChatStore(WebActivity.this)){JSONObject metadata=MediaStore.asset(mediaDb,id);boolean actualThumb=thumb&&MediaStore.file(WebActivity.this,id,true).isFile();headers.put("Cache-Control","private, max-age=86400");return new WebResourceResponse(actualThumb?"image/webp":metadata.getString("mime"),null,200,"OK",headers,MediaStore.open(WebActivity.this,mediaDb,id,actualThumb));}
+                    }
                     if(p.equals("/personal/avatar.jpg")){headers.put("Cache-Control","no-store");return new WebResourceResponse("image/jpeg",null,200,"OK",headers,ProducerAvatar.open(WebActivity.this));}
                     return new WebResourceResponse(mime,"UTF-8",200,"OK",headers,getAssets().open(p.substring(1)));
                 }catch(Exception e){android.util.Log.e("EidolonUI","Local resource failed: "+p,e);if("/ui/index.html".equals(p)||"/ui/app.js".equals(p))runOnUiThread(()->showUiError("安装包中的页面资源无法读取，请覆盖安装最新 APK。"));return new WebResourceResponse("text/plain","UTF-8",403,"Forbidden",Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));}
@@ -91,6 +96,12 @@ public final class WebActivity extends MainActivity {
         @JavascriptInterface public void post(String message){
             if(message==null||message.length()>100000)return;
             runOnUiThread(()->{if(destroyed)return;int id=0;try{JSONObject q=new JSONObject(message);id=q.getInt("id");String action=q.getString("action");JSONObject args=q.optJSONObject("args");if(args==null)args=new JSONObject();
+                if(Arrays.asList("mediaLibrary","mediaUpdate","mediaLibraryAdd","mediaProfile","mediaSettings","mediaAnalyze","mediaDraft","mediaCleanup").contains(action)){
+                    if(fileBusy&&action.equals("mediaCleanup"))throw new IOException("请等待图片导入完成后清理");
+                    if(action.equals("mediaAnalyze")&&mediaAnalysisClient!=null)throw new IOException("正在分析图片，请勿重复提交");final int requestId=id;final JSONObject mediaArgs=args;final ModelClient visualClient=new ModelClient();if(action.equals("mediaAnalyze"))mediaAnalysisClient=visualClient;
+                    worker.execute(()->{try(ChatStore mediaDb=new ChatStore(getApplicationContext())){Object result=MediaActions.run(getApplicationContext(),mediaDb,action,mediaArgs,visualClient);runOnUiThread(()->{if(!destroyed)reply(requestId,result,null);});}catch(Exception e){runOnUiThread(()->{if(!destroyed)reply(requestId,null,e.getMessage()==null?"媒体操作未完成，请重试":e.getMessage());});}finally{if(mediaAnalysisClient==visualClient)mediaAnalysisClient=null;}});return;
+                }
+                if(action.equals("mediaPick")||action.equals("mediaSend")||action.equals("mediaTextRetry")){reply(id,dispatch(action,args),null);return;}
                 if(action.equals("visiblePage")){visiblePage=args.optString("page","roster");reply(id,new JSONObject(),null);return;}
                 if(action.equals("callStatus")||action.equals("callControl")||action.equals("callHistory")||action.equals("callAnswer")||action.equals("callReject")){reply(id,dispatch(action,args),null);return;}
                 if(VoicePlayer.controlAction(action)){reply(id,dispatch(action,args),null);return;}
@@ -335,7 +346,7 @@ public final class WebActivity extends MainActivity {
         if(action.equals("notebookDiscard")){notebookDraft=null;return new JSONObject();}
         if(action.equals("notebookSettings")){if(!prefs.edit().putBoolean("timelineAuto",a.optBoolean("automatic")).commit())throw new IOException("保存失败");return new JSONObject();}
         if(action.equals("chatOlder")){
-            if(current==null||!conversation.equals(a.optString("session"))||a.optLong("before")<=0)throw new IOException("请先打开对应会话");JSONArray rows=new JSONArray();for(ChatStore.Message m:store.historyBefore(conversation,a.getLong("before"),200))rows.put(new JSONObject().put("id",m.id).put("role",m.role).put("text",m.role.equals("assistant")?ReplyText.visible(m.text):m.text).put("sentAt",m.sentAt).put("generatedAt",m.generatedAt).put("timeZone",m.zone));return new JSONObject().put("messages",rows).put("hasMore",rows.length()==200);
+            if(current==null||!conversation.equals(a.optString("session"))||a.optLong("before")<=0)throw new IOException("请先打开对应会话");JSONArray rows=new JSONArray();for(ChatStore.Message m:store.historyBefore(conversation,a.getLong("before"),200))rows.put(new JSONObject().put("id",m.id).put("role",m.role).put("text",m.role.equals("assistant")?ReplyText.visible(m.text):m.text).put("sentAt",m.sentAt).put("generatedAt",m.generatedAt).put("timeZone",m.zone).put("content",m.blocks));return new JSONObject().put("messages",rows).put("hasMore",rows.length()==200);
         }
         if(action.equals("chatRead")){
             boolean visible=current!=null&&conversation.equals(a.optString("session"))&&"chat".equals(visiblePage)&&visibleForReply();
@@ -383,6 +394,12 @@ public final class WebActivity extends MainActivity {
 
         if(action.equals("exit")){finish();return new JSONObject();}
         if(action.equals("open")){voicePlayer.stop();current=character(a.getString("character"));conversation=store.latestConversation(current.getString("id"));draft="";return new SnapshotRequest("chat");}
+        if(action.equals("mediaPick")){
+            if(current==null||conversation.isEmpty())throw new IOException("请先打开角色聊天");if(fileBusy)throw new IOException("正在导入图片，请稍候");mediaPickSession=conversation;mediaPickWho=current.getString("id");mediaPickKind=a.optString("kind","image");
+            Intent picker;if(android.os.Build.VERSION.SDK_INT>=33){picker=new Intent("android.provider.action.PICK_IMAGES");picker.putExtra("android.provider.extra.PICK_IMAGES_MAX",4);}else{picker=new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE);picker.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);}picker.setType("image/*");try{startActivityForResult(picker,PICK_CHAT_MEDIA);}catch(android.content.ActivityNotFoundException missing){Intent fallback=new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*").putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);startActivityForResult(fallback,PICK_CHAT_MEDIA);}return new JSONObject();
+        }
+        if(action.equals("mediaSend")){if(current==null||!conversation.equals(a.optString("session")))throw new IOException("会话已变化，请回到图片预览所属会话");sendWeb(a.optString("text"),a.getJSONArray("content"));MediaActions.draft(this,conversation,new JSONArray());return snapshot();}
+        if(action.equals("mediaTextRetry")){ChatStore.PendingReply row=store.pending(conversation);if(row==null||!row.status.equals("failed"))throw new IOException("当前没有失败回复");if(CallStore.busy(store,row.character))throw new IOException("本轮由电话管理，请在通话界面操作");store.retryPending(row.id,System.currentTimeMillis());row=store.pending(row.id);prefs.edit().putLong("mediaSkip/"+row.id,row.revision).commit();scheduleGeneration(row);return snapshot();}
         if(action.equals("send")){sendWeb(a.getString("text"));return snapshot();}
         if(action.equals("cancel")){ChatStore.PendingReply pending=store.pending(conversation);if(pending!=null)ReplyFallback.stop(pending.id,pending.revision);if(client!=null)client.cancel();WritingEngine.cancel();ScheduleEngine.cancel();generation++;busy=false;ReachOut.chatBusy=false;client=null;return snapshot();}
         if(action.equals("sessions")){conversationMenu();return new JSONObject();}
@@ -397,13 +414,13 @@ public final class WebActivity extends MainActivity {
         if(action.equals("storyDelete")){store.deleteStory(a.getString("storyId"));return snapshot();}
         if(action.equals("storyRetrievalSettings")){StoryRetrieval policy=new StoryRetrieval(a);if(!prefs.edit().putInt("storyRetrieval.candidates",policy.candidates).putInt("storyRetrieval.terms",policy.terms).putInt("storyRetrieval.passages",policy.passages).putInt("storyRetrieval.chars",policy.chars).commit())throw new IOException("检索设置保存失败");return snapshot();}
         if(action.equals("features")){String name=a.optString("analysisModel").trim();if(name.length()>200)throw new Exception("模型名称过长");if(!prefs.edit().putBoolean("autoMemory",a.optBoolean("autoMemory")).putBoolean("affinity",a.optBoolean("affinity")).putBoolean("hibiHearts",a.optBoolean("hibiHearts",prefs.getBoolean("hibiHearts",true))).putBoolean("story",a.optBoolean("story")).putString("analysisModel",name).commit())throw new Exception("保存失败");JSONObject sceneData=store.personal();HeartScenes.configure(sceneData,a.optBoolean("heartScenes",HeartScenes.root(sceneData).optBoolean("enabled")),!a.optBoolean("affinity")||!a.optBoolean("hibiHearts",true));store.savePersonal(sceneData);return snapshot();}
-        if(action.equals("settings")){
+        if(action.equals("settings")){synchronized(MediaContext.CONFIG_LOCK){
             String address=a.getString("url").trim(),model=a.getString("model").trim(),key=a.optString("key").trim();ModelClient.endpoint(address);
             if(model.isEmpty()||model.length()>200||key.contains("\n")||key.contains("\r"))throw new Exception("模型或密钥格式不正确");
             if(!address.equals(prefs.getString("url",""))&&key.isEmpty())throw new Exception("更换服务地址时，请填写对应服务的新密钥");
             if(key.isEmpty()&&Vault.read(this).isEmpty())throw new Exception("请填写 API 密钥");
             if(!key.isEmpty())Vault.save(this,key);
-            if(!prefs.edit().putString("url",address).putString("model",model).putBoolean("bilingual",a.optBoolean("bilingual",true)).commit())throw new Exception("设置保存失败");return snapshot();
+            if(!prefs.edit().putString("url",address).putString("model",model).putBoolean("bilingual",a.optBoolean("bilingual",true)).commit())throw new Exception("设置保存失败");return snapshot();}
         }
         JSONObject data=store.personal();PersonalData.refresh(data,PersonalData.today());
         if(action.equals("profile")){
@@ -432,10 +449,11 @@ public final class WebActivity extends MainActivity {
         else throw new Exception("不支持的操作");
         store.savePersonal(data);if(action.equals("profile"))WritingEngine.schedule(this);return snapshot();
     }
-    void sendWeb(String text)throws Exception{
-        if(current==null||conversation.isEmpty())throw new Exception("请先选择角色");String user=text.trim();if(CallStore.busy(store,current.getString("id")))throw new Exception("这个角色正在通话，请挂断后再发送文字；其他角色聊天仍可使用");if(user.isEmpty()||user.length()>6000)throw new Exception("消息应为 1–6000 字");
-        ChatStore.PendingReply previous=store.pending(conversation);if(prefs.getBoolean("replyDelay.enabled",false)){if(previous!=null)ReplyFallback.stop(previous.id,previous.revision);ChatStore.PendingReply row=store.beginPendingUser(current.getString("id"),conversation,user,System.currentTimeMillis());ReplyTrace.record(this,"用户消息已保存，独立会话等待合并");PendingReplyJob.cancel(this,row.id);scheduleGeneration(row);return;}
-        ChatStore.PendingReply row=store.beginPendingUser(current.getString("id"),conversation,user,System.currentTimeMillis());ReplyTrace.record(this,"用户消息已保存，等待合并");
+    void sendWeb(String text)throws Exception{sendWeb(text,new JSONArray());}
+    void sendWeb(String text,JSONArray requested)throws Exception{
+        if(current==null||conversation.isEmpty())throw new Exception("请先选择角色");if(text.length()>6000)throw new IOException("附言最多6000字");JSONArray blocks=MediaStore.userBlocks(store,requested);String user=MediaData.summary(text,blocks);if(CallStore.busy(store,current.getString("id")))throw new Exception("这个角色正在通话，请挂断后再发送文字；其他角色聊天仍可使用");if(user.isEmpty()||user.length()>6600)throw new Exception("请填写文字或选择图片/表情包");if(blocks.length()>0&&!text.trim().isEmpty()){JSONArray mixed=new JSONArray().put(new JSONObject().put("type","text").put("text",text.trim()));for(int i=0;i<blocks.length();i++)mixed.put(blocks.getJSONObject(i));blocks=mixed;}
+        ChatStore.PendingReply previous=store.pending(conversation);if(prefs.getBoolean("replyDelay.enabled",false)){if(previous!=null)ReplyFallback.stop(previous.id,previous.revision);ChatStore.PendingReply row=store.beginPendingUser(current.getString("id"),conversation,user,System.currentTimeMillis(),blocks);ReplyTrace.record(this,"用户消息已保存，独立会话等待合并");PendingReplyJob.cancel(this,row.id);scheduleGeneration(row);return;}
+        ChatStore.PendingReply row=store.beginPendingUser(current.getString("id"),conversation,user,System.currentTimeMillis(),blocks);ReplyTrace.record(this,"用户消息已保存，等待合并");
         if(previous!=null)ReplyFallback.stop(previous.id,previous.revision);if(client!=null)client.cancel();generation++;busy=false;client=null;activeGenerations.remove(row.id);PendingReplyJob.cancel(this,row.id);ReachOut.chatBusy=true;scheduleGeneration(row);event("refresh","pending");
     }
     void scheduleGeneration(ChatStore.PendingReply row){
@@ -464,7 +482,13 @@ public final class WebActivity extends MainActivity {
             runOnUiThread(()->{if(destroyed)return;if(generation==token){busy=false;client=null;ReachOut.chatBusy=waiting;}event(error?"replyFailed":"replyPending","");});
         });
     }
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("mediaPickSession",mediaPickSession);out.putString("mediaPickWho",mediaPickWho);out.putString("mediaPickKind",mediaPickKind);}
     @Override protected void onActivityResult(int request,int result,android.content.Intent intent){
+        if(request==PICK_CHAT_MEDIA){
+            if(result!=RESULT_OK||intent==null)return;if(fileBusy){toast("正在处理另一份文件，请稍后重试");return;}
+            final String session=mediaPickSession,who=mediaPickWho,kind=mediaPickKind;final List<Uri> chosen=new ArrayList<>();if(intent.getClipData()!=null){for(int i=0;i<Math.min(4,intent.getClipData().getItemCount());i++)chosen.add(intent.getClipData().getItemAt(i).getUri());}else if(intent.getData()!=null)chosen.add(intent.getData());if(chosen.isEmpty())return;fileBusy=true;toast("正在处理图片…");
+            worker.execute(()->{String failure="";JSONArray items=new JSONArray();try(ChatStore mediaDb=new ChatStore(getApplicationContext())){for(Uri uri:chosen){JSONObject b=MediaStore.importImage(getApplicationContext(),mediaDb,uri);if(kind.equals("sticker"))b=MediaData.snapshot(MediaStore.addSticker(mediaDb,b.getString("asset")));items.put(b);}if(!kind.equals("sticker"))MediaActions.draft(getApplicationContext(),session,items);}catch(OutOfMemoryError e){failure="图片像素过大，请选择较小图片";}catch(Exception e){failure=e.getMessage()==null?"图片导入未完成":e.getMessage();}if(!kind.equals("sticker")&&items.length()>0)try{MediaActions.draft(getApplicationContext(),session,items);}catch(Exception e){failure="图片草稿保存失败，请重新选择";}final String notice=failure;final JSONArray imported=items;runOnUiThread(()->{fileBusy=false;if(destroyed)return;if(!notice.isEmpty())toast(notice);try{event("mediaChanged",new JSONObject().put("session",session).put("character",who).put("kind",kind).put("items",imported).toString());}catch(Exception ignored){}});});return;
+        }
         if(request==PICK_PRODUCER_AVATAR){
             if(result!=RESULT_OK||intent==null||intent.getData()==null||destroyed)return;if(busy||fileBusy){toast("请等当前操作结束后再更换头像");return;}
             final Uri chosen=intent.getData();fileBusy=true;toast("正在处理头像…");worker.execute(()->{String failure="";try{ProducerAvatar.save(WebActivity.this,chosen);}catch(OutOfMemoryError e){failure="图片过大，请换一张较小的照片";}catch(Exception e){failure="无法处理图片，请选择不超过10MB的照片后重试";}final String error=failure;runOnUiThread(()->{fileBusy=false;if(destroyed)return;if(error.isEmpty()){event("producerAvatar",ProducerAvatar.url(WebActivity.this));toast("头像已更新");}else toast(error);});});return;
@@ -482,5 +506,5 @@ public final class WebActivity extends MainActivity {
     @Override void showChat(){if(web!=null)event("conversationOpened","");}
     @Override void showSettings(){if(web!=null)event("route","settings");}
     @Override public void onBackPressed(){if(web!=null)evaluate("window.goBack()");else super.onBackPressed();}
-    @Override protected void onDestroy(){if(generationDebounce!=null)reachHandler.removeCallbacks(generationDebounce);/* The application-context worker retains ownership across Activity destruction. */reachHandler.removeCallbacks(reachTick);reachHandler.removeCallbacks(writingTick);if(writingManual){WritingEngine.cancel();ScheduleEngine.cancel();}ReachOut.chatBusy=false;if(web!=null){web.removeJavascriptInterface("Native");web.destroy();web=null;}super.onDestroy();}
+    @Override protected void onDestroy(){if(generationDebounce!=null)reachHandler.removeCallbacks(generationDebounce);/* The application-context worker retains ownership across Activity destruction. */reachHandler.removeCallbacks(reachTick);reachHandler.removeCallbacks(writingTick);if(writingManual){WritingEngine.cancel();ScheduleEngine.cancel();}ReachOut.chatBusy=false;if(mediaAnalysisClient!=null)mediaAnalysisClient.cancel();if(web!=null){web.removeJavascriptInterface("Native");web.destroy();web=null;}super.onDestroy();}
 }

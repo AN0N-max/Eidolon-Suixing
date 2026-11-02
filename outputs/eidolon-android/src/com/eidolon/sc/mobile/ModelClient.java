@@ -79,7 +79,7 @@ final class ModelClient {
             included.add(item);
         }
         if(batch.isEmpty())messages.put(new JSONObject().put("role","user").put("content",user));
-        else for(ChatStore.Message item:batch){messages.put(new JSONObject().put("role","user").put("content",item.text));included.add(item);}
+        else for(ChatStore.Message item:batch){messages.put(new JSONObject().put("role","user").put("content",MessageTime.content(item)));included.add(item);}
         String dated=system+(!included.isEmpty()?MessageTime.context(included,zone):"");if(clock!=null)dated+=RecentTimeFacts.prompt(included,clock,zone);messages.getJSONObject(0).put("content",dated);
         return new JSONObject().put("model",model).put("messages",messages).put("stream",true);
     }

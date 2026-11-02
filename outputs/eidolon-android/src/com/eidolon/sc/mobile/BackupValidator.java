@@ -6,7 +6,8 @@ import java.util.Set;
 final class BackupValidator {
     static boolean sequence(boolean awaiting,JSONObject row)throws Exception{String role=row.getString("role");boolean reach=row.optBoolean("reachOut");if(reach&&!role.equals("assistant"))throw new Exception("主动消息角色无效");if(role.equals("gift"))return awaiting;if(role.equals("user"))return true;if(!role.equals("assistant"))throw new Exception("聊天角色无效");if(reach)return awaiting;if(!awaiting)throw new Exception("角色回复缺少用户消息来源");return false;}
     static void validate(JSONObject data, Set<String> characters) throws Exception {
-        if(!"eidolon-android-chats".equals(data.optString("format")) || data.optInt("version")<1||data.optInt("version")>16)throw new Exception("不支持的备份格式或版本");
+        if(!"eidolon-android-chats".equals(data.optString("format")) || data.optInt("version")<1||data.optInt("version")>17)throw new Exception("不支持的备份格式或版本");
+        java.util.Set<String> mediaIds=data.optInt("version")>=17?MediaStore.validateBackup(data,characters):null;
         if(data.optInt("version")>=16)CallStore.validateBackup(data,characters);
         if(data.optInt("version")>=15)RuntimeSettings.validateBackup(data,characters);
         if(data.optInt("version")>=14)LifeStore.validateBackup(data,characters);
@@ -30,7 +31,7 @@ final class BackupValidator {
             int turnRows=0;boolean awaitingUser=false;
             for(int j=0;j<rows.length();j++) {
                 if(data.optInt("version")>=14){long generated=rows.getJSONObject(j).optLong("generatedAt");if(generated<0||generated>253402300799999L)throw new Exception("回复形成时间无效");}
-                JSONObject row=rows.getJSONObject(j);String role=row.getString("role"),text=row.getString("text");
+                JSONObject row=rows.getJSONObject(j);if(data.optInt("version")>=17)MediaData.validate(row.getJSONArray("content"),mediaIds);String role=row.getString("role"),text=row.getString("text");
                 if(data.optInt("version")>=16){awaitingUser=sequence(awaitingUser,row);if(role.equals("gift"))GiftRecord.parse(text);}
                 else if(data.optInt("version")>=5&&role.equals("gift")){
                     if(turnRows%2!=0||row.optBoolean("reachOut"))throw new Exception("送礼记录位置错误");
