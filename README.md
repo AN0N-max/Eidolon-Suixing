@@ -114,3 +114,7 @@ Android 应用位于 `outputs/eidolon-android/`。本仓库保留上游 fork 关
 **1.15 已接入角色生活连续性系统**：跨日目标、因果事件、情绪惯性、生活记忆、单次请求多气泡，以及事件驱动主动消息与缓慢兴趣/信心变化。入口在设置 → 生活日常 → 角色生活状态。详见[实现、验证和限制](docs/LIFE-SYSTEM-1.15.md)。虚拟经历与真实操作、原作剧情分开；外部结果需明确确认。没有进行真实模型或手机端到端验收。
 
 [1.15 完整更新记录](outputs/eidolon-android/RELEASE-1.15.md)。备份与数据库升至v14，保留原包名和升级签名，凌晨03:00规则不变。
+
+## 云端框架开发分支
+
+本分支增加自行编写的[云端框架](outputs/eidolon-cloud/README.md)，组织方式参考上游，现有 Android 日程和判断规则保持不变。当前只完成基础设施与首条共享 Java 规则适配，完整业务尚未接通，尚未部署，不是新的手机版本。参见[架构与交接](docs/CLOUD-ARCHITECTURE.md)及[验证范围](outputs/eidolon-cloud/docs/VALIDATION.md)。Android 安装版仍为 1.22/code77、SQLite/备份 v17，旧安装包保留。

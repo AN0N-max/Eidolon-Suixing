@@ -1,0 +1,101 @@
+{
+  "androidVersion": "1.22",
+  "versionCode": 77,
+  "databaseVersion": 17,
+  "backupVersion": 17,
+  "reference": "748c5f0a5f8ddec5cd570b87e08ef2cf67fe8aee",
+  "files": [
+    {
+      "path": "src/com/eidolon/sc/mobile/ReachConfig.java",
+      "sha256": "c26c0ca54f34137be5180c10fc685ac805bff76261c1528349789f06353c2af0"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/ReachPolicy.java",
+      "sha256": "0bc9b5bb09ef7e6de996ac66d2305224a1b2a7dacf3fd2b11b500a6c86c65b5b"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/ReachPlanRules.java",
+      "sha256": "281b3fe117683ed1c8f434e343b9feffe4a5b3e29694b2f3191bb2a4c6610743"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/ReachPlans.java",
+      "sha256": "05f86c6ececc0bb387c98aa19d7d5ee44ede672de6b91f7aaed3a44b06c9d168"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/ReachExecution.java",
+      "sha256": "94987cfd2e7e62226856923988e079b95dbb29f2cfd3642a3711ca9b2578540f"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/ReachBudget.java",
+      "sha256": "434283bea5c88d34afabb712e2ff104529c1f21ae8219100d12500eb3cf29947"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/ScheduleData.java",
+      "sha256": "4713c65f19085abc29da0054057ad0398d15eab63769f084e9c5a0d0155703d5"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/ScheduleRuntime.java",
+      "sha256": "712668d310e2cb36fc110e88ade2a003daad3b4fd7c9056ae4214faa81146c26"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/ScheduleGeneration.java",
+      "sha256": "b8ad798e637e33f9b8d91012234d321e339d7995f940ca5083eca52ea6b5a581"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/DailyScheduleClock.java",
+      "sha256": "9715606c4e3224a8e07dbf94d89d2f868b84c2c6e50f41b8ea622ad1b9f41b13"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/LifeData.java",
+      "sha256": "a836d6ecc9d5a1a6bcc7cd19022a881f037964599a2856c4d3b2f97bde90cf0e"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/LifeStore.java",
+      "sha256": "d31f5960128be194f6e5321786a2c62bf92c85871f65a45bfabc226204e36fab"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/LifeRuntime.java",
+      "sha256": "38a6079b274a733defd0727b344dfc796254f6eee52a9a8a78358d707ab3c2bb"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/TemporalData.java",
+      "sha256": "32fa96e10106d8f1287e06eea94b08abffa70774f262c8db2e5dc80fcf7be3e1"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/TemporalRuntime.java",
+      "sha256": "f81c4f3ee730da6d3831c4f173d294197e899c8ac5d46385d0b1ddede68199ff"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/Progression.java",
+      "sha256": "11b95bdd6ab573c6cd360f71c64c07b8539f70d85a620e829db587b531d044d9"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/PersonalMerge.java",
+      "sha256": "6fc063ef85580eee63941fc09d77b461880575f62afdf1c5a042e6418ce9b2e6"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/MemoryNotebook.java",
+      "sha256": "a73f3920d595bee6e1d3e669e467d2f6b88e1c66597b05bc6c029aa8541569e5"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/ConversationEngine.java",
+      "sha256": "a182307d9ade0846969cf6c4380ff207b50c4c3ff0337346535a80f1ca5e690b"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/CallService.java",
+      "sha256": "75d9b5d4e5c45032e33856f9b2f1f23d36552d15f4867a7fe684fcb5a7b6cbb0"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/ChatStore.java",
+      "sha256": "4c45f7c3a594a775aebb41c0d219f7b20eeacd6e1294a1852cd0aaa83e76a1c6"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/BackupCrypto.java",
+      "sha256": "dbab836aa7058cc55de9568146385abe1622e4ca33187953186f583cff168580"
+    },
+    {
+      "path": "src/com/eidolon/sc/mobile/WebActivity.java",
+      "sha256": "92a60fdcc8b8327d61ffc93a99abe06f97c425f70068ce32ee5bfbadd5b4d9f9"
+    }
+  ]
+}
