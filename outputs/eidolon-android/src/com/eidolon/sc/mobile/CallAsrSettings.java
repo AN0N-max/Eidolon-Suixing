@@ -47,12 +47,12 @@ final class CallAsrSettings {
                 if (!key.isEmpty()) Vault.save(c, "callSttKey", key);
                 edit.putString("callSttUrl", url).putString("callSttModel", model);
             }
-            if (!edit.putString("callSttProvider", provider).putBoolean("callIncoming", a.optBoolean("incoming", false)).commit()) throw new IOException("电话设置未能保存");
+            if (!edit.putString("callSttProvider", provider).putBoolean("callIncoming", a.optBoolean("incoming", false)).putBoolean("callAutoListen",a.optBoolean("autoListen",p.getBoolean("callAutoListen",true))).commit()) throw new IOException("电话设置未能保存");
         }
         return new JSONObject().put("provider", provider(c)).put("url", p.getString("callSttUrl", ""))
             .put("model", p.getString("callSttModel", "")).put("hasKey", !Vault.read(c, "callSttKey").isEmpty())
             .put("region", p.getString("callBailianRegion", "beijing"))
             .put("bailianModel", p.getString("callBailianModel", BailianAsrProtocol.DEFAULT_MODEL))
-            .put("hasBailianKey", !Vault.read(c, "callBailianKey").isEmpty()).put("incoming", p.getBoolean("callIncoming", false));
+            .put("hasBailianKey", !Vault.read(c, "callBailianKey").isEmpty()).put("incoming", p.getBoolean("callIncoming", false)).put("autoListen",p.getBoolean("callAutoListen",true)).put("maxMinutes",CallLimits.MAX_MINUTES).put("maxTurns",CallLimits.MAX_TURNS);
     }
 }

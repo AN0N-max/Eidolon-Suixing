@@ -27,7 +27,7 @@ public final class WebActivity extends MainActivity {
     volatile String visiblePage="roster";
     WebView web;
     boolean uiFailed;
-    void showUiError(String detail){
+    void showUiError(String detail){cancelCallUi(CallLaunch.CURRENT.id());if(CallService.live())CallService.active.end("通话界面不可用，已结束");
         if(uiFailed||isFinishing()||destroyed)return;uiFailed=true;
         LinearLayout panel=new LinearLayout(this);panel.setOrientation(LinearLayout.VERTICAL);panel.setPadding(dp(24),dp(60),dp(24),dp(24));panel.setBackgroundColor(android.graphics.Color.WHITE);
         TextView title=new TextView(this);title.setText("页面未能启动");title.setTextSize(22);title.setTextColor(INK);panel.addView(title);
@@ -41,7 +41,7 @@ public final class WebActivity extends MainActivity {
     boolean initialConversation;
     final Runnable writingTick=new Runnable(){public void run(){if(destroyed||!ReachOut.foreground)return;if(!busy&&!fileBusy)worker.execute(()->{try{LettersEngine.refresh(WebActivity.this);JSONObject plan=ScheduleEngine.run(WebActivity.this);if(plan!=null)runOnUiThread(()->{if(!destroyed)event("scheduleChanged","");});else{JSONObject row=WritingEngine.run(WebActivity.this);if(row!=null)runOnUiThread(()->{if(!destroyed)event("writingsChanged","");});}}catch(Exception e){android.util.Log.w("EidolonWriting","Foreground task failed",e);}});reachHandler.postDelayed(this,300000);}};
     final Runnable reachTick=new Runnable(){public void run(){if(destroyed||!ReachOut.foreground)return;if(!busy&&!fileBusy)worker.execute(()->{try{JSONObject m=ReachOut.run(WebActivity.this,false);if(m!=null)runOnUiThread(()->{if(ReachOut.foreground&&!destroyed){if(!OverlayBanner.show(WebActivity.this,m))event("reach",m.toString());}else{boolean shown=OverlayBanner.show(WebActivity.this,m);ReachOut.notify(WebActivity.this,m,shown);}});}catch(Exception e){android.util.Log.w("EidolonReach","Foreground reach failed",e);}});reachHandler.postDelayed(this,ReachConfig.read(prefs).integer("frontSeconds")*1000L);}};
-    @Override protected void onResume(){super.onResume();replyResumed=true;leavingApp=false;foregroundActivity=this;ReachOut.foreground=true;ReplyTrace.record(this,"应用回到前台");UiSnapshots.maintain(this,characters);ReachPlanCheck.resume(this);reachHandler.removeCallbacks(reachTick);reachHandler.postDelayed(reachTick,ReachConfig.read(prefs).integer("frontSeconds")*1000L);reachHandler.removeCallbacks(writingTick);reachHandler.postDelayed(writingTick,15000);reachHandler.postDelayed(()->{event("overlayPermission",OverlayBanner.allowed(this)?"true":"false");event("notificationPermission",getSystemService(android.app.NotificationManager.class).areNotificationsEnabled()?"true":"false");event("writingsRefresh","");event("inboxRefresh","");},500);LauncherBadge.refresh(getApplicationContext());}
+    @Override protected void onResume(){super.onResume();if(callChrome||CallService.live()||!CallLaunch.CURRENT.id().isEmpty())setCallChrome(true);replyResumed=true;leavingApp=false;foregroundActivity=this;ReachOut.foreground=true;ReplyTrace.record(this,"应用回到前台");UiSnapshots.maintain(this,characters);ReachPlanCheck.resume(this);reachHandler.removeCallbacks(reachTick);reachHandler.postDelayed(reachTick,ReachConfig.read(prefs).integer("frontSeconds")*1000L);reachHandler.removeCallbacks(writingTick);reachHandler.postDelayed(writingTick,15000);reachHandler.postDelayed(()->{event("overlayPermission",OverlayBanner.allowed(this)?"true":"false");event("notificationPermission",getSystemService(android.app.NotificationManager.class).areNotificationsEnabled()?"true":"false");event("writingsRefresh","");event("inboxRefresh","");},500);LauncherBadge.refresh(getApplicationContext());}
     @Override protected void onPause(){replyResumed=false;leavingApp=true;if(voicePlayer!=null)voicePlayer.stop();if(foregroundActivity==this)foregroundActivity=null;ReachOut.foreground=false;ReplyTrace.record(this,"应用进入后台");reachHandler.removeCallbacks(reachTick);reachHandler.removeCallbacks(writingTick);LauncherBadge.refresh(getApplicationContext());super.onPause();}
     @Override protected void onNewIntent(android.content.Intent intent){super.onNewIntent(intent);setIntent(intent);if(intent.hasExtra("incomingCallId")){if(web!=null)web.evaluateJavascript("if(typeof callPoll==='function'){callShown=true;callPoll();}",null);intent.removeExtra("incomingCallId");}try{if(ChatEntry.requested(intent)){if(busy){ChatEntry.consume(intent);toast("请先结束当前操作，再从未读列表打开消息");}else if(openReachIntent()){event("conversationOpened","");return;}}}catch(Exception e){toast("该对话已删除");}event("inboxRefresh","");}
     boolean openReachIntent()throws Exception{if(!ChatEntry.requested(getIntent()))return false;String who=getIntent().getStringExtra("reachCharacter"),sid=getIntent().getStringExtra("reachSession");ChatEntry.consume(getIntent());for(ChatStore.Conversation c:store.conversations(who))if(c.id.equals(sid)){current=character(who);conversation=sid;return true;}throw new IOException("该对话已删除");}
@@ -53,7 +53,7 @@ public final class WebActivity extends MainActivity {
     @Override public void onCreate(Bundle state){
         ThemePrefs.beforeCreate(this);
         super.onCreate(state);
-        if(state!=null){mediaPickSession=state.getString("mediaPickSession","");mediaPickWho=state.getString("mediaPickWho","");mediaPickKind=state.getString("mediaPickKind","image");}
+        if(state!=null){callPermissionOwner=state.getString("callPermissionOwner","");mediaPickSession=state.getString("mediaPickSession","");mediaPickWho=state.getString("mediaPickWho","");mediaPickKind=state.getString("mediaPickKind","image");}
         try{gifts=new JSONArray(asset("gifts.json"));calendar=new JSONObject(asset("calendar.json"));
             if(!prefs.getBoolean("profile-migrated-v4",false)){JSONObject data=store.personal();if(data.getString("profile").isEmpty())data.put("profile",prefs.getString("profile",""));store.savePersonal(data);prefs.edit().putBoolean("profile-migrated-v4",true).commit();}
         }catch(Exception e){toast("本机资源无法加载");finish();return;}
@@ -86,7 +86,7 @@ public final class WebActivity extends MainActivity {
         FrameLayout frame=new FrameLayout(this);frame.setBackgroundColor(android.graphics.Color.WHITE);frame.addView(web);
         frame.setOnApplyWindowInsetsListener((v,insets)->{v.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;});
         setContentView(frame);
-        ThemePrefs.apply(this);
+        ThemePrefs.apply(this);if(CallService.live()||!CallLaunch.CURRENT.id().isEmpty())setCallChrome(true);
         ReachOut.schedule(this);WritingEngine.schedule(this);try{initialConversation=openReachIntent();}catch(Exception ignored){}
         // Serve the entry through the same APK-only HTTPS route as its assets.
         web.loadUrl("https://eidolon.local/ui/index.html");
@@ -103,7 +103,7 @@ public final class WebActivity extends MainActivity {
                 }
                 if(action.equals("mediaPick")||action.equals("mediaSend")||action.equals("mediaTextRetry")){reply(id,dispatch(action,args),null);return;}
                 if(action.equals("visiblePage")){visiblePage=args.optString("page","roster");reply(id,new JSONObject(),null);return;}
-                if(action.equals("callStatus")||action.equals("callControl")||action.equals("callHistory")||action.equals("callAnswer")||action.equals("callReject")){reply(id,dispatch(action,args),null);return;}
+                if(action.equals("callUiChrome")||action.equals("callCancelLaunch")||action.equals("callStatus")||action.equals("callControl")||action.equals("callHistory")||action.equals("callAnswer")||action.equals("callReject")){reply(id,dispatch(action,args),null);return;}
                 if(VoicePlayer.controlAction(action)){reply(id,dispatch(action,args),null);return;}
                 if(fileBusy&&!Arrays.asList("snapshot","voiceStop","displaySettings","reachSignal","scheduleStatus","chatRead","chatOlder","desktopBadgeStatus","desktopBadgeSync","desktopBadgeSettings").contains(action))throw new Exception("正在处理文件，请稍候");
                 if(busy&&!(prefs.getBoolean("replyDelay.enabled",false)&&!writingManual&&Arrays.asList("open","reachOpen","sessions").contains(action))&&!Arrays.asList("snapshot","cancel","voiceStop","displaySettings","reachSignal","scheduleStatus","send","replyNow","pendingCancel","pendingRetry","pendingTest","pendingWorkTest","chatRead","chatOlder","desktopBadgeStatus","desktopBadgeSync","desktopBadgeSettings").contains(action))throw new Exception("请先停止当前回复");
@@ -260,28 +260,56 @@ public final class WebActivity extends MainActivity {
         String translated=new ModelClient().chat(url,key,ModelClient.request(model,instruction,Collections.emptyList(),japanese),ignored->{});
         String repaired=BilingualReply.withChinese(original,translated);WritingStore.repairDiary(store,who,date,original,repaired);return snapshot();
     }
-    String callWho="",callSession="",callIncomingId="";
+    boolean callChrome;
+    void setCallChrome(boolean active){callChrome=active;if(!active){ThemePrefs.apply(this);return;}int color=android.graphics.Color.rgb(16,23,39);getWindow().setStatusBarColor(color);getWindow().setNavigationBarColor(color);View decor=getWindow().getDecorView();decor.setBackgroundColor(color);decor.setSystemUiVisibility(decor.getSystemUiVisibility()&~(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR));if(android.os.Build.VERSION.SDK_INT>=30&&getWindow().getInsetsController()!=null){int mask=android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;getWindow().getInsetsController().setSystemBarsAppearance(0,mask);}View container=findViewById(android.R.id.content);if(container instanceof ViewGroup&&((ViewGroup)container).getChildCount()>0)((ViewGroup)container).getChildAt(0).setBackgroundColor(color);if(web!=null)web.setBackgroundColor(color);}
+    String callWho="",callSession="",callIncomingId="",callPermissionOwner="";
+    JSONObject callUiStatus()throws Exception{
+        JSONObject actual=CallService.snapshot(this),launch=CallLaunch.CURRENT.view();String id=launch.optString("requestId");
+        if(!id.isEmpty()&&id.equals(actual.optString("requestId")))return actual.put("showCall",true);
+        if(CallLaunch.CURRENT.pending()){CallLaunch.CURRENT.timeout(android.os.SystemClock.elapsedRealtime());return CallLaunch.CURRENT.view();}
+        if(launch.optString("state").equals("failed"))return launch;if(launch.optString("state").equals("active")&&!CallService.live()){CallLaunch.CURRENT.fail(id,"通话已停止，请检查最近记录后重试");return CallLaunch.CURRENT.view();}
+        return actual.put("showCall",CallService.live()||actual.optString("state").equals("ringing"));
+    }
+    JSONObject beginCallUi(String who,String session,String incoming,JSONObject a)throws Exception{
+        String request=a.optString("attemptId",UUID.randomUUID().toString());if(CallLaunch.CURRENT.matches(request))return callUiStatus();
+        if(CallService.active!=null||CallLaunch.CURRENT.pending())throw new IOException("已有通话或拨号，请先结束");
+        CallLaunch.CURRENT.cancel(CallLaunch.CURRENT.id());CallLaunch.CURRENT.begin(request,who,session,incoming,android.os.SystemClock.elapsedRealtime());callIncomingId=incoming;
+        try{startNativeCall(who,session);}catch(Exception e){CallLaunch.CURRENT.fail(request,e.getMessage()==null?"通话未开始，请检查设置":e.getMessage());throw e;}return callUiStatus();
+    }
+    void cancelCallUi(String request){
+        boolean owned=CallLaunch.CURRENT.matches(request);CallLaunch.CURRENT.cancel(request);if(owned)setCallChrome(false);CallService active=CallService.active;if(active!=null&&active.row!=null&&request.equals(active.row.optString("requestId")))active.end("用户退出通话页面");
+    }
+    void publishCallUi(){try{event("callChanged",callUiStatus().toString());}catch(Exception ignored){}}
+
     void startNativeCall(String who,String session)throws Exception{
-        if(CallService.live())throw new IOException("已有通话，请先挂断");character(who);if(store.hasBlockingPending(who))throw new IOException("请先处理这个角色的待回复文字，再拨打电话");
+        String request=CallLaunch.CURRENT.id();if(!CallLaunch.CURRENT.mayStart(request))throw new IOException("拨号已取消");if(CallService.active!=null)throw new IOException("上一通电话尚在结束，请稍后重拨");if(!callPermissionOwner.isEmpty()&&!callPermissionOwner.equals(request))throw new IOException("请等待上次系统权限请求结束后重试");character(who);if(store.hasBlockingPending(who))throw new IOException("请先处理这个角色的待回复文字，再拨打电话");
         CallAsrSettings.preflight(this);
         if(Vault.read(this).isEmpty()||Vault.read(this,"fish").isEmpty())throw new IOException("请先配置聊天模型和Fish语音密钥");
         JSONObject c=character(who);FishClient.request("<ja>通話</ja><zh>通话</zh>",prefs.getString("voice-"+who,c.optString("voice_id")),prefs.getString("fish-model","s2.1-pro-free"));
         JSONObject personal=store.personal();Progression.upgrade(personal);if(prefs.getBoolean("affinity",true)&&(Progression.relation(personal,who,System.currentTimeMillis()).optBoolean("cooling")||Progression.session(personal,session).optBoolean("ended")))throw new IOException("当前关系或会话暂不能继续，请先处理关系冷却或新建会话");
         ModelClient.endpoint(prefs.getString("url",""));callWho=who;callSession=session;
-        if(android.os.Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=android.content.pm.PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},9753);return;}
-        if(checkSelfPermission("android.permission.RECORD_AUDIO")!=android.content.pm.PackageManager.PERMISSION_GRANTED){requestPermissions(android.os.Build.VERSION.SDK_INT>=31?new String[]{"android.permission.RECORD_AUDIO","android.permission.BLUETOOTH_CONNECT"}:new String[]{"android.permission.RECORD_AUDIO"},9752);return;}
-        voicePlayer.stop();startForegroundService(new Intent(this,CallService.class).putExtra("character",who).putExtra("session",session).putExtra("incomingCallId",callIncomingId));
+        if(android.os.Build.VERSION.SDK_INT>=33&&checkSelfPermission("android.permission.POST_NOTIFICATIONS")!=android.content.pm.PackageManager.PERMISSION_GRANTED){callPermissionOwner=request;CallLaunch.CURRENT.permission(request);requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"},9753);return;}
+        if(checkSelfPermission("android.permission.RECORD_AUDIO")!=android.content.pm.PackageManager.PERMISSION_GRANTED){callPermissionOwner=request;CallLaunch.CURRENT.permission(request);requestPermissions(android.os.Build.VERSION.SDK_INT>=31?new String[]{"android.permission.RECORD_AUDIO","android.permission.BLUETOOTH_CONNECT"}:new String[]{"android.permission.RECORD_AUDIO"},9752);return;}
+        CallLaunch.CURRENT.connecting(request,android.os.SystemClock.elapsedRealtime());voicePlayer.stop();startForegroundService(new Intent(this,CallService.class).putExtra("character",who).putExtra("session",session).putExtra("incomingCallId",callIncomingId).putExtra("requestId",request));
     }
-    @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){super.onRequestPermissionsResult(code,permissions,results);if(code==9753){if(results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED)try{startNativeCall(callWho,callSession);}catch(Exception e){toast(e.getMessage());}else toast("需要允许系统通知，才能显示可操作的通话状态");}if(code==9752){if(results.length>0&&results[0]==android.content.pm.PackageManager.PERMISSION_GRANTED)try{startNativeCall(callWho,callSession);}catch(Exception e){toast(e.getMessage());}else toast("麦克风权限未允许，通话未开始");}}
+    @Override public void onRequestPermissionsResult(int code,String[] permissions,int[] results){
+        super.onRequestPermissionsResult(code,permissions,results);if(code!=9752&&code!=9753)return;
+        String owner=callPermissionOwner;callPermissionOwner="";if(!CallLaunch.CURRENT.mayStart(owner))return;
+        if(results.length==0||results[0]!=android.content.pm.PackageManager.PERMISSION_GRANTED){CallLaunch.CURRENT.fail(owner,code==9752?"麦克风权限未允许，通话未开始":"需要允许通知，才能显示可操作的通话状态");publishCallUi();return;}
+        try{JSONObject launch=CallLaunch.CURRENT.view();callIncomingId=launch.optString("incomingCallId");startNativeCall(launch.getString("character"),launch.getString("session"));}catch(Exception e){CallLaunch.CURRENT.fail(owner,e.getMessage()==null?"通话未开始，请检查设置":e.getMessage());}publishCallUi();
+    }
+
     Object dispatch(String action,JSONObject a)throws Exception{
         if(action.equals("reset")&&CallService.live())throw new IOException("请先挂断通话，再重置数据");
         if(Arrays.asList("replyNow","pendingCancel","pendingRetry","pendingTest","pendingWorkTest").contains(action)&&current!=null&&CallStore.busy(store,current.getString("id")))throw new IOException("本轮由电话管理，请在通话界面打断或挂断");
         if(Arrays.asList("voice","voiceLibrary").contains(action)&&CallService.live())throw new IOException("通话正在使用音频，请挂断后播放聊天语音");
         if(action.equals("callConfig"))return CallAsrSettings.config(this,a);
-        if(action.equals("callAnswer")){JSONObject incoming=CallIncoming.answer(this,store,a.getString("callId"));callIncomingId=incoming.getString("id");startNativeCall(incoming.getString("character"),incoming.getString("session"));return new JSONObject();}
+        if(action.equals("callAnswer")){JSONObject incoming=CallIncoming.answer(this,store,a.getString("callId"));return beginCallUi(incoming.getString("character"),incoming.getString("session"),incoming.getString("id"),a);}
         if(action.equals("callReject")){CallIncoming.reject(this,a.getString("callId"));return CallService.snapshot(this);}
-        if(action.equals("callStatus"))return CallService.snapshot(this);
-        if(action.equals("callStart")){callIncomingId="";if(current==null||conversation.isEmpty())throw new IOException("请先打开角色聊天");startNativeCall(current.getString("id"),conversation);return new JSONObject();}
+        if(action.equals("callUiChrome")){if(a.optBoolean("active"))setCallChrome(true);else if(CallLaunch.CURRENT.id().isEmpty()||CallLaunch.CURRENT.matches(a.optString("attemptId")))setCallChrome(false);return new JSONObject();}
+        if(action.equals("callStatus"))return callUiStatus();
+        if(action.equals("callCancelLaunch")){cancelCallUi(a.getString("attemptId"));return callUiStatus();}
+        if(action.equals("callStart")){callIncomingId="";if(current==null||conversation.isEmpty())throw new IOException("请先打开角色聊天");if(a.has("character")&&(!current.getString("id").equals(a.optString("character"))||!conversation.equals(a.optString("session"))))throw new IOException("会话已变化，请重新拨打");return beginCallUi(current.getString("id"),conversation,"",a);}
         if(action.equals("callControl")){if(!CallService.live()||!a.optString("callId").equals(CallService.active.row.optString("id")))throw new IOException("通话已变化，旧操作已忽略");CallService.command(this,a.getString("operation"));return CallService.snapshot(this);}
         if(action.equals("callHistory"))return CallStore.all(store);
         if(action.equals("voiceToggle")&&CallService.live())throw new IOException("通话期间请使用电话的打断或静音按钮");if(action.equals("voiceToggle"))return voicePlayer.toggleText(a.getString("text"));
@@ -482,7 +510,7 @@ public final class WebActivity extends MainActivity {
             runOnUiThread(()->{if(destroyed)return;if(generation==token){busy=false;client=null;ReachOut.chatBusy=waiting;}event(error?"replyFailed":"replyPending","");});
         });
     }
-    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("mediaPickSession",mediaPickSession);out.putString("mediaPickWho",mediaPickWho);out.putString("mediaPickKind",mediaPickKind);}
+    @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("callPermissionOwner",callPermissionOwner);out.putString("mediaPickSession",mediaPickSession);out.putString("mediaPickWho",mediaPickWho);out.putString("mediaPickKind",mediaPickKind);}
     @Override protected void onActivityResult(int request,int result,android.content.Intent intent){
         if(request==PICK_CHAT_MEDIA){
             if(result!=RESULT_OK||intent==null)return;if(fileBusy){toast("正在处理另一份文件，请稍后重试");return;}
@@ -505,6 +533,9 @@ public final class WebActivity extends MainActivity {
     @Override void showRoster(String query){if(web!=null)event("route","roster");}
     @Override void showChat(){if(web!=null)event("conversationOpened","");}
     @Override void showSettings(){if(web!=null)event("route","settings");}
-    @Override public void onBackPressed(){if(web!=null)evaluate("window.goBack()");else super.onBackPressed();}
-    @Override protected void onDestroy(){if(generationDebounce!=null)reachHandler.removeCallbacks(generationDebounce);/* The application-context worker retains ownership across Activity destruction. */reachHandler.removeCallbacks(reachTick);reachHandler.removeCallbacks(writingTick);if(writingManual){WritingEngine.cancel();ScheduleEngine.cancel();}ReachOut.chatBusy=false;if(mediaAnalysisClient!=null)mediaAnalysisClient.cancel();if(web!=null){web.removeJavascriptInterface("Native");web.destroy();web=null;}super.onDestroy();}
+    @Override public void onBackPressed(){
+        if(CallLaunch.CURRENT.pending()||CallService.live()){String request=CallLaunch.CURRENT.id();cancelCallUi(request);if(CallService.live())CallService.active.end("用户返回并挂断");event("callClosed","");return;}
+        if(web!=null)evaluate("window.goBack()");else super.onBackPressed();
+    }
+    @Override protected void onDestroy(){if(isFinishing()&&!isChangingConfigurations()){cancelCallUi(CallLaunch.CURRENT.id());if(CallService.live())CallService.active.end("应用页面已关闭");}if(generationDebounce!=null)reachHandler.removeCallbacks(generationDebounce);/* The application-context worker retains ownership across Activity destruction. */reachHandler.removeCallbacks(reachTick);reachHandler.removeCallbacks(writingTick);if(writingManual){WritingEngine.cancel();ScheduleEngine.cancel();}ReachOut.chatBusy=false;if(mediaAnalysisClient!=null)mediaAnalysisClient.cancel();if(web!=null){web.removeJavascriptInterface("Native");web.destroy();web=null;}super.onDestroy();}
 }

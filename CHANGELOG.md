@@ -1,9 +1,10 @@
 # 更新记录与开发文档
 
-当前可安装版本：**1.21/code76**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
+当前可安装版本：**1.22/code77**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
 
 | 版本 | 主要变化 | 完整记录 |
 | --- | --- | --- |
+| 1.22 | 全屏通话、设置迁移、权限取消隔离、真实音频状态与手动下一轮 | [RELEASE-1.22](outputs/eidolon-android/RELEASE-1.22.md) |
 | 1.21 | 双向表情包、图片预览/识别、逐角色偏好、语义缓存、统一内容块及媒体备份v17 | [RELEASE-1.21](outputs/eidolon-android/RELEASE-1.21.md) |
 | 1.20 | 电话增加百炼WebSocket流式识别、地域与独立密钥、临时字幕和取消/超时控制 | [RELEASE-1.20](outputs/eidolon-android/RELEASE-1.20.md) |
 | 1.19 | 应用内电话试用版、多轮语音、取消与路由、默认关闭的主动来电、备份v16 | [RELEASE-1.19](outputs/eidolon-android/RELEASE-1.19.md) |
