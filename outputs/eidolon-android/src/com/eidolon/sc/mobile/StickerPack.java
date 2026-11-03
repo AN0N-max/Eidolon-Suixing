@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.zip.*;
 
-/** Offline sticker package v1. No extraction paths, executable content or remote downloads. */
+/** Offline sticker package v1/v2. No extraction paths, executable content or remote downloads. */
 final class StickerPack {
     static final int MAX_ARCHIVE=32*1024*1024, MAX_TOTAL=48*1024*1024, MAX_ITEMS=400;
     static final String[] TEXT={"name","category","description","emotion","intent","tone","ocr","meme"};
@@ -43,7 +43,8 @@ final class StickerPack {
             }
             ZipEntry manifest=files.get("manifest.json");if(manifest==null)throw new IOException("没有找到manifest.json，请选择Eidolon表情包");
             JSONObject root;try(InputStream in=zip.getInputStream(manifest)){byte[] b=read(in,1024*1024);total+=b.length;root=new JSONObject(new String(b,StandardCharsets.UTF_8));}
-            if(!"eidolon-sticker-pack".equals(root.optString("format"))||!(root.get("version") instanceof Number)||root.getDouble("version")!=1)throw new IOException("不支持的表情包格式或版本");
+            if(!"eidolon-sticker-pack".equals(root.optString("format"))||!(root.get("version") instanceof Number)||(root.getDouble("version")!=1&&root.getDouble("version")!=2))throw new IOException("不支持的表情包格式或版本");
+            strings(root,"disableSeries",20,80);if(root.getInt("version")==1&&root.has("disableSeries"))throw new IOException("停用旧系列需要version 2表情包及1.24以上应用");
             string(root,"id",100,true);string(root,"name",120,true);string(root,"description",2000,false);
             StickerPack pack=new StickerPack(archive,root);if(pack.stickers.length()<1||pack.stickers.length()>MAX_ITEMS)throw new IOException("每包应有1至400张表情");
             Set<String> used=new HashSet<>(),hashes=new HashSet<>();used.add("manifest.json");
@@ -52,6 +53,7 @@ final class StickerPack {
                 ZipEntry image=files.get(file);if(image==null||!file.startsWith("images/")||!used.add(file))throw new IOException("表情图片缺失或重复引用");
                 String hash=string(s,"sha256",64,true);if(!MediaData.hash(hash)||!hashes.add(hash))throw new IOException("图片哈希无效或包内有重复图片");
                 for(String key:TEXT)string(s,key,key.equals("description")||key.equals("ocr")||key.equals("meme")?1500:120,key.equals("name"));
+                string(s,"series",80,false);if(root.getInt("version")==2)string(s,"series",80,true);if(MediaData.contains(root.optJSONArray("disableSeries"),s.optString("series")))throw new IOException("包内图片属于本包声明停用的系列");
                 strings(s,"characters",60,100);for(String key:new String[]{"enabled","favorite"})if(s.has(key)&&!(s.get(key) instanceof Boolean))throw new IOException("表情开关无效");
                 byte[] data;try(InputStream in=zip.getInputStream(image)){data=read(in,MediaStoreLimits.MAX_INPUT);}
                 total+=data.length;if(total>MAX_TOTAL)throw new IOException("表情包解压内容超过48MB");if(!MediaData.hash(data).equals(hash))throw new IOException("图片校验失败："+s.getString("name"));
@@ -61,7 +63,7 @@ final class StickerPack {
             for(int i=0;i<pack.profiles.length();i++){
                 JSONObject row=pack.profiles.getJSONObject(i);String who=string(row,"character",100,true);if(!roles.add(who))throw new IOException("角色偏好重复");JSONObject p=row.getJSONObject("profile");
                 if(!Arrays.asList("off","low","normal","high").contains(string(p,"frequency",10,true)))throw new IOException("表情频率无效");
-                for(String k:new String[]{"preferred","blocked","emotions"})strings(p,k,20,80);string(p,"style",1000,false);
+                for(String k:new String[]{"preferred","blocked","emotions","preferredSeries","blockedSeries"})strings(p,k,20,80);if(root.getInt("version")==1&&(p.has("preferredSeries")||p.has("blockedSeries")))throw new IOException("系列偏好需要version 2表情包及1.24以上应用");string(p,"style",1000,false);
             }
             return pack;
         }
@@ -75,10 +77,15 @@ final class StickerPack {
         try(ZipFile zip=new ZipFile(archive);InputStream in=zip.getInputStream(zip.getEntry(s.getString("file")))){byte[] data=read(in,MediaStoreLimits.MAX_INPUT);if(!MediaData.hash(data).equals(s.getString("sha256")))throw new IOException("图片内容已变化，请重新选择包");return data;}
     }
     static JSONObject merge(JSONObject existing,JSONObject incoming,boolean update)throws Exception{
-        JSONObject row=new JSONObject(existing.toString());if(!update)return row;
+        JSONObject row=new JSONObject(existing.toString());if(incoming.has("series")&&(update||!row.has("series")))row.put("series",incoming.getString("series"));if(!update)return row;
         // Updating semantics never resets user permissions, favorites, enablement or usage history.
         for(String key:TEXT)row.put(key,incoming.optString(key));return row;
     }
+    static JSONObject profileSupplement(JSONObject existing,JSONObject incoming)throws Exception{
+        if(existing==null)return new JSONObject(incoming.toString());JSONObject row=new JSONObject(existing.toString());
+        for(String key:new String[]{"preferredSeries","blockedSeries"})if(!row.has(key)&&incoming.has(key))row.put(key,new JSONArray(incoming.getJSONArray(key).toString()));return row;
+    }
+    static boolean shouldDisable(JSONObject row,JSONArray excluded){return row.optBoolean("enabled",true)&&MediaData.contains(excluded,MediaData.series(row));}
     /** Kept Android-independent so the production archive parser runs in JVM regression tests. */
     private static final class MediaStoreLimits {static final int MAX_INPUT=12*1024*1024;}
 }

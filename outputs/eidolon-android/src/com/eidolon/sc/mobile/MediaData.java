@@ -40,13 +40,18 @@ final class MediaData {
         StringBuilder s=new StringBuilder(caption.trim());for(int i=0;i<blocks.length();i++){JSONObject b=blocks.getJSONObject(i);if(b.getString("type").equals("text"))continue;if(s.length()>0)s.append('\n');s.append(b.getString("type").equals("sticker")?"[表情包："+cut(b.optString("name","自定义"),60)+"]":"[图片]");}return s.toString();
     }
     static JSONObject snapshot(JSONObject e)throws Exception {
-        JSONObject b=new JSONObject().put("type","sticker").put("asset",e.getString("asset")).put("stickerId",e.getString("id"));
+        JSONObject b=new JSONObject().put("type","sticker").put("asset",e.getString("asset")).put("stickerId",e.getString("id")).put("series",series(e));
         for(String k:new String[]{"name","category","description","emotion","intent","tone","ocr","meme"})b.put(k,cut(e.optString(k),k.equals("description")||k.equals("ocr")||k.equals("meme")?1500:120));return b;
+    }
+    static String series(JSONObject row){
+        if(row.has("series"))return cut(row.optString("series"),80);
+        String name=row.optString("name");int at=name.indexOf('·');if(at<0)return "";String prefix=name.substring(0,at);
+        return Arrays.asList("吉伊卡哇","内裤兔","んぽちゃむ","Esther Bunny","兔丸","猫与熊","兔子100%","大耳狗","卡娜赫拉","正能量企鹅").contains(prefix)?prefix:"";
     }
     static boolean allowed(JSONObject sticker,JSONObject profile,String who) {
         if(!sticker.optBoolean("enabled",true)||sticker.optBoolean("deleted"))return false;
         JSONArray allowed=sticker.optJSONArray("characters");if(allowed!=null&&allowed.length()>0&&!contains(allowed,who))return false;
-        return !contains(profile.optJSONArray("blocked"),sticker.optString("category"));
+        return !contains(profile.optJSONArray("blocked"),sticker.optString("category"))&&!contains(profile.optJSONArray("blockedSeries"),series(sticker));
     }
     static boolean contains(JSONArray a,String value){if(a!=null)for(int i=0;i<a.length();i++)if(value.equals(a.optString(i)))return true;return false;}
     static JSONObject observation(String raw)throws Exception {

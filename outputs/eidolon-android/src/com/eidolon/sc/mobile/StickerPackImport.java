@@ -24,7 +24,8 @@ final class StickerPackImport {
                 if(o.outWidth<1||o.outHeight<1||(long)o.outWidth*o.outHeight>80000000L||!Arrays.asList("image/png","image/jpeg","image/webp","image/gif").contains(o.outMimeType))throw new IOException("图片损坏、格式不支持或像素过大："+s.getString("name"));
                 JSONObject row=new JSONObject(s.toString());row.remove("sha256");row.remove("file");row.put("preview","/sticker-pack/"+token+"/"+i+"/thumb.png");preview.put(row);
             }
-            ready=true;return new JSONObject().put("token",token).put("name",p.manifest.getString("name")).put("description",p.manifest.optString("description")).put("items",preview).put("profiles",p.profiles.length());
+            int disabling=0;try(ChatStore db=new ChatStore(c);Cursor rows=db.getReadableDatabase().rawQuery("SELECT body FROM stickers",null)){while(rows.moveToNext())if(StickerPack.shouldDisable(new JSONObject(rows.getString(0)),p.manifest.optJSONArray("disableSeries")))disabling++;}
+            ready=true;return new JSONObject().put("token",token).put("name",p.manifest.getString("name")).put("description",p.manifest.optString("description")).put("items",preview).put("profiles",p.profiles.length()).put("disableSeries",p.manifest.optJSONArray("disableSeries")==null?new JSONArray():p.manifest.getJSONArray("disableSeries")).put("disableCount",disabling);
         }finally{if(!ready)target.delete();}
     }
     static InputStream thumbnail(Context c,String token,int index)throws Exception{
@@ -40,27 +41,28 @@ final class StickerPackImport {
     }
     static JSONObject commit(Context c,ChatStore s,JSONObject args)throws Exception{
         File archive=file(c,args.getString("token"));StickerPack pack=StickerPack.inspect(archive);Set<String> known=MediaActions.known(c);pack.known(known);
-        SQLiteDatabase db=s.getWritableDatabase();Set<String> created=new HashSet<>();int added=0,skipped=0,updated=0,profiles=0;boolean success=false;
+        SQLiteDatabase db=s.getWritableDatabase();Set<String> created=new HashSet<>();int added=0,skipped=0,updated=0,profiles=0,disabled=0;boolean success=false;
         db.beginTransaction();try{
             for(int i=0;i<pack.stickers.length();i++){
                 JSONObject spec=pack.stickers.getJSONObject(i),image=MediaStore.importImage(c,s,pack.image(i));String hash=image.getString("asset"),id="s-"+hash;
                 // Added assets are tracked by importImage before their first registration below.
                 if(image.optBoolean("newAsset"))created.add(hash);
                 JSONObject old=null;try{old=MediaStore.sticker(s,id);}catch(IOException missing){}
-                if(old!=null){if(args.optBoolean("updateExisting")){MediaStore.saveSticker(s,StickerPack.merge(old,spec,true));updated++;}else skipped++;continue;}
+                if(old!=null){JSONObject merged=StickerPack.merge(old,spec,args.optBoolean("updateExisting"));MediaStore.saveSticker(s,merged);if(args.optBoolean("updateExisting"))updated++;else skipped++;continue;}
                 JSONObject row=MediaStore.addSticker(s,hash);for(String k:StickerPack.TEXT)row.put(k,spec.optString(k));
                 row.put("enabled",spec.optBoolean("enabled",true)).put("favorite",spec.optBoolean("favorite",false)).put("characters",spec.optJSONArray("characters")==null?new JSONArray():spec.getJSONArray("characters"));
-                row.put("packId",pack.manifest.getString("id"));MediaStore.saveSticker(s,row);added++;
+                if(spec.has("series"))row.put("series",spec.getString("series"));row.put("packId",pack.manifest.getString("id"));MediaStore.saveSticker(s,row);added++;
             }
             if(args.optBoolean("profiles",true))for(int i=0;i<pack.profiles.length();i++){
                 JSONObject p=pack.profiles.getJSONObject(i);String who=p.getString("character");boolean exists;try(Cursor r=db.rawQuery("SELECT 1 FROM media_profiles WHERE character=?",new String[]{who})){exists=r.moveToFirst();}
-                if(!exists){MediaStore.profile(s,who,p.getJSONObject("profile"));profiles++;}
+                if(!exists){MediaStore.profile(s,who,p.getJSONObject("profile"));profiles++;}else{JSONObject old=MediaStore.profile(s,who),merged=StickerPack.profileSupplement(old,p.getJSONObject("profile"));if(!old.toString().equals(merged.toString())){MediaStore.profile(s,who,merged);profiles++;}}
             }
+            if(args.optBoolean("disableExcluded")){List<JSONObject> disabling=new ArrayList<>();try(Cursor rows=db.rawQuery("SELECT body FROM stickers",null)){while(rows.moveToNext()){JSONObject row=new JSONObject(rows.getString(0));if(StickerPack.shouldDisable(row,pack.manifest.optJSONArray("disableSeries")))disabling.add(row);}}for(JSONObject row:disabling){row.put("enabled",false);MediaStore.saveSticker(s,row);disabled++;}}
             db.setTransactionSuccessful();success=true;
         }finally{
             db.endTransaction();if(!success){db.beginTransaction();try{for(String hash:created)if(!MediaStore.exists(s,hash)){MediaStore.file(c,hash,false).delete();MediaStore.file(c,hash,true).delete();}db.setTransactionSuccessful();}finally{db.endTransaction();}}
         }
-        archive.delete();return new JSONObject().put("added",added).put("skipped",skipped).put("updated",updated).put("profiles",profiles);
+        archive.delete();return new JSONObject().put("added",added).put("skipped",skipped).put("updated",updated).put("profiles",profiles).put("disabled",disabled);
     }
     static void cancel(Context c,String token)throws Exception{file(c,token).delete();}
     private StickerPackImport(){}

@@ -17,7 +17,7 @@ public final class StickerPackTests {
     static void reject(JSONObject root,String name)throws Exception{reject(root,Collections.emptyMap(),name);}
     public static void main(String[] args)throws Exception{
         File valid=zip(root(),Collections.emptyMap());try{StickerPack p=StickerPack.inspect(valid);p.known(Collections.singleton("mano"));check(p.stickers.length()==1&&Arrays.equals(p.image(0),IMAGE),"valid archive verifies and returns exact image bytes");boolean bad=false;try{p.image(-1);}catch(Exception expected){bad=true;}check(bad,"preview index is bounded");bad=false;try{p.known(Collections.singleton("hiori"));}catch(Exception expected){bad=true;}check(bad,"unknown role permissions are rejected before import");}finally{valid.delete();}
-        reject(root().put("version",2),"unsupported schema version rejected");reject(root().put("format","other"),"foreign ZIP manifest rejected");reject(root().put("name",""),"blank package name rejected");
+        reject(root().put("version",3),"unsupported schema version rejected");reject(root().put("format","other"),"foreign ZIP manifest rejected");reject(root().put("name",""),"blank package name rejected");
         JSONObject d=root();d.getJSONArray("stickers").getJSONObject(0).put("file","../outside.png");reject(d,"path traversal rejected");
         reject(root(),Collections.singletonMap("images/../outside.png",IMAGE),"unsafe unreferenced ZIP path rejected");
         reject(root(),Collections.singletonMap("extra.txt",new byte[]{1}),"undeclared content rejected");
@@ -31,10 +31,18 @@ public final class StickerPackTests {
         d=root();d.getJSONArray("stickers").getJSONObject(0).put("characters",new JSONArray().put("mano").put("mano"));reject(d,"duplicate role permission rejected");
         reject(root(),Collections.singletonMap("images/test.png",new byte[12*1024*1024+1]),"expanded image size limit enforced while reading");
         File huge=File.createTempFile("eidolon-size-test-",".zip");try{try(RandomAccessFile f=new RandomAccessFile(huge,"rw")){f.setLength(StickerPack.MAX_ARCHIVE+1L);}boolean fail=false;try{StickerPack.inspect(huge);}catch(Exception expected){fail=true;}check(fail,"archive size bound checked before ZIP parsing");}finally{huge.delete();}
+        JSONObject v2=root().put("version",2).put("disableSeries",new JSONArray().put("旧系列"));v2.getJSONArray("stickers").getJSONObject(0).put("series","大耳狗");v2.getJSONArray("profiles").getJSONObject(0).getJSONObject("profile").put("preferredSeries",new JSONArray().put("大耳狗")).put("blockedSeries",new JSONArray().put("旧系列"));
+        File seriesPack=zip(v2,Collections.emptyMap());try{StickerPack p=StickerPack.inspect(seriesPack);check(p.manifest.getInt("version")==2&&p.stickers.getJSONObject(0).getString("series").equals("大耳狗"),"v2 retains explicit series preferences and excluded-series metadata");}finally{seriesPack.delete();}
+        d=new JSONObject(v2.toString());d.getJSONArray("stickers").getJSONObject(0).remove("series");reject(d,"v2 requires explicit nonempty series");
+        d=new JSONObject(v2.toString());d.getJSONArray("stickers").getJSONObject(0).put("series","旧系列");reject(d,"included and excluded series cannot overlap");
+        d=new JSONObject(v2.toString());d.put("disableSeries",new JSONArray().put("旧系列").put("旧系列"));reject(d,"duplicate excluded series rejected");
+        d=new JSONObject(v2.toString());d.getJSONArray("profiles").getJSONObject(0).getJSONObject("profile").put("preferredSeries",new JSONArray().put(7));reject(d,"non-string series preference rejected");
+        d=new JSONObject(v2.toString()).put("version",1);reject(d,"v1 cannot silently ignore v2 disable-series instructions");
+        d=root();d.getJSONArray("profiles").getJSONObject(0).getJSONObject("profile").put("preferredSeries",new JSONArray().put("大耳狗"));reject(d,"v1 cannot silently ignore v2 preferred series");
         JSONObject old=new JSONObject().put("id","s-existing").put("name","旧名").put("description","旧语义").put("enabled",false).put("favorite",true).put("characters",new JSONArray().put("mano")).put("uses",123).put("lastUsed",456);
         JSONObject incoming=new JSONObject().put("name","新名").put("description","新语义").put("enabled",true).put("characters",new JSONArray()).put("uses",0);
         check(StickerPack.merge(old,incoming,false).toString().equals(old.toString()),"skip duplicate preserves all existing fields");JSONObject merged=StickerPack.merge(old,incoming,true);check(merged.getString("name").equals("新名")&&merged.getString("description").equals("新语义"),"explicit update replaces semantics");check(!merged.getBoolean("enabled")&&merged.getBoolean("favorite")&&merged.getInt("uses")==123&&merged.getInt("lastUsed")==456&&merged.getJSONArray("characters").getString(0).equals("mano"),"semantic update preserves permission favorite enablement and statistics");check(old.getString("name").equals("旧名"),"merge does not mutate source row");
-        if(args.length>0){StickerPack p=StickerPack.inspect(new File(args[0]));check(p.stickers.length()==144&&p.profiles.length()==29,"delivered curated package passes production parser with all 144 images and 29 profiles");}
+        if(args.length>0){StickerPack p=StickerPack.inspect(new File(args[0]));check(p.stickers.length()==(args.length>1?Integer.parseInt(args[1]):144)&&p.profiles.length()==29,"delivered curated package passes production parser with all expected images and 29 profiles");}
         System.out.println("Sticker package checks: "+checks);
     }
 }

@@ -5,7 +5,7 @@ from pathlib import Path
 def build(folder,output):
     folder=Path(folder).resolve();output=Path(output).resolve()
     manifest=json.loads((folder/'manifest.json').read_text(encoding='utf-8-sig'))
-    if manifest.get('format')!='eidolon-sticker-pack' or manifest.get('version')!=1:raise ValueError('Expected eidolon-sticker-pack version 1')
+    if manifest.get('format')!='eidolon-sticker-pack' or manifest.get('version') not in (1,2):raise ValueError('Expected eidolon-sticker-pack version 1 or 2')
     rows=manifest.get('stickers',[])
     if not 1<=len(rows)<=400:raise ValueError('Expected 1..400 stickers')
     files={};hashes=set();total=0
