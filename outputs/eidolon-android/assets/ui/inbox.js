@@ -21,7 +21,7 @@ async function refreshInbox(){
  if(page==='desktopBadge')refreshDesktopBadge();writingValidateReader();
 }
 async function markVisibleRead(){
- if(callShown||readPending||page!=='chat'||document.hidden||!document.hasFocus()||modal.open)return;
+ if(mediaObscuresChat()||callShown||readPending||page!=='chat'||document.hidden||!document.hasFocus()||modal.open)return;
  const list=document.querySelector('#messages');if(!list)return;const viewport=list.getBoundingClientRect(),session=state.session,ids=[];
  for(const n of list.querySelectorAll('[data-message-id]')){const id=Number(n.dataset.messageId),key=session+'/'+id,rect=n.getBoundingClientRect();if(!seenMessages.has(key)&&Math.min(rect.bottom,viewport.bottom)-Math.max(rect.top,viewport.top)>=Math.min(24,rect.height))ids.push(id);}
  if(!ids.length)return;readPending=true;

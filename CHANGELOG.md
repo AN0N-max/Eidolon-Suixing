@@ -1,9 +1,10 @@
 # 更新记录与开发文档
 
-当前可安装版本：**1.24/code79**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
+当前可安装版本：**1.25/code80**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
 
 | 版本 | 主要变化 | 完整记录 |
 | --- | --- | --- |
+| 1.25 | 聊天底部表情网格、全屏图片预览、资源/角色/视觉配置归入总设置 | [RELEASE-1.25](outputs/eidolon-android/RELEASE-1.25.md) |
 | 1.24 | 逐角色主用/次选/禁用系列、按话题排序、v2包与保留历史的旧系列停用 | [RELEASE-1.24](outputs/eidolon-android/RELEASE-1.24.md) |
 | 1.23 | 表情ZIP整包预览、语义/角色偏好合并、同图去重及保留旧资料 | [RELEASE-1.23](outputs/eidolon-android/RELEASE-1.23.md) |
 | 1.22 | 全屏通话、设置迁移、权限取消隔离、真实音频状态与手动下一轮 | [RELEASE-1.22](outputs/eidolon-android/RELEASE-1.22.md) |
