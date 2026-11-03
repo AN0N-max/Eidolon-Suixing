@@ -21,6 +21,20 @@ public class ScheduleGenerationTests {
         check(result.getJSONArray("slots").length()==3&&requests.size()==1,"complete schedule succeeds in one request despite separate reasoning delta");
         check(requests.get(0).getInt("max_tokens")==4096,"schedule starts with 4096 rather than restrictive 1500 token budget");
         check(!requests.get(0).has("enable_thinking")&&!requests.get(0).has("reasoning_effort"),"generic compatible APIs receive no vendor-specific thinking parameters");
+        check(requests.get(0).getJSONArray("messages").getJSONObject(0).getString("content").contains("午夜入睡写 00:00"),"every attempt specifies clock format and unambiguous midnight");
+        JSONObject variant=ScheduleTests.plan().put("wake","7:00").put("sleep","24:00");
+        variant.getJSONArray("slots").getJSONObject(0).put("start","９：００").put("end","10:00:00");
+        variant.getJSONArray("slots").getJSONObject(2).put("end","24:00:00");
+        callsForVariant(variant,facts);
+        for(String invalid:new String[]{"25:00","07:60","07:00:30","7:0","明早07:00","2026-11-03T07:00","07:00 PM","NaN"}){
+            int[] invalidCalls={0};
+            try{ScheduleGeneration.generate("m","rules",facts,r->{invalidCalls[0]++;return ScheduleTests.plan().put("wake",invalid).toString();},()->{});throw new AssertionError("invalid clock accepted: "+invalid);}
+            catch(Exception expected){check(expected.getMessage().contains("起床")&&invalidCalls[0]==1,"rejects ambiguous or invalid wake without a paid retry: "+invalid);}
+        }
+        JSONObject invalidStart=ScheduleTests.plan();invalidStart.getJSONArray("slots").getJSONObject(2).put("start","24:00");
+        try{ScheduleData.normalize(invalidStart);throw new AssertionError("24:00 start accepted");}catch(Exception expected){check(expected.getMessage().contains("第3段开始"),"time errors identify the exact slot and boundary");}
+        JSONObject bath=ScheduleTests.plan().put("bath",new JSONObject().put("at","２１：３０：００").put("minutes",30).put("kind","tub"));
+        check(ScheduleData.normalize(bath).getJSONObject("bath").getString("at").equals("21:30"),"bath times use the same canonical parser");
         requests.clear();
         JSONObject recovered=ScheduleGeneration.generate("test-model","保留作息和年龄要求",facts,r->{requests.add(r);return read(requests.size()==1?"{\"wake\":":plan,requests.size()==1?"length":"stop");},()->{});
         check(recovered.getString("wake").equals("07:00")&&requests.size()==2,"provider truncation recovers once with a complete fresh schedule");
@@ -42,5 +56,17 @@ public class ScheduleGenerationTests {
         check(calls[0]==0,"stopped task opens no connection");
         stopped[0]=false;rejects(()->ScheduleGeneration.generate("m","rules",facts,r->{stopped[0]=true;return plan;},()->{if(stopped[0])throw new IOException("已停止");}),"cancelled successful response cannot become a saved plan");
         System.out.println("Passed "+count+" schedule generation checks. Fake responses only; no API or Android runtime.");
+    }
+    static void callsForVariant(JSONObject variant,JSONObject facts)throws Exception{
+        int[] calls={0};JSONObject value=ScheduleGeneration.generate("m","rules",facts,r->{calls[0]++;return read(variant.toString(),"stop");},()->{});
+        check(calls[0]==1&&value.getString("wake").equals("07:00")&&value.getString("sleep").equals("00:00"),"unpadded wake and midnight bedtime recover locally in one request");
+        check(value.getJSONArray("slots").getJSONObject(0).getString("start").equals("09:00")&&value.getJSONArray("slots").getJSONObject(0).getString("end").equals("10:00"),"full-width clocks and zero seconds save as canonical HH:mm");
+        check(value.getJSONArray("slots").getJSONObject(2).getString("end").equals("24:00"),"midnight slot end preserves day boundary");
+        check(ScheduleData.normalize(value).toString().equals(value.toString()),"clock normalization is stable on repeated save and backup validation");
+        check(variant.getString("sleep").equals("24:00"),"normalization does not mutate source records");
+        JSONObject row=new JSONObject().put("character","test").put("date","2026-11-03").put("plan",variant);
+        rejects(()->ScheduleData.validateEntry(row,Collections.singleton("test")),"raw noncanonical clocks cannot bypass normalization through backup restore");
+        ScheduleData.validateEntry(row.put("plan",value),Collections.singleton("test"));
+        check(true,"normalized model clocks remain valid v17 backup rows");
     }
 }

@@ -1,5 +1,13 @@
 # Android安装包
 
+[1.25.1 原签名升级APK](Eidolon-1.25.1-original-upgrade.apk)，code81，SQLite/加密备份17。覆盖安装保留现有数据，无需重新导入表情。本补丁修复行程时间格式兼容和具体失败提示；已有失败需安装后手动重新安排。
+
+SHA256：9e0b9b0989bc4f7e9256b99dbeae5dbe8b8bac0c948d99380e6f013a88c9d85b
+
+[完整变更](../outputs/eidolon-android/RELEASE-1.25.1.md) · [功能说明](../docs/SCHEDULE-FIX-1.25.1.md) · [验证范围](../docs/QA-1.25.1.md)
+
+## 历史安装包说明
+
 [1.15 原签名升级APK](Eidolon-1.15-original-upgrade.apk)，code69。保持包名/原升级签名，覆盖安装不要先卸载；建议先做加密备份。本版SQLite/备份v14，旧备份可导入。
 
 SHA256：796942DBA5AB637161AE8563A1DFF86D7E9379D5F349AF1E5765B2F29F59A7AE

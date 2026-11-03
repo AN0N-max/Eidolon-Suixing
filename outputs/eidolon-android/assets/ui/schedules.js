@@ -24,7 +24,7 @@ function schedulePage(){
   details.append(el('p','muted',data.date+' · '+data.timeZone));if(data.showingPrevious)details.append(el('p','notice','03:00 前继续显示上一日安排，03:00 后切换到当天行程。'));
   if(data.habit||data.bathHabit){const habits=el('details','sleep-habit');habits.append(el('summary','','她的作息习惯'));if(data.habit)habits.append(el('p','muted',data.habit));if(data.bathHabit)habits.append(el('p','muted',data.bathHabit));details.append(habits);}
   if(!data.enabled)details.append(el('p','notice','行程尚未开启。开启后，她会按自己的安排和作息聊天。'));
-  else details.append(el('div','schedule-current',data.text));
+  else details.append(el('div','schedule-current',!data.plan&&data.error?'这一天的行程生成失败':data.text));
   if(data.restEnabled&&data.sleepWindow){const night=data.sleepWindow;details.append(el('p','schedule-rest','本夜预计入睡 '+night.startText+' · 起床 '+night.endText),el('p','muted',night.estimated?'昨日日程缺失，本夜暂按这名角色已有日程估计。':'本夜作息来源：'+night.sourceDate+' 的日程。'));}
   if(data.plan){
    if(data.restEnabled)details.append(el('p','schedule-rest',(data.showingPrevious?'上一日安排：起床 ':'今日日程：起床 ')+data.plan.wake+' · 入睡 '+data.plan.sleep+(data.plan.sleep<'12:00'?'（次日）':'')));
@@ -33,10 +33,11 @@ function schedulePage(){
    if(data.plan.twists?.length)details.append(el('p','notice',(data.showingPrevious?'上一日的小变化：':'今天的小变化：')+data.plan.twists.join('；')));
    details.append(el('p','notice',data.showingPrevious?'这是上一日的大致安排，保留显示至03:00。':'这是她今天的大致安排，可能临时变化。没有安排的时间可以自由活动。'));
   }else{
-   details.append(el('p','muted',data.error?'这一天暂时没排好：'+data.error:data.showingPrevious?'上一日没有已保存的行程，03:00 后切换新一天。':'今天还没有生成行程。'));
+   details.append(el('p',data.error?'danger':'muted',data.error?'失败原因：'+data.error:data.showingPrevious?'上一日没有已保存的行程，03:00 后切换新一天。':'今天还没有生成行程。'));
+   if(data.error)details.append(el('p','notice','本次失败已记录，当天不会自动重复请求。重新安排会再次调用模型。'));
    const generate=btn(data.error?'重新安排行程':'生成今天行程',()=>scheduleCompose(data.character),'pill primary wide');generate.disabled=!data.enabled||!!data.showingPrevious;details.append(generate);
   }
- }).catch(e=>{if(page==='schedule'&&epoch===schedulePageEpoch&&details.isConnected)details.replaceChildren(el('p','danger',e.message));});
+ }).catch(e=>{if(page==='schedule'&&epoch===schedulePageEpoch&&details.isConnected)details.replaceChildren(el('p','danger','读取行程失败：'+e.message),btn('重新读取',()=>render(),'pill wide'));});
 }
 function scheduleCompose(who){
  const c=state.characters.find(c=>c.id===who);modal.replaceChildren(el('h2','','请'+c.name+'安排今天'),el('p','notice','会调用后台模型，未单独配置时使用聊天模型。仅在输出被长度上限截断时自动扩大额度重试一次，可能增加用量。今天成功生成后会保存在本机，不反复重写。'));
