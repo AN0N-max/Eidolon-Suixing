@@ -48,7 +48,7 @@ public final class WebActivity extends MainActivity {
 
     JSONArray gifts;
     JSONObject calendar;
-    static final int IMPORT_STORIES=81, PICK_PRODUCER_AVATAR=82, PICK_CHAT_MEDIA=83;
+    static final int IMPORT_STORIES=81, PICK_PRODUCER_AVATAR=82, PICK_CHAT_MEDIA=83, PICK_STICKER_PACK=84;
     String mediaPickSession="",mediaPickWho="",mediaPickKind="image";volatile ModelClient mediaAnalysisClient;
     @Override public void onCreate(Bundle state){
         ThemePrefs.beforeCreate(this);
@@ -74,6 +74,10 @@ public final class WebActivity extends MainActivity {
                     String mime=p.endsWith(".html")?"text/html":p.endsWith(".js")?"application/javascript":p.endsWith(".css")?"text/css":p.endsWith(".jpg")?"image/jpeg":p.endsWith(".webp")?"image/webp":p.endsWith(".png")?"image/png":null;
                     if(mime==null)throw new IOException();
                     Map<String,String> headers=new HashMap<>();headers.put("Content-Security-Policy","default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'");headers.put("X-Content-Type-Options","nosniff");
+                    if(p.startsWith("/sticker-pack/")){
+                        java.util.regex.Matcher m=java.util.regex.Pattern.compile("/sticker-pack/([a-f0-9-]{36})/([0-9]{1,3})/thumb\\.png").matcher(p);if(!m.matches())throw new IOException("Invalid package preview");
+                        headers.put("Cache-Control","no-store");return new WebResourceResponse("image/png",null,200,"OK",headers,StickerPackImport.thumbnail(WebActivity.this,m.group(1),Integer.parseInt(m.group(2))));
+                    }
                     if(p.startsWith("/media/")){
                         java.util.regex.Matcher match=java.util.regex.Pattern.compile("/media/([a-f0-9]{64})/(image|thumb)\\.(png|jpg|webp)").matcher(p);if(!match.matches())throw new IOException("Invalid media route");String id=match.group(1);boolean thumb=match.group(2).equals("thumb");try(ChatStore mediaDb=new ChatStore(WebActivity.this)){JSONObject metadata=MediaStore.asset(mediaDb,id);boolean actualThumb=thumb&&MediaStore.file(WebActivity.this,id,true).isFile();headers.put("Cache-Control","private, max-age=86400");return new WebResourceResponse(actualThumb?"image/webp":metadata.getString("mime"),null,200,"OK",headers,MediaStore.open(WebActivity.this,mediaDb,id,actualThumb));}
                     }
@@ -96,12 +100,16 @@ public final class WebActivity extends MainActivity {
         @JavascriptInterface public void post(String message){
             if(message==null||message.length()>100000)return;
             runOnUiThread(()->{if(destroyed)return;int id=0;try{JSONObject q=new JSONObject(message);id=q.getInt("id");String action=q.getString("action");JSONObject args=q.optJSONObject("args");if(args==null)args=new JSONObject();
+                if(action.equals("stickerPackCommit")||action.equals("stickerPackCancel")){
+                    if(fileBusy)throw new IOException("正在处理文件，请稍候");fileBusy=true;final int rid=id;final JSONObject packArgs=args;final String packAction=action;
+                    worker.execute(()->{try(ChatStore db=new ChatStore(getApplicationContext())){Object result;if(packAction.equals("stickerPackCommit"))result=StickerPackImport.commit(getApplicationContext(),db,packArgs);else{StickerPackImport.cancel(getApplicationContext(),packArgs.getString("token"));result=new JSONObject();}runOnUiThread(()->{fileBusy=false;if(!destroyed)reply(rid,result,null);});}catch(OutOfMemoryError e){runOnUiThread(()->{fileBusy=false;if(!destroyed)reply(rid,null,"图片占用内存过大，请选择较小的表情包");});}catch(Exception e){runOnUiThread(()->{fileBusy=false;if(!destroyed)reply(rid,null,e.getMessage()==null?"表情包导入未完成，请重新选择文件":e.getMessage());});}});return;
+                }
                 if(Arrays.asList("mediaLibrary","mediaUpdate","mediaLibraryAdd","mediaProfile","mediaSettings","mediaAnalyze","mediaDraft","mediaCleanup").contains(action)){
                     if(fileBusy&&action.equals("mediaCleanup"))throw new IOException("请等待图片导入完成后清理");
                     if(action.equals("mediaAnalyze")&&mediaAnalysisClient!=null)throw new IOException("正在分析图片，请勿重复提交");final int requestId=id;final JSONObject mediaArgs=args;final ModelClient visualClient=new ModelClient();if(action.equals("mediaAnalyze"))mediaAnalysisClient=visualClient;
                     worker.execute(()->{try(ChatStore mediaDb=new ChatStore(getApplicationContext())){Object result=MediaActions.run(getApplicationContext(),mediaDb,action,mediaArgs,visualClient);runOnUiThread(()->{if(!destroyed)reply(requestId,result,null);});}catch(Exception e){runOnUiThread(()->{if(!destroyed)reply(requestId,null,e.getMessage()==null?"媒体操作未完成，请重试":e.getMessage());});}finally{if(mediaAnalysisClient==visualClient)mediaAnalysisClient=null;}});return;
                 }
-                if(action.equals("mediaPick")||action.equals("mediaSend")||action.equals("mediaTextRetry")){reply(id,dispatch(action,args),null);return;}
+                if(action.equals("stickerPackChoose")||action.equals("mediaPick")||action.equals("mediaSend")||action.equals("mediaTextRetry")){reply(id,dispatch(action,args),null);return;}
                 if(action.equals("visiblePage")){visiblePage=args.optString("page","roster");reply(id,new JSONObject(),null);return;}
                 if(action.equals("callUiChrome")||action.equals("callCancelLaunch")||action.equals("callStatus")||action.equals("callControl")||action.equals("callHistory")||action.equals("callAnswer")||action.equals("callReject")){reply(id,dispatch(action,args),null);return;}
                 if(VoicePlayer.controlAction(action)){reply(id,dispatch(action,args),null);return;}
@@ -422,6 +430,9 @@ public final class WebActivity extends MainActivity {
 
         if(action.equals("exit")){finish();return new JSONObject();}
         if(action.equals("open")){voicePlayer.stop();current=character(a.getString("character"));conversation=store.latestConversation(current.getString("id"));draft="";return new SnapshotRequest("chat");}
+        if(action.equals("stickerPackChoose")){
+            if(fileBusy)throw new IOException("正在处理文件，请稍候");Intent picker=new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*");startActivityForResult(picker,PICK_STICKER_PACK);return new JSONObject();
+        }
         if(action.equals("mediaPick")){
             if(current==null||conversation.isEmpty())throw new IOException("请先打开角色聊天");if(fileBusy)throw new IOException("正在导入图片，请稍候");mediaPickSession=conversation;mediaPickWho=current.getString("id");mediaPickKind=a.optString("kind","image");
             Intent picker;if(android.os.Build.VERSION.SDK_INT>=33){picker=new Intent("android.provider.action.PICK_IMAGES");picker.putExtra("android.provider.extra.PICK_IMAGES_MAX",4);}else{picker=new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE);picker.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);}picker.setType("image/*");try{startActivityForResult(picker,PICK_CHAT_MEDIA);}catch(android.content.ActivityNotFoundException missing){Intent fallback=new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*").putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);startActivityForResult(fallback,PICK_CHAT_MEDIA);}return new JSONObject();
@@ -512,6 +523,10 @@ public final class WebActivity extends MainActivity {
     }
     @Override protected void onSaveInstanceState(Bundle out){super.onSaveInstanceState(out);out.putString("callPermissionOwner",callPermissionOwner);out.putString("mediaPickSession",mediaPickSession);out.putString("mediaPickWho",mediaPickWho);out.putString("mediaPickKind",mediaPickKind);}
     @Override protected void onActivityResult(int request,int result,android.content.Intent intent){
+        if(request==PICK_STICKER_PACK){
+            if(result!=RESULT_OK||intent==null||intent.getData()==null||destroyed)return;if(fileBusy){toast("正在处理另一份文件，请重新选择包");return;}final Uri uri=intent.getData();fileBusy=true;toast("正在校验表情包，仅预览尚未导入…");
+            worker.execute(()->{try{JSONObject preview=StickerPackImport.stage(getApplicationContext(),uri);runOnUiThread(()->{fileBusy=false;if(!destroyed)event("stickerPackReady",preview.toString());});}catch(OutOfMemoryError e){runOnUiThread(()->{fileBusy=false;if(!destroyed)toast("表情包图片过大，请选择较小的包");});}catch(Exception e){runOnUiThread(()->{fileBusy=false;if(!destroyed)toast(e.getMessage()==null?"表情包无效，请重新选择":e.getMessage());});}});return;
+        }
         if(request==PICK_CHAT_MEDIA){
             if(result!=RESULT_OK||intent==null)return;if(fileBusy){toast("正在处理另一份文件，请稍后重试");return;}
             final String session=mediaPickSession,who=mediaPickWho,kind=mediaPickKind;final List<Uri> chosen=new ArrayList<>();if(intent.getClipData()!=null){for(int i=0;i<Math.min(4,intent.getClipData().getItemCount());i++)chosen.add(intent.getClipData().getItemAt(i).getUri());}else if(intent.getData()!=null)chosen.add(intent.getData());if(chosen.isEmpty())return;fileBusy=true;toast("正在处理图片…");

@@ -21,6 +21,10 @@ final class MediaStore {
     static InputStream open(Context c,ChatStore s,String id,boolean thumb)throws Exception{asset(s,id);File f=file(c,id,thumb);if(!f.exists()&&thumb)f=file(c,id,false);return new FileInputStream(f);}
     static JSONObject importImage(Context c,ChatStore s,Uri uri)throws Exception{
         byte[] raw;try(InputStream in=c.getContentResolver().openInputStream(uri)){if(in==null)throw new IOException("无法读取图片");raw=StoryFiles.read(in,MAX_IMPORT);}
+        JSONObject result=importImage(c,s,raw);result.remove("newAsset");return result;
+    }
+    static JSONObject importImage(Context c,ChatStore s,byte[] raw)throws Exception{
+        if(raw==null||raw.length==0||raw.length>MAX_IMPORT)throw new IOException("图片文件过大或为空");
         BitmapFactory.Options o=new BitmapFactory.Options();o.inJustDecodeBounds=true;BitmapFactory.decodeByteArray(raw,0,raw.length,o);
         if(o.outWidth<=0||o.outHeight<=0||(long)o.outWidth*o.outHeight>80000000L)throw new IOException("图片损坏或像素过大");
         String source=o.outMimeType;if(!Arrays.asList("image/png","image/jpeg","image/webp","image/gif").contains(source))throw new IOException("支持PNG、JPG、WEBP和GIF首帧");
@@ -32,11 +36,12 @@ final class MediaStore {
             byte[] normalized;boolean alpha=bitmap.hasAlpha()||"image/png".equals(source)||"image/gif".equals(source);String mime=alpha?"image/png":"image/jpeg";
             for(;;){ByteArrayOutputStream out=new ByteArrayOutputStream();bitmap.compress(alpha?Bitmap.CompressFormat.PNG:Bitmap.CompressFormat.JPEG,92,out);normalized=out.toByteArray();if(normalized.length<=MAX_IMAGE)break;if(Math.max(bitmap.getWidth(),bitmap.getHeight())<500)throw new IOException("图片压缩后仍过大");Bitmap next=Bitmap.createScaledBitmap(bitmap,Math.max(1,(int)(bitmap.getWidth()*.8)),Math.max(1,(int)(bitmap.getHeight()*.8)),true);bitmap.recycle();bitmap=next;}
             String id=MediaData.hash(normalized);SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{
+                boolean newAsset=!exists(s,id);
                 try(Cursor r=db.rawQuery("SELECT coalesce(sum(bytes),0),count(*) FROM media_assets",null)){r.moveToFirst();if(!exists(s,id)&&(r.getLong(0)+normalized.length>64*1024*1024L||r.getInt(1)>=2000))throw new IOException("本机媒体库已达64MB或2000张限制");}
                 File f=file(c,id,false);if(!f.exists())atomic(f,normalized);
                 int w=bitmap.getWidth(),h=bitmap.getHeight();double scale=Math.min(1,256.0/Math.max(w,h));Bitmap thumb=Bitmap.createScaledBitmap(bitmap,Math.max(1,(int)(w*scale)),Math.max(1,(int)(h*scale)),true);
                 ByteArrayOutputStream out=new ByteArrayOutputStream();thumb.compress(Bitmap.CompressFormat.WEBP,85,out);atomic(file(c,id,true),out.toByteArray());if(thumb!=bitmap)thumb.recycle();
-                ContentValues v=new ContentValues();v.put("id",id);v.put("mime",mime);v.put("bytes",normalized.length);v.put("width",w);v.put("height",h);db.insertWithOnConflict("media_assets",null,v,SQLiteDatabase.CONFLICT_IGNORE);db.setTransactionSuccessful();return new JSONObject().put("type","image").put("asset",id);
+                ContentValues v=new ContentValues();v.put("id",id);v.put("mime",mime);v.put("bytes",normalized.length);v.put("width",w);v.put("height",h);db.insertWithOnConflict("media_assets",null,v,SQLiteDatabase.CONFLICT_IGNORE);db.setTransactionSuccessful();return new JSONObject().put("type","image").put("asset",id).put("newAsset",newAsset);
             }finally{db.endTransaction();}
         }finally{bitmap.recycle();}
     }
