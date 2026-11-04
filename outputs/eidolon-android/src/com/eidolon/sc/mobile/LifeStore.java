@@ -11,7 +11,7 @@ final class LifeStore {
  static JSONObject advance(Context c,ChatStore s,JSONObject personal,String who,Clock clock)throws Exception{
   SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{
    JSONObject old=read(s,who);if(old==null)old=LifeData.fresh(who,WritingEngine.character(WritingEngine.characters(c),who),clock);
-   try(Cursor contact=db.rawQuery("SELECT coalesce(max(sent_at),0) FROM messages WHERE character=? AND role='user' AND sent_at<=?",new String[]{who,""+clock.millis()})){if(contact.moveToFirst())old.put("awakeUntil",contact.getLong(0)+10*60000L);}
+   try(Cursor contact=db.rawQuery("SELECT coalesce(max(sent_at),0) FROM messages WHERE character=? AND role='user' AND sent_at<=?",new String[]{who,""+clock.millis()})){if(contact.moveToFirst())old.put("awakeUntil",contact.getLong(0)+ScheduleData.HALF_HOUR);}
    ZoneId zone=TemporalRuntime.zone(c,personal,who);LocalDate day=clock.instant().atZone(zone).toLocalDate();JSONObject today=ScheduleStore.entry(s,who,day.toString()),yesterday=ScheduleStore.entry(s,who,day.minusDays(1).toString());
    if(!c.getSharedPreferences("settings",0).getBoolean("hibiSchedules",false)){today=null;yesterday=null;}
    JSONObject next=LifeData.advance(old,clock,zone,today,yesterday,TemporalRuntime.override(c,who,clock.millis())!=null);

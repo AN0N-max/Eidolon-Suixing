@@ -3,7 +3,7 @@ package com.eidolon.sc.mobile;
 final class CallAudioText {
  static String forVoice(String answer,boolean bilingual)throws Exception{
   if(bilingual){FishClient.speech(answer);return answer;}
-  String text=ReplyText.clean(answer).replace(ChatEnvelope.BREAK,"\n").replaceAll("(?s)<ja>.*?</ja>","").replaceAll("<[^>]+>","").trim();
+  String text=DialogueText.language(ReplyText.clean(answer),"zh",false);
   if(text.isEmpty())throw new Exception("没有可播放的中文台词");return text;
  }
  private CallAudioText(){}

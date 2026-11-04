@@ -57,7 +57,8 @@ final class LifeData {
         if(!raw.optString("obstacle").isEmpty())out.put("obstacle",shortText(raw.getString("obstacle"),100));return out;
     }
     static JSONObject goal(JSONObject s){JSONArray a=s.optJSONArray("goals");if(a!=null)for(int i=0;i<a.length();i++)if(a.optJSONObject(i).optString("status").equals("active"))return a.optJSONObject(i);return null;}
-    static void ingest(JSONObject s,JSONObject entry,ZoneId zone,long now)throws Exception{
+    static void ingest(JSONObject s,JSONObject entry,ZoneId zone,long now)throws Exception{ingest(s,entry,zone,now,null);}
+    static void ingest(JSONObject s,JSONObject entry,ZoneId zone,long now,JSONObject nextPlan)throws Exception{
         if(entry==null||entry.optJSONObject("plan")==null||!s.optBoolean("enabled"))return;
         JSONObject plan=entry.getJSONObject("plan"),continuity=plan.optJSONObject("continuity");long created=entry.optLong("createdAt",now);LocalDate date=LocalDate.parse(entry.getString("date"));
         if(continuity!=null&&created<=now)seedGoal(s,continuity.optJSONObject("goal"),Math.max(created,now));
@@ -72,7 +73,16 @@ final class LifeData {
             events.put(e);
         }
         String nightId="night/"+s.getString("character")+"/"+date;
-        if(find(events,nightId)==null){int minute=ScheduleData.minute(plan.getString("sleep"),false);long start=TemporalData.boundary(minute<240?date.plusDays(1):date,plan.getString("sleep"),zone)+15*60000L,end=TemporalData.boundary(date.plusDays(1),plan.getString("wake"),zone);if(end>start&&end>=now-7*DAY){JSONObject sleep=event(nightId,"睡眠","activity",start,end,"").put("zone",zone.getId()).put("night",true);if(end<=now)sleep.put("status","missed").put("source","unobserved_plan");events.put(sleep);}}
+        JSONObject bounds=ScheduleData.sleepInterval(date,plan,nextPlan,zone);long start=bounds.getLong("start")+15*60000L,end=bounds.getLong("end");JSONObject existingNight=find(events,nightId);
+        if(existingNight!=null){
+            // Only derived bounds change. Never replay completion, mood, memory, or relationship effects.
+            if(existingNight.optLong("start")!=start||existingNight.optLong("end")!=end){
+                existingNight.put("start",start).put("end",end).put("zone",zone.getId()).put("boundsRepair",1);
+                if(existingNight.optString("status").equals("in_progress")&&(now<start||now>=end))existingNight.put("status",now<start?"planned":"missed").put("source","corrected_schedule_bounds");
+                JSONObject actual=s.optJSONObject("actual");if(actual!=null&&nightId.equals(actual.optString("eventId")))s.put("actual",JSONObject.NULL);
+            }
+        }else if(end>start&&end>=now-7*DAY){JSONObject sleep=event(nightId,"睡眠","activity",start,end,"").put("zone",zone.getId()).put("night",true);if(end<=now)sleep.put("status","missed").put("source","unobserved_plan");events.put(sleep);}
+
     }
     static void completeGoalStep(JSONObject s,JSONObject e,ZoneId zone,long now,boolean confirmed)throws Exception{
         JSONObject g=find(s.getJSONArray("goals"),e.optString("goalId"));if(g==null||!g.getString("status").equals("active")||g.optString("lastDay").equals(day(now,zone)))return;
@@ -96,7 +106,7 @@ final class LifeData {
     static JSONObject advance(JSONObject state,Clock clock,ZoneId zone,JSONObject today,JSONObject yesterday,boolean interrupted)throws Exception{
         JSONObject s=new JSONObject(state.toString());long now=clock.millis(),previous=s.getLong("observedAt");if(now<previous&&previous-now<=120000)return s;s.put("clockRollback",now<previous);
         if(now<previous||!s.getBoolean("enabled"))return s;
-        decay(s,now);ingest(s,yesterday,zone,now);ingest(s,today,zone,now);
+        decay(s,now);ingest(s,yesterday,zone,now,today==null?null:today.optJSONObject("plan"));ingest(s,today,zone,now);
         JSONArray events=s.getJSONArray("events");JSONObject actual=null;int original=events.length();
         for(int i=0;i<original;i++){
             JSONObject e=events.getJSONObject(i);if(!e.getString("kind").equals("activity"))continue;

@@ -20,12 +20,7 @@ final class FishClient {
         if (c != null) c.disconnect();
     }
     static String speech(String text) throws Exception {
-        text=ReplyMarkup.speech(ReplyText.clean(text));
-        Matcher m = Pattern.compile("<ja>(.*?)</ja>", Pattern.DOTALL).matcher(text);
-        StringBuilder ja = new StringBuilder();
-        while (m.find()) ja.append(m.group(1)).append('\n');
-        String s = (ja.length() > 0 ? ja.toString() : text.replaceAll("(?s)<zh>.*?</zh>", ""))
-                .replaceAll("<[^>]*>", "").replaceAll("\\[[^\\]]*\\]", "").trim();
+        String s=DialogueText.spoken(ReplyText.clean(text));
         if (s.isEmpty()) throw new Exception("这条消息没有可播放的台词");
         if (s.length() > 5000) throw new Exception("单条语音暂限 5000 字，请选择较短的回复");
         return s;

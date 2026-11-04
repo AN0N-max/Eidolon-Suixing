@@ -1,0 +1,38 @@
+package com.eidolon.sc.mobile;
+import java.time.*;import org.json.*;
+public class ContinuationTests {
+ static int n;static void check(boolean ok,String name){if(!ok)throw new AssertionError(name);n++;System.out.println("PASS "+name);}
+ static final ZoneId Z=ZoneId.of("Asia/Shanghai");static Clock clock(String s){return Clock.fixed(LocalDateTime.parse(s).atZone(Z).toInstant(),ZoneOffset.UTC);}
+ static JSONObject plan(String sleep)throws Exception{return ScheduleData.normalize(new JSONObject("{wake:'09:00',sleep:'"+sleep+"',slots:[{start:'11:00',end:'12:00',activity:'上课'},{start:'13:00',end:'14:00',activity:'午餐'},{start:'15:00',end:'16:00',activity:'练习'}],twists:[]}"));}
+ public static void main(String[] args)throws Exception{
+  String mixed="<zh>中文</ja>\n<ja>こんにちは</ja><zh>翻译</zh>",nested="<ja><ja>こんにちは</ja></ja><zh>中文<ja>おはよう</ja>翻译</zh>";
+  for(String raw:new String[]{mixed,nested,"</ja>中文<ja>こんにちは<zh>翻译","&lt;ja&gt;こんにちは&lt;/ja&gt;<zh>中文</zh>","<JA>こんにちは</JA><ZH>中文</ZH>"}){String canonical=ReplyText.clean(raw);check(!DialogueText.language(canonical,"zh",false).contains("<ja>"),"known malformed syntax canonicalizes "+n);check(DialogueText.language(canonical,"ja",false).contains("こんにちは")||raw.equals(nested),"Japanese remains recoverable "+n);check(canonical.equals(ReplyText.clean(canonical)),"decoder idempotent "+n);}
+  check(!DialogueText.language(nested,"zh",false).contains("おはよう"),"hidden Japanese cannot leak through nested Chinese");
+  String examples="说明 `<ja>literal</ja>`\n> <zh>引用</zh>\n```xml\n<ja>code</ja>\n```";check(ReplyText.clean(examples).contains("`<ja>literal</ja>`")&&ReplyText.clean(examples).contains("<ja>code</ja>"),"code and quotation retain literal language syntax");
+  check(DialogueText.needsChinese("<zh>こんにちは</zh>"),"kana mislabelled Chinese requires translation");
+  check(!BilingualReply.needsChinese("<ja>こんにちは</ja><zh>你好</zh>"),"normal bilingual translation detected");
+  check(FishClient.speech(nested).contains("こんにちは")&&!FishClient.speech(nested).contains("<ja>"),"speech shares parser and no transport tags");
+  check(FishClient.speech("<ja>「こんにちは」</ja><zh>你好</zh>").contains("こんにちは"),"ordinary quotation stays speakable without protocol leakage");
+  String field=DialogueText.fields("<ja>こんにちは</ja>","</ja><zh>你好</zh>",true);check(field.equals("<ja>こんにちは</ja><zh>你好</zh>"),"JSON fields do not double wrap legacy XML");
+  check(ReplyText.clean("<zh>段落一<br><br><br><br>段落二</zh>").contains("段落一\n\n段落二"),"blank excess collapses while preserving paragraph");
+  for(String sleep:new String[]{"23:59","00:00","03:59","04:00"}){JSONObject p=plan(sleep),bounds=ScheduleData.sleepInterval(LocalDate.parse("2026-11-04"),p,null,Z);long now=clock("2026-11-04T10:49:00").millis();JSONObject entry=new JSONObject().put("date","2026-11-04").put("plan",p).put("createdAt",now);JSONObject life=LifeData.fresh("mikoto",new JSONObject(),clock("2026-11-04T10:49:00"));LifeData.ingest(life,entry,Z,now);JSONObject night=LifeData.find(life.getJSONArray("events"),"night/mikoto/2026-11-04");check(night.getLong("start")==bounds.getLong("start")+15*60000L&&night.getLong("end")==bounds.getLong("end"),"common interval "+sleep);check(night.getLong("end")-night.getLong("start")<24*LifeData.HOUR,"bounded sleep duration "+sleep);}
+  JSONObject p=plan("04:00");long now=clock("2026-11-04T10:49:00").millis();JSONObject entry=new JSONObject().put("date","2026-11-04").put("plan",p).put("createdAt",now),life=LifeData.fresh("mikoto",new JSONObject(),clock("2026-11-04T10:49:00"));JSONObject old=LifeData.event("night/mikoto/2026-11-04","睡眠","activity",now-6*LifeData.HOUR,now+22*LifeData.HOUR,"").put("night",true).put("status","in_progress");life.getJSONArray("events").put(old);String memories=life.getJSONArray("memories").toString(),influences=life.getJSONArray("influences").toString();LifeData.ingest(life,entry,Z,now);check(old.getString("status").equals("planned")&&old.optInt("boundsRepair")==1,"repair old 28-hour sleep only derived interval");check(memories.equals(life.getJSONArray("memories").toString())&&influences.equals(life.getJSONArray("influences").toString()),"repair cannot replay memories or mood effects");
+  JSONObject next=TemporalData.next(p,clock("2026-11-04T01:00:00").instant().atZone(Z));check(next.getLong("minutes_until_start")==600&&!next.getBoolean("is_near")&&next.getString("local_date").equals("2026-11-04"),"next distant activity has distance and local date");
+  JSONObject t=TemporalData.build(clock("2026-11-04T01:00:00"),Z,p,new JSONObject().put("state","free"),now,now,0,0,null);
+  check(!TimeConsistency.reason("我现在要吃午饭了。",t,clock("2026-11-04T01:00:00").millis()).isEmpty(),"explicit present lunch at night rejected");
+  for(String value:new String[]{"晚安，制作人。","我明天准备吃午饭。","你上夜班，午饭要记得吃。","昨天你说晚安。","我现在要午睡了。","`我现在要吃午饭了`","她说：“我现在要吃午饭了。”"})check(TimeConsistency.reason(value,t,clock("2026-11-04T01:00:00").millis()).isEmpty(),"ambiguous/quoted/future topic preserved "+n);
+  check(TimeConsistency.reason("我现在要吃午饭了。",t,clock("2026-11-04T12:00:00").millis()).isEmpty(),"normal lunch preserved at delivery");
+  JSONObject shift=new JSONObject(t.toString()).put("actual_state",new JSONObject().put("confirmed",true).put("name","夜班午餐"));check(TimeConsistency.reason("我现在要吃午饭了。",shift,clock("2026-11-04T01:00:00").millis()).isEmpty(),"confirmed night-shift lunch remains valid");
+  check(!TimeConsistency.reason("我现在要吃午饭了。",t,clock("2026-11-05T01:00:00").millis()).isEmpty(),"delivery recheck rejects stale present lunch next night without regeneration");
+  CallEpoch dialEpoch=new CallEpoch("dial");long dialToken=dialEpoch.next();dialEpoch.end();check(!dialEpoch.current("dial",dialToken)&&new CallDialWait(1000,0).due(3000),"expired wait after cancellation cannot restart old call identity");
+  JSONObject tokyo=TemporalData.build(clock("2026-11-04T00:00:00"),ZoneId.of("Asia/Tokyo"),p,new JSONObject(),0,0,0,0,null);check(tokyo.getString("current_time").contains("01:00")&&!tokyo.getString("timezone").equals(Z.getId()),"same instant role zone projects independently");
+  for(String mode:new String[]{"fast","natural","thinking"}){CallTurnEnd turn=new CallTurnEnd(mode,1000);turn.voice(1100);check(!turn.finishAt(1100+turn.hold()-1),"pause retains turn "+mode);turn.voice(2000);check(!turn.finishAt(2100),"continuation resets clock "+mode);check(turn.finishAt(2000+turn.hold()),"bounded end threshold "+mode);}
+  CallTurnEnd thinking=new CallTurnEnd("thinking",1000);thinking.voice(1100);thinking.text("因为",1100);check(!thinking.finishAt(4600)&&thinking.finishAt(6100),"unfinished clause extends but remains bounded");
+  CallTurnEnd manual=new CallTurnEnd("manual",1000);manual.voice(1100);check(!manual.finishAt(50000)&&manual.limit(61000),"manual has hard capture cap");manual.finish();check(manual.finishAt(50000),"explicit finish bypasses silence wait");
+  CallTurnEnd.Activity a=new CallTurnEnd.Activity();for(int i=0;i<50;i++)a.speech(30);check(a.speech(220),"quiet room soft voice is not lost to old 700 threshold");
+  CallDialWait w=new CallDialWait(1000,3000);check(!w.due(5999)&&w.due(6000)&&w.deadline==6000,"draw-once wait exact boundary");check(new CallDialWait(1000,0).deadline==3000,"minimum dial wait 2 seconds");
+  AsrDiagnostic d=new AsrDiagnostic("bailian","qwen-asr","beijing","task-1");check(!d.stage("failed","401", "request-2").has("text"),"diagnostic contains no transcript or provider error prose");
+  for(String phase:new String[]{"speech_pause","waiting_continue"})check(CallLimits.recording(phase,false,false),"pause still captures microphone "+phase);check(!CallLimits.recording("outgoing_wait",false,false),"dial wait cannot claim recording");
+  System.out.println("Continuation checks "+n);
+ }
+}

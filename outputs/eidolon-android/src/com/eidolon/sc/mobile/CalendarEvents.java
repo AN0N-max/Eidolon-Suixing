@@ -7,11 +7,12 @@ import org.json.*;
 final class CalendarEvents {
     private CalendarEvents() {}
 
-    static String prompt(JSONObject calendar, JSONObject personal, String who) throws Exception {
+    static String prompt(JSONObject calendar, JSONObject personal, String who) throws Exception {return prompt(calendar,personal,who,java.time.Clock.systemUTC());}
+    static String prompt(JSONObject calendar, JSONObject personal, String who,java.time.Clock clock) throws Exception {
         JSONObject producer=personal.optJSONObject("producer");
         String zoneName=producer==null?"":producer.optString("timeZone");
         ZoneId zone=zoneName.isEmpty()?ZoneId.systemDefault():ZoneId.of(zoneName);
-        LocalDate today=LocalDate.now(zone);
+        LocalDate today=clock.instant().atZone(zone).toLocalDate();
         String day=String.format(java.util.Locale.ROOT,"%02d-%02d",today.getMonthValue(),today.getDayOfMonth());
         StringBuilder note=new StringBuilder();
         note.append(Anniversaries.lines(personal,who,today));

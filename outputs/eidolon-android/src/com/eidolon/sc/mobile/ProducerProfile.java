@@ -20,10 +20,11 @@ final class ProducerProfile {
         if((anniversaryMonth==0)!=(anniversaryDay==0))throw new Exception("自定纪念日请同时选择月和日");
         if(anniversaryMonth!=0)try{MonthDay.of(anniversaryMonth,anniversaryDay);}catch(Exception e){throw new Exception("自定纪念日无效");}
     }
-    static String prompt(JSONObject personal)throws Exception{
+    static String prompt(JSONObject personal)throws Exception{return prompt(personal,java.time.Clock.systemUTC());}
+    static String prompt(JSONObject personal,java.time.Clock clock)throws Exception{
         JSONObject p=personal.optJSONObject("producer");if(p==null)p=empty();validate(p);
         ZoneId zone=p.optString("timeZone").isEmpty()?ZoneId.systemDefault():ZoneId.of(p.getString("timeZone"));
-        ZonedDateTime now=ZonedDateTime.now(zone);StringBuilder result=new StringBuilder("\n制作人档案（只影响当下对待制作人的方式，不改写原作剧情）：");
+        ZonedDateTime now=ZonedDateTime.ofInstant(clock.instant(),zone);StringBuilder result=new StringBuilder("\n制作人档案（只影响当下对待制作人的方式，不改写原作剧情）：");
         result.append("称呼：").append(p.optString("address").isEmpty()?"沿用角色原有习惯":p.getString("address"));
         result.append("；性别：").append(p.optString("gender").equals("female")?"女性":p.optString("gender").equals("male")?"男性":"沿用原作设定");
         result.append("；制作人所在时区：").append(zone.getId()).append("；制作人当前时间（不是角色时区）：").append(now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm",Locale.ROOT)));

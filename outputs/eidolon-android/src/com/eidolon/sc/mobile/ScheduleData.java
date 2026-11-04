@@ -86,15 +86,18 @@ final class ScheduleData {
         }
         return today!=null&&minute(today.getString("sleep"),false)>=1200&&now>=minute(today.getString("sleep"),false);
     }
+    static JSONObject sleepInterval(LocalDate source,JSONObject night,JSONObject wakePlan,ZoneId zone)throws Exception{
+        int sleep=minute(night.getString("sleep"),false),wake=minute((wakePlan==null?night:wakePlan).getString("wake"),false);
+        long start=source.plusDays(sleep<720?1:0).atTime(sleep/60,sleep%60).atZone(zone).toInstant().toEpochMilli();
+        long end=source.plusDays(1).atTime(wake/60,wake%60).atZone(zone).toInstant().toEpochMilli();
+        return new JSONObject().put("start",start).put("end",end);
+    }
     static JSONObject sleepWindow(JSONObject today,JSONObject yesterday,ZonedDateTime at)throws Exception{
         JSONObject known=today!=null?today:yesterday;if(known==null)return null;
         int now=at.getHour()*60+at.getMinute();boolean early=now<minute(known.getString("wake"),false);
         JSONObject night=early?(yesterday!=null?yesterday:today):today;if(night==null)return null;
         LocalDate source=at.toLocalDate().minusDays(early?1:0);int sleep=minute(night.getString("sleep"),false);
-        LocalDate sleepDay=source.plusDays(sleep<720?1:0),wakeDay=source.plusDays(1);
-        int wake=minute((early&&today!=null?today:night).getString("wake"),false);
-        long start=sleepDay.atTime(sleep/60,sleep%60).atZone(at.getZone()).toInstant().toEpochMilli();
-        long end=wakeDay.atTime(wake/60,wake%60).atZone(at.getZone()).toInstant().toEpochMilli();
+        JSONObject bounds=sleepInterval(source,night,early&&today!=null?today:night,at.getZone());long start=bounds.getLong("start"),end=bounds.getLong("end");
         return new JSONObject().put("start",start).put("end",end).put("sourceDate",source.toString()).put("estimated",early&&yesterday==null).put("startText",Instant.ofEpochMilli(start).atZone(at.getZone()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm"))).put("endText",Instant.ofEpochMilli(end).atZone(at.getZone()).format(java.time.format.DateTimeFormatter.ofPattern("MM-dd HH:mm")));
     }
     static boolean asleepAt(JSONObject today,JSONObject yesterday,ZonedDateTime at)throws Exception{JSONObject w=sleepWindow(today,yesterday,at);long now=at.toInstant().toEpochMilli();return w!=null&&now>=w.getLong("start")&&now<w.getLong("end");}

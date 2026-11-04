@@ -7,7 +7,9 @@ import org.json.*;
 final class BailianAsrProtocol {
     static final String DEFAULT_MODEL = "qwen-audio-3.1-asr-flash-streaming";
     final String taskId = UUID.randomUUID().toString().replace("-", "");
-    volatile boolean started, finished;
+    volatile boolean started, finished, finishSent, serverFinished, failed;
+    volatile String requestId="",errorCode="";
+    final java.util.TreeMap<Integer,String> finals=new java.util.TreeMap<>(),partials=new java.util.TreeMap<>();
     volatile String text = "", finalText = "", failure = "";
 
     static String endpoint(String region) {
@@ -33,6 +35,7 @@ final class BailianAsrProtocol {
     }
 
     String finish() throws JSONException {
+        finishSent=true;
         return new JSONObject().put("header", header("finish-task"))
             .put("payload", new JSONObject().put("input", new JSONObject())).toString();
     }
@@ -51,9 +54,9 @@ final class BailianAsrProtocol {
             String code = h.optString("error_code").replaceAll("[^A-Za-z0-9_.-]", "");
             failure = "百炼识别任务失败" + (code.isEmpty() ? "" : "（" + code.substring(0, Math.min(80, code.length())) + "）")
                 + "，请检查密钥地域、模型开通与额度；未自动重试";
-            finished = true;
+            finished = true;failed=true;errorCode=code;
         } else if (kind.equals("task-started")) started = true;
-        else if (kind.equals("task-finished")) finished = true;
+        else if (kind.equals("task-finished")) {finished=true;serverFinished=true;}
         else if (kind.equals("result-generated") && started) {
             JSONObject payload = event.optJSONObject("payload"), output = payload == null ? null : payload.optJSONObject("output");
             JSONObject sentence = output == null ? null : output.optJSONObject("sentence");
@@ -61,11 +64,16 @@ final class BailianAsrProtocol {
             String value = sentence.optString("text").trim();
             if (value.length() > 6000) throw new JSONException("识别文本过长");
             if (!hasWords(value)) return false;
-            text = value;
-            if (sentence.optBoolean("sentence_end")) { finalText = value; finished = true; return true; }
+            requestId=AsrDiagnostic.safe(payload.optString("request_id",output.optString("request_id",requestId)));
+            int id=sentence.optInt("sentence_id",1);if(id<1||id>256)throw new JSONException("识别分段数量无效");
+            boolean isFinal=sentence.optBoolean("sentence_end"),changed=isFinal&&!value.equals(finals.get(id));
+            if(isFinal){finals.put(id,value);partials.remove(id);}else if(!finals.containsKey(id))partials.put(id,value);
+            java.util.TreeMap<Integer,String> all=new java.util.TreeMap<>(finals);all.putAll(partials);text=join(all);finalText=join(finals);
+            if(text.length()>6000)throw new JSONException("整轮识别文本过长");return changed;
         }
         return false;
     }
 
+    static String join(java.util.TreeMap<Integer,String> map){StringBuilder b=new StringBuilder();for(String value:map.values()){if(b.length()>0)b.append(' ');b.append(value);}return b.toString();}
     static boolean hasWords(String text) { return text.codePoints().anyMatch(Character::isLetterOrDigit); }
 }
