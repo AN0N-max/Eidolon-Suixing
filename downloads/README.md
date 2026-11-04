@@ -1,5 +1,15 @@
 # Android安装包
 
+[1.26原签名升级APK](Eidolon-1.26-original-upgrade.apk)，code82，DB/备份18。朋友圈、天气、城市与逐位日程修复；新功能默认关闭，旧失败需手动重新安排。覆盖安装保留现有数据/表情，旧APK保留。
+
+SHA256：e49451c257f2541f632a866899e56b60091690a5282248101d2b933fafc21134
+
+[发布说明](../outputs/eidolon-android/RELEASE-1.26.md) · [验证](../docs/QA-1.26.md)
+
+## 历史安装包记录
+
+# Android安装包
+
 [1.25.1 原签名升级APK](Eidolon-1.25.1-original-upgrade.apk)，code81，SQLite/加密备份17。覆盖安装保留现有数据，无需重新导入表情。本补丁修复行程时间格式兼容和具体失败提示；已有失败需安装后手动重新安排。
 
 SHA256：9e0b9b0989bc4f7e9256b99dbeae5dbe8b8bac0c948d99380e6f013a88c9d85b

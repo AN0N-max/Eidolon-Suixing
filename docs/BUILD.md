@@ -15,7 +15,7 @@
 gradle --no-daemon -p outputs/eidolon-android assembleDebug
 ```
 
-Gradle 首次会从 Google Maven/Maven Central 下载依赖，应用运行时不需要电脑后台。产物位于 work/android-build-1.16/gradle/outputs/apk/debug/；该目录不进版本库。也可在 Windows 执行：
+Gradle 首次会从 Google Maven/Maven Central 下载依赖，应用运行时不需要电脑后台。产物位于 work/android-build-1.26/gradle/outputs/apk/debug/；该目录不进版本库。也可在 Windows 执行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File outputs/eidolon-android/build.ps1
@@ -25,7 +25,7 @@ release 源码编译用 assembleRelease，生成未签名包；正式分发需�
 
 ## 离线规则与数据库测试
 
-先运行 assembleRelease。将 org.json 的 JVM 测试依赖 json-20240303.jar 放到 work/android-test-tools/json.jar（Maven Central: org/json/json/20240303），再执行：
+先运行 assembleRelease。将 org.json 的 JVM 测试依赖 json-20240303.jar 放到 work/android-test-tools/json.jar（Maven Central: org/json/json/20240303），另需Bouncy Castle1.86 JVM测试依赖org.bouncycastle:bcprov-jdk18on:1.86，放到work/android-test-tools/bcprov-jdk18on-1.86.jar或设置BC_JAR。再执行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File outputs/eidolon-android/test.ps1
@@ -45,7 +45,7 @@ node outputs/eidolon-android/tests/schedule-rollover-ui.cjs
 
 ## 当前源码
 
-当前Android源码与APK为1.16/code71，数据库和加密备份格式v15。变更与验证范围见[架构改进](ARCHITECTURE-1.16.md)。
+当前Android源码与APK为1.26/code82，数据库和加密备份18。变更与验证范围见[本版QA](QA-1.26.md)。
 
 ## 首次公开时的源码对应
 

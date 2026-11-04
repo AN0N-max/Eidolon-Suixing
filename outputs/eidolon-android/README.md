@@ -1,3 +1,7 @@
+# Eidolon 随行 · 1.26
+
+朋友圈、天气、城市与日程队列；code82，DB/备份18，原签名升级。详见[发布说明](RELEASE-1.26.md)、[文件索引](SOCIAL-1.26.md)、[验证](QA-1.26.md)。新功能默认关闭，手机/真实服务未验收。
+
 # Eidolon 随行 · 1.12
 
 仅使用系统通知，取消自绘弹窗；修复Vivo桌面兼容路径及角标状态误报。见[1.12发布说明](RELEASE-1.12.md)。
@@ -216,7 +220,7 @@ WebView 从 APK 的 `assets/ui` 读取界面，通过拦截的 `https://eidolon.
 
 ## 构建与测试
 
-JDK 17 + Android platform 35 + build-tools 35.0.0 + PowerShell。`build.ps1` 支持 `-Jdk`、`-BuildTools`、`-AndroidJar`、`-BuildDirectory`、`-SigningStore`、`-SigningAlias`。默认工具在 `work/android-tools`，签名文件在 `work/android-signing/local-test.jks`，别名 `local-test`。原版证书 SHA-256 为 `d576e97cae45aca6dedb80064e56a2aae97553fdaa8705904b63420b1d4503db`，与电脑保存的 0.8.8 原版 APK 实际比对；源码包不包含密钥文件。缺少原密钥时构建脚本拒绝创建其他签名。Java R 类通过 aapt2 的 custom-package 保留原代码包名，Manifest 中的 Activity 和服务使用完整类名。
+构建需JDK17、Android SDK35和Gradle8.9，公开构建脚本只生成debug或未签名release；见[构建指南](../../docs/BUILD.md)。维护者原升级签名私钥不随源码分发。
 
 `test.ps1` 使用 `work/android-test-tools/json.jar`（org.json:json:20250517）和 Python 3，不调用收费 API。`tests/browser-ui.cjs` 需要 Playwright，可通过 `PLAYWRIGHT_MODULE` 指定模块位置，使用本机 Chrome 与模拟 Native 桥接；截图输出到 cwd 的 outputs。
 

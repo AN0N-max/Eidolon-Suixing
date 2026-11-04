@@ -18,7 +18,7 @@ with tempfile.TemporaryDirectory(prefix='eidolon-media-') as folder:
  assert json.loads(db.execute('SELECT body FROM stickers').fetchone()[0])['uses']==0 and db.execute('SELECT count(*) FROM messages').fetchone()[0]==2
  db.execute('DELETE FROM stickers WHERE id=?',(sticker,));db.commit();assert db.execute('SELECT count(*) FROM media_assets WHERE id=?',(asset,)).fetchone()[0]==1 and db.execute('SELECT content FROM messages WHERE id=2').fetchone()[0]
  db.close()
-assert 'if(oldVersion<17)MediaStore.create(db)' in chat and '.put("version",17)' in chat and '.put("content",MediaData.array(m.getString(9)))' in chat
+assert 'if(oldVersion<17)MediaStore.create(db)' in chat and '.put("version",18)' in chat and '.put("content",MediaData.array(m.getString(9)))' in chat
 engine=(src/'ConversationEngine.java').read_text(encoding='utf-8');context=(src/'MediaContext.java').read_text(encoding='utf-8')
 assert 'remember=!voiceCall&&!mediaBatch' in engine and 'promises=!voiceCall&&!mediaBatch' in engine
 assert 'mediaPending(p)' in chat and '服务可能已计费' in chat

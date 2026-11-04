@@ -1,5 +1,7 @@
 'use strict';
-let scheduleSelected='',scheduleStatusBusy=false,schedulePageEpoch=0,scheduleDisplayTimer=0;
+let scheduleSelected='',scheduleStatusBusy=false,schedulePageEpoch=0,scheduleDisplayTimer=0,scheduleQueueDeferred=false;
+function scheduleQueueRefresh(){if(document.hidden)return;if(page==='schedule'){if(modal.open){scheduleQueueDeferred=true;return;}scheduleQueueDeferred=false;render();}else if(page==='chat')refreshScheduleStatus();}
+document.addEventListener('close',event=>{if(event.target.id==='modal'&&scheduleQueueDeferred)scheduleQueueRefresh();},true);
 function chatIdentity(c){
  const box=el('div','chat-identity');box.append(el('h1','',c.name));
  const current=state.currentSchedule||{},status=btn(current.text||'',()=>{scheduleSelected=c.id;navigate('schedule');},'activity-status');
@@ -25,6 +27,7 @@ function schedulePage(){
   if(data.habit||data.bathHabit){const habits=el('details','sleep-habit');habits.append(el('summary','','她的作息习惯'));if(data.habit)habits.append(el('p','muted',data.habit));if(data.bathHabit)habits.append(el('p','muted',data.bathHabit));details.append(habits);}
   if(!data.enabled)details.append(el('p','notice','行程尚未开启。开启后，她会按自己的安排和作息聊天。'));
   else details.append(el('div','schedule-current',!data.plan&&data.error?'这一天的行程生成失败':data.text));
+  if(!data.plan&&data.generation?.message&&data.generation.code!=='failed')details.append(el('p','notice',data.generation.message));
   if(data.restEnabled&&data.sleepWindow){const night=data.sleepWindow;details.append(el('p','schedule-rest','本夜预计入睡 '+night.startText+' · 起床 '+night.endText),el('p','muted',night.estimated?'昨日日程缺失，本夜暂按这名角色已有日程估计。':'本夜作息来源：'+night.sourceDate+' 的日程。'));}
   if(data.plan){
    if(data.restEnabled)details.append(el('p','schedule-rest',(data.showingPrevious?'上一日安排：起床 ':'今日日程：起床 ')+data.plan.wake+' · 入睡 '+data.plan.sleep+(data.plan.sleep<'12:00'?'（次日）':'')));
@@ -35,7 +38,7 @@ function schedulePage(){
   }else{
    details.append(el('p',data.error?'danger':'muted',data.error?'失败原因：'+data.error:data.showingPrevious?'上一日没有已保存的行程，03:00 后切换新一天。':'今天还没有生成行程。'));
    if(data.error)details.append(el('p','notice','本次失败已记录，当天不会自动重复请求。重新安排会再次调用模型。'));
-   const generate=btn(data.error?'重新安排行程':'生成今天行程',()=>scheduleCompose(data.character),'pill primary wide');generate.disabled=!data.enabled||!!data.showingPrevious;details.append(generate);
+   const generate=btn(data.generation?.code==='running'?'正在安排…':data.error?'重新安排行程':'生成今天行程',()=>scheduleCompose(data.character),'pill primary wide');generate.disabled=!data.enabled||!!data.showingPrevious||data.generation?.code==='running';details.append(generate);
   }
  }).catch(e=>{if(page==='schedule'&&epoch===schedulePageEpoch&&details.isConnected)details.replaceChildren(el('p','danger','读取行程失败：'+e.message),btn('重新读取',()=>render(),'pill wide'));});
 }
@@ -57,6 +60,6 @@ function scheduleSettings(){
  const limit=choiceField(area,'每天自动安排角色数量上限',[['1','1 位'],['3','3 位'],['5','5 位'],['10','10 位'],['28','28 位']],String(options.limit||3));
  area.append(el('p','notice','按角色有效时区（默认沿用档案），每天 03:00 后为最近七天聊过的角色安排，优先最近聊天的角色。每位每天成功生成一次，手机后台运行可能延迟。行程页在03:00前保留上一日安排，03:00后切换当天，不删除历史记录。'));
  area.append(el('p','notice','开启作息后，睡着时仍会回复，语气可以困倦；连续聊醒后不再反复提睡觉。每天安排行程时会本地随机生成睡前泡澡/淋浴时段，正在洗澡时聊天状态会提示；在洗澡期间收到的消息会等到预计结束后再投放回复（需同时开启延迟回复）。她睡觉或洗澡时会暂停主动搭话。洗澡仅作日常安排参考，不描写过程或身体。行程关闭时，作息效果也会关闭。'));
- area.append(el('p','notice','每天生成行程会调用后台模型，日常读取状态不调用模型。同一角色当天自动失败后不会反复尝试，可以去行程页手动重试。'));
+ area.append(el('p','notice','每天生成行程会调用后台模型，日常读取状态不调用模型。自动安排逐名执行，聊天生成和通话优先；等待投放的回复不会占住所有角色的安排。上限包含当天已安排或尝试的记录，同一角色当天失败或进程中断后不自动重发，可在行程页明确重试。'));
  area.append(btn('保存设置',async()=>{state=await api('scheduleSettings',{enabled:enabled.checked,rest:rest.checked,limit:Number(limit.value)});toast('已保存');render();},'pill primary wide'));
 }

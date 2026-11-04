@@ -21,6 +21,8 @@ final class ScheduleRuntime {
         status.put("date",day).put("calendarDate",now.toLocalDate().toString()).put("showingPrevious",previous).put("nextDisplayAt",DailyScheduleClock.nextBoundary(now)).put("now",stamp)
             .put("plan",row==null||row.optJSONObject("plan")==null?JSONObject.NULL:row.getJSONObject("plan")).put("error",row==null?"":row.optString("error"));
         if(previous&&status.optString("state").equals("no_plan"))status.put("text","当前保留上一日安排，03:00 后切换新一天");
+        JSONObject generation=ScheduleCandidates.status(c,store,personal,who,day,stamp);status.put("generation",generation);
+        if(status.optJSONObject("plan")==null){if(generation.getString("code").equals("running"))status.put("text","正在安排行程…").put("error","");else if(generation.getString("code").equals("failed")&&status.optString("error").isEmpty())status.put("error",generation.getString("message"));}
         return status;
     }
     static String prompt(Context c,ChatStore store,JSONObject personal,String who)throws Exception{

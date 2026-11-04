@@ -20,7 +20,7 @@ final class WritingEngine {
             SharedPreferences p=context.getSharedPreferences("settings",0);
             if(p.getBoolean("hibiLetters",false)||p.getBoolean("hibiDiary",false)||p.getBoolean("hibiSchedules",false))scheduler.schedule(new JobInfo.Builder(284,new ComponentName(context,WritingJob.class)).setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY).setPeriodic(60*60*1000L).build());
         }catch(SecurityException|IllegalArgumentException e){android.util.Log.w("EidolonWriting","Unable to schedule writing",e);}
-        LettersEngine.reschedule(context);WritingMorningJob.schedule(context);
+        LettersEngine.reschedule(context);WritingMorningJob.schedule(context);ScheduleQueue.refresh(context);
     }
     static JSONObject asset(Context c,String file)throws Exception{try(InputStream in=c.getAssets().open(file)){return new JSONObject(new String(StoryFiles.read(in,128*1024),"UTF-8"));}}
     static JSONArray characters(Context c)throws Exception{try(InputStream in=c.getAssets().open("characters.json");ChatStore store=new ChatStore(c)){JSONArray raw=new JSONArray(new String(StoryFiles.read(in,4*1024*1024),"UTF-8")),out=new JSONArray();JSONObject personal=store.personal();for(int i=0;i<raw.length();i++)out.put(CharacterPrompts.apply(raw.getJSONObject(i),personal));return out;}}

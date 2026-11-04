@@ -44,7 +44,7 @@ final class ChatStore extends SQLiteOpenHelper {
         PendingReply(String id,String character,String session,long revision,long firstUserId,long lastUserId,long lastAt,String status,String answer,String effects,long dueAt,String error,boolean test,boolean immediate,String userText){this.id=id;this.character=character;this.session=session;this.revision=revision;this.firstUserId=firstUserId;this.lastUserId=lastUserId;this.lastAt=lastAt;this.status=status;this.answer=answer;this.effects=effects;this.dueAt=dueAt;this.error=error;this.test=test;this.immediate=immediate;this.userText=userText;}
     }
     ChatStore(Context c){this(c,false);}
-    private ChatStore(Context c,boolean owner){super(c.getApplicationContext(), "eidolon.db", null, 17);appContext=c.getApplicationContext();ownsDatabase=owner;if(owner)super.setWriteAheadLoggingEnabled(true);}
+    private ChatStore(Context c,boolean owner){super(c.getApplicationContext(), "eidolon.db", null, 18);appContext=c.getApplicationContext();ownsDatabase=owner;if(owner)super.setWriteAheadLoggingEnabled(true);}
 
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE messages(id INTEGER PRIMARY KEY AUTOINCREMENT, character TEXT NOT NULL, role TEXT NOT NULL, body TEXT NOT NULL, conversation TEXT NOT NULL)");
@@ -59,7 +59,7 @@ final class ChatStore extends SQLiteOpenHelper {
         LetterPlanStore.create(db);
         DiaryStore.create(db);
         AppealStore.create(db);
-        ReachPlanStore.create(db);UnreadState.create(db);MemoryNotebook.create(db);LifeStore.create(db);RuntimeSettings.create(db,appContext);CallStore.create(db);MediaStore.create(db);
+        ReachPlanStore.create(db);UnreadState.create(db);MemoryNotebook.create(db);LifeStore.create(db);RuntimeSettings.create(db,appContext);CallStore.create(db);MediaStore.create(db);SocialStore.create(db);ScheduleAttempts.create(db);
     }
     private void createConversations(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE conversations(id TEXT PRIMARY KEY, character TEXT NOT NULL, title TEXT NOT NULL, updated INTEGER NOT NULL)");
@@ -84,6 +84,7 @@ final class ChatStore extends SQLiteOpenHelper {
         if(oldVersion<12){ReachPlanStore.create(db);UnreadState.create(db);}
         if(oldVersion<13){MemoryNotebook.create(db);if(oldVersion>=12)db.execSQL("ALTER TABLE reach_tasks ADD COLUMN opportunity INTEGER NOT NULL DEFAULT 0");}
         if(oldVersion<14)LifeStore.create(db);if(oldVersion<15)RuntimeSettings.create(db,appContext);if(oldVersion<16)CallStore.create(db);if(oldVersion<17)MediaStore.create(db);
+        if(oldVersion<18){SocialStore.create(db);ScheduleAttempts.create(db);}
     }
     private void createPending(SQLiteDatabase db){db.execSQL("CREATE TABLE pending_replies(id TEXT PRIMARY KEY,character TEXT NOT NULL,session TEXT NOT NULL,revision INTEGER NOT NULL,first_user_id INTEGER NOT NULL,last_user_id INTEGER NOT NULL,last_at INTEGER NOT NULL,status TEXT NOT NULL,answer TEXT NOT NULL DEFAULT '',effects TEXT NOT NULL DEFAULT '',due_at INTEGER NOT NULL DEFAULT 0,error TEXT NOT NULL DEFAULT '',test INTEGER NOT NULL DEFAULT 0,immediate INTEGER NOT NULL DEFAULT 0)");db.execSQL("CREATE INDEX pending_due ON pending_replies(status,due_at)");}
     PendingReply beginPendingUser(String who,String session,String text,long now)throws Exception{return beginPendingUser(who,session,text,now,new JSONArray());}
@@ -316,13 +317,14 @@ final class ChatStore extends SQLiteOpenHelper {
                     sessions.put(new JSONObject().put("id",c.getString(0)).put("character",c.getString(1)).put("title",c.getString(2)).put("messages",rows));
                 }
             }
-            return new JSONObject().put("format","eidolon-android-chats").put("version",17).put("media",MediaStore.backup(appContext,this)).put("calls",CallStore.all(this)).put("runtimeSettings",RuntimeSettings.all(this)).put("characterLife",LifeStore.all(this)).put("conversations",sessions).put("personal",personal()).put("stories",allStories()).put("writings",WritingStore.all(this)).put("writingEvents",WritingStore.events(this)).put("schedules",ScheduleStore.all(this)).put("letterPlans",LetterPlanStore.all(this)).put("diaryAttempts",DiaryStore.attempts(this)).put("notebook",MemoryNotebook.all(this));
+            return new JSONObject().put("format","eidolon-android-chats").put("version",18).put("social",SocialStore.backup(this)).put("scheduleAttempts",ScheduleAttempts.backup(this)).put("media",MediaStore.backup(appContext,this)).put("calls",CallStore.all(this)).put("runtimeSettings",RuntimeSettings.all(this)).put("characterLife",LifeStore.all(this)).put("conversations",sessions).put("personal",personal()).put("stories",allStories()).put("writings",WritingStore.all(this)).put("writingEvents",WritingStore.events(this)).put("schedules",ScheduleStore.all(this)).put("letterPlans",LetterPlanStore.all(this)).put("diaryAttempts",DiaryStore.attempts(this)).put("notebook",MemoryNotebook.all(this));
         }finally{db.endTransaction();}
     }
     int importChats(JSONObject data, java.util.Set<String> knownCharacters) throws Exception {
-        BackupValidator.validate(data,knownCharacters);CallService.stopForRestore();
+        BackupValidator.validate(data,knownCharacters);CallService.stopForRestore();SocialEngine social=SocialEngine.active;if(social!=null)social.stop();ScheduleEngine.cancel();
         WritingStore.epoch.incrementAndGet();
         synchronized(ReachPlans.LOCK){ReachOut.cancel();appContext.getSharedPreferences("settings",0).edit().putLong("reachSettingsRevision",appContext.getSharedPreferences("settings",0).getLong("reachSettingsRevision",0)+1).commit();ReachPlanStore.stop(this,"备份恢复后旧搭话计划已失效",System.currentTimeMillis());}
+        synchronized(ScheduleAttempts.LOCK){synchronized(SocialStore.LOCK){synchronized(WeatherRuntime.CONFIG_LOCK){
         JSONArray sessions=data.getJSONArray("conversations");SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
         try {
             java.util.Map<String,String> mapping=new java.util.HashMap<>();java.util.Map<String,Long> messageMapping=new java.util.HashMap<>();
@@ -348,7 +350,8 @@ final class ChatStore extends SQLiteOpenHelper {
             if(data.optInt("version")>=9){JSONArray plans=data.getJSONArray("letterPlans");for(int i=0;i<plans.length();i++)LetterPlanStore.insert(this,plans.getJSONObject(i),WritingStore.epoch.get());}
             db.delete("diary_attempts",null,null);
             if(data.optInt("version")>=10){JSONArray attempts=data.getJSONArray("diaryAttempts");for(int i=0;i<attempts.length();i++)DiaryStore.restoreAttempt(this,attempts.getJSONObject(i));}
-            MemoryNotebook.restore(this,data,mapping,messageMapping);LifeStore.restore(this,data,messageMapping);CallStore.restore(this,data,mapping);MediaStore.restore(appContext,this,data);RuntimeSettings.restore(this,data);RuntimeSettings.clearObservationCache(appContext);db.setTransactionSuccessful();return sessions.length();
+            MemoryNotebook.restore(this,data,mapping,messageMapping);LifeStore.restore(this,data,messageMapping);CallStore.restore(this,data,mapping);MediaStore.restore(appContext,this,data);RuntimeSettings.restore(this,data);RuntimeSettings.clearObservationCache(appContext);SocialStore.restore(this,data);ScheduleAttempts.restore(this,data);db.setTransactionSuccessful();return sessions.length();
         }finally{db.endTransaction();}
+        }}}
     }
 }

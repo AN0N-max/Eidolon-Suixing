@@ -5,10 +5,11 @@ if(!$jdk){throw 'Set JAVA_HOME to JDK 17'}
 $python=if($env:EIDOLON_PYTHON){$env:EIDOLON_PYTHON}else{'python'}
 $android=Join-Path $env:ANDROID_HOME 'platforms/android-35/android.jar'
 $json=if($env:JSON_JAR){$env:JSON_JAR}else{Join-Path $workspace 'work/android-test-tools/json.jar'}
-$classes=Join-Path $workspace 'work/android-build-1.25.1/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
+$classes=Join-Path $workspace 'work/android-build-1.26/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
 $testClasses=Join-Path $workspace 'work/android-tests/classes'
 New-Item -ItemType Directory -Force $testClasses | Out-Null
-$cp="$json;$classes;$android"
+$bc=if($env:BC_JAR){$env:BC_JAR}else{Join-Path $workspace 'work/android-test-tools/bcprov-jdk18on-1.86.jar'}
+$cp="$json;$bc;$classes;$android"
 $testSources=@(Get-ChildItem (Join-Path $PSScriptRoot 'tests/com/eidolon/sc/mobile') -Filter '*Tests.java' | ForEach-Object { $_.FullName })
 & (Join-Path $jdk 'bin/javac.exe') -encoding UTF-8 -cp $cp -d $testClasses @testSources
 if($LASTEXITCODE -ne 0){throw 'Test compilation failed'}
@@ -142,3 +143,10 @@ if($LASTEXITCODE -ne 0){throw 'Sticker package checks failed'}
 
 & (Join-Path $jdk 'bin/java.exe') -cp "$testClasses;$cp" com.eidolon.sc.mobile.StickerSeriesTests
 if($LASTEXITCODE -ne 0){throw 'Sticker series preference checks failed'}
+
+& (Join-Path $jdk 'bin/java.exe') -cp "$testClasses;$cp" com.eidolon.sc.mobile.ScheduleQueueTests
+if($LASTEXITCODE -ne 0){throw 'Schedule queue checks failed'}
+& (Join-Path $jdk 'bin/java.exe') -cp "$testClasses;$cp" com.eidolon.sc.mobile.SocialRulesTests (Join-Path $PSScriptRoot 'assets/places.json')
+if($LASTEXITCODE -ne 0){throw 'Social, weather, location and backup checks failed'}
+& $python (Join-Path $PSScriptRoot 'tests/test_social_sql.py')
+if($LASTEXITCODE -ne 0){throw 'Social and schedule SQL checks failed'}

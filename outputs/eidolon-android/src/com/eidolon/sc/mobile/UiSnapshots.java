@@ -18,7 +18,7 @@ final class UiSnapshots {
         result.put("current",who.isEmpty()?JSONObject.NULL:who).put("session",conversation);
         result.put("config",new JSONObject().put("url",prefs.getString("url","")).put("model",prefs.getString("model","")).put("hasKey",Vault.configured(context,"key")).put("bilingual",prefs.getBoolean("bilingual",true)));
         result.put("producerAvatar",ProducerAvatar.url(context));
-        result.put("unread",UnreadState.counts(store));result.put("initialRoute",initialConversation?"chat":"roster");
+        result.put("socialStatus",new JSONObject().put("enabled",SocialStore.config(store).getBoolean("enabled")).put("unseen",SocialStore.unseen(store,System.currentTimeMillis())));result.put("unread",UnreadState.counts(store));result.put("initialRoute",initialConversation?"chat":"roster");
         result.put("reachEnabled",prefs.getBoolean("reachEnabled",false));
         result.put("notificationsAllowed",context.getSystemService(android.app.NotificationManager.class).areNotificationsEnabled());
         if(scope.reach)result.put("reachOptions",ReachOut.options(context,store));
