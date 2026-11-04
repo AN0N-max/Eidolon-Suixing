@@ -42,12 +42,14 @@ function schedulePage(){
   }
  }).catch(e=>{if(page==='schedule'&&epoch===schedulePageEpoch&&details.isConnected)details.replaceChildren(el('p','danger','读取行程失败：'+e.message),btn('重新读取',()=>render(),'pill wide'));});
 }
+let scheduleRequest='';
 function scheduleCompose(who){
- const c=state.characters.find(c=>c.id===who);modal.replaceChildren(el('h2','','请'+c.name+'安排今天'),el('p','notice','会调用后台模型，未单独配置时使用聊天模型。仅在输出被长度上限截断时自动扩大额度重试一次，可能增加用量。今天成功生成后会保存在本机，不反复重写。'));
+ const c=state.characters.find(c=>c.id===who);modal.replaceChildren(el('h2','','请'+c.name+'安排今天'),el('p','notice','会调用后台模型，未单独配置时使用聊天模型。截断专用重试最多一次。可同时聊天，已成功的行程不重写。'));
  modal.append(btn('开始安排',async()=>{
-  if(writingPending)return;writingPending=true;modal.replaceChildren(el('h2','','她正在安排今天…'),el('p','muted','完成后会保存到手机。'),btn('停止',async()=>{await api('cancel');modal.close();},'pill wide'));
-  try{state=await api('scheduleGenerate',{character:who});modal.close();page='schedule';scheduleSelected=who;render();toast('今天的行程已保存');}
-  catch(e){modal.close();toast(e.message);if(page==='schedule')render();}finally{writingPending=false;}
+  if(scheduleRequest)return;const requestId=crypto.randomUUID();scheduleRequest=requestId;
+  modal.replaceChildren(el('h2','','她正在安排今天…'),el('p','muted','可继续聊天，完成后保存到手机。'),btn('继续聊天',()=>{modal.close();navigate('roster');},'pill wide'),btn('停止安排',async()=>{await api('scheduleCancel',{requestId});modal.close();},'pill wide'));
+  try{await api('scheduleGenerate',{character:who,requestId});if(modal.open&&scheduleRequest===requestId)modal.close();if(page==='schedule')render();toast('今天的行程已保存');}
+  catch(e){if(modal.open&&scheduleRequest===requestId)modal.close();toast(e.message);if(page==='schedule')render();}finally{if(scheduleRequest===requestId)scheduleRequest='';}
  },'pill primary wide'),btn('取消',()=>modal.close(),'pill wide'));modal.showModal();
 }
 function scheduleSettings(){
@@ -60,6 +62,6 @@ function scheduleSettings(){
  const limit=choiceField(area,'每天自动安排角色数量上限',[['1','1 位'],['3','3 位'],['5','5 位'],['10','10 位'],['28','28 位']],String(options.limit||3));
  area.append(el('p','notice','按角色有效时区（默认沿用档案），每天 03:00 后为最近七天聊过的角色安排，优先最近聊天的角色。每位每天成功生成一次，手机后台运行可能延迟。行程页在03:00前保留上一日安排，03:00后切换当天，不删除历史记录。'));
  area.append(el('p','notice','开启作息后，睡着时仍会回复，语气可以困倦；连续聊醒后不再反复提睡觉。每天安排行程时会本地随机生成睡前泡澡/淋浴时段，正在洗澡时聊天状态会提示；在洗澡期间收到的消息会等到预计结束后再投放回复（需同时开启延迟回复）。她睡觉或洗澡时会暂停主动搭话。洗澡仅作日常安排参考，不描写过程或身体。行程关闭时，作息效果也会关闭。'));
- area.append(el('p','notice','每天生成行程会调用后台模型，日常读取状态不调用模型。自动安排逐名执行，聊天生成和通话优先；等待投放的回复不会占住所有角色的安排。上限包含当天已安排或尝试的记录，同一角色当天失败或进程中断后不自动重发，可在行程页明确重试。'));
+ area.append(el('p','notice','每天生成行程会调用后台模型，日常读取状态不调用模型。自动安排逐名执行，可与文字聊天并行，共享有界请求额度；不同任务分别取消，等待投放不占用请求。上限包含当天已安排或尝试的记录，同一角色当天失败或进程中断后不自动重发，可在行程页明确重试。'));
  area.append(btn('保存设置',async()=>{state=await api('scheduleSettings',{enabled:enabled.checked,rest:rest.checked,limit:Number(limit.value)});toast('已保存');render();},'pill primary wide'));
 }

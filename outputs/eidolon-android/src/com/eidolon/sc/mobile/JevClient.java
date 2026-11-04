@@ -21,7 +21,8 @@ final class JevClient {
         android.util.Log.i("EidolonJudge","Opening System One connection");
         JSONObject request = new JSONObject().put("model", model).put("state", state)
             .put("questions", questions);
-        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        RequestSlots.Lease lease=RequestSlots.acquire(()->task!=null&&task.cancelled,task!=null&&task.foreground);
+        try{HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         if(task!=null){task.connection=connection;if(task.cancelled){connection.disconnect();throw new IOException("已停止");}}
         try {
             connection.setInstanceFollowRedirects(false);
@@ -57,6 +58,7 @@ final class JevClient {
             if (answers.length() == 0) throw new IOException("判断模型没有返回结果");
             return answers;
         } finally { connection.disconnect();if(task!=null&&task.connection==connection)task.connection=null; }
+        }finally{lease.close();}
     }
 
     private static String refusal(int status, String body) {

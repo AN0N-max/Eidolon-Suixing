@@ -16,7 +16,7 @@ final class ScheduleQueue {
   long now=System.currentTimeMillis(),next=Long.MAX_VALUE;JSONObject personal=s.personal();JSONArray chars=WritingEngine.characters(c);ZoneId producer=ScheduleData.zone(personal);String budgetDay=Instant.ofEpochMilli(now).atZone(producer).toLocalDate().toString();
   boolean room=ScheduleAttempts.count(s,budgetDay,producer)<p.getInt("hibiScheduleLimit",3);
   if(!room)next=Instant.ofEpochMilli(now).atZone(producer).toLocalDate().plusDays(1).atStartOfDay(producer).toInstant().toEpochMilli();
-  if(room&&!ScheduleCandidates.list(c,s,personal,chars,now).isEmpty())next=ScheduleQueueRules.retryAt(now,ScheduleCandidates.occupied(s)||WritingEngine.running.get());
+  if(room&&!ScheduleCandidates.list(c,s,personal,chars,now).isEmpty())next=ScheduleQueueRules.retryAt(now,ScheduleCandidates.occupied(s));
   else for(int i=0;i<chars.length();i++){String who=chars.getJSONObject(i).getString("id");if(!ScheduleStore.talked(s,who)||s.lastActivity(who)<now-7L*SocialData.DAY)continue;ZonedDateTime at=Instant.ofEpochMilli(now).atZone(TemporalRuntime.zone(c,personal,who));next=Math.min(next,DailyScheduleClock.nextBoundary(at));}
   if(next==Long.MAX_VALUE){jobs.cancel(JOB);return;}next=Math.max(now+1000,next);JobInfo previous=jobs.getPendingJob(JOB);
   if(!force&&previous!=null&&previous.getExtras().getLong("targetAt",Long.MAX_VALUE)<=next+1000)return;

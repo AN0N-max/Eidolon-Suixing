@@ -5,6 +5,7 @@ function unreadBadge(count){const n=el('span','unread-count',count>99?'99+':Stri
 function writingLink(title,route,kind){const n=btn(title,()=>navigate(route),'pill');n.dataset.writingKind=kind;return n;}
 function writingUnread(kind){if(state?.writingUnread)return state.writingUnread[kind]||0;return (state?.writings||[]).filter(e=>e.kind===kind&&!e.locked&&(!e.read||e.hiddenUnread)).length;}
 function updateUnreadBadges(){
+ socialUpdateDot(!!state?.socialStatus?.unseen);
  document.querySelectorAll('[data-unread-character]').forEach(n=>{n.replaceChildren();const count=state?.unread?.characters?.[n.dataset.unreadCharacter]||0;if(count)n.append(unreadBadge(count));n.closest('.roster-row')?.classList.toggle('has-unread',count>0);});
  document.querySelectorAll('[data-writing-kind]').forEach(n=>{const k=n.dataset.writingKind,count=k==='all'?writingUnread('letter')+writingUnread('diary'):writingUnread(k);n.classList.toggle('has-writing-unread',count>0);});
  const navSettings=document.querySelector('[data-settings-unread]');if(navSettings)navSettings.classList.toggle('has-unread',!!(writingUnread('letter')||writingUnread('diary')));

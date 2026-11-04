@@ -11,8 +11,9 @@ final class ModelClient {
     static final class OutputLimitException extends IOException {
         OutputLimitException(){super("回复达到服务的长度限制，请缩短问题后重试");}
     }
+    static final class ServiceException extends IOException {final int status;ServiceException(int code){super(error(code));status=code;}}
     interface Listener { void update(String text); }
-    volatile boolean cancelled;
+    volatile boolean cancelled;boolean foreground;
     volatile HttpURLConnection connection;
     void cancel() { cancelled = true; HttpURLConnection c = connection; if (c != null) c.disconnect(); }
     static String endpointBase(String address) throws Exception {
@@ -85,9 +86,10 @@ final class ModelClient {
     }
     String chat(String address, String key, JSONObject body, Listener listener) throws Exception {
         if (cancelled) throw new IOException("已停止");
-        connection = (HttpURLConnection)new URL(endpoint(address)).openConnection();
+        RequestSlots.Lease lease=RequestSlots.acquire(()->cancelled,foreground);
+        try{connection = (HttpURLConnection)new URL(endpoint(address)).openConnection();
         try {
-            connection.setInstanceFollowRedirects(false);
+            if(cancelled)throw new IOException("已停止");connection.setInstanceFollowRedirects(false);
             connection.setConnectTimeout(20000); connection.setReadTimeout(90000);
             connection.setRequestMethod("POST"); connection.setDoOutput(true);
             connection.setRequestProperty("Authorization", "Bearer " + key);
@@ -96,11 +98,12 @@ final class ModelClient {
             byte[] bytes=body.toString().getBytes("UTF-8"); connection.setFixedLengthStreamingMode(bytes.length);
             try(OutputStream out=connection.getOutputStream()) { out.write(bytes); }
             int status=connection.getResponseCode();
-            if (status<200 || status>=300) throw new IOException(error(status));
+            if (status<200 || status>=300) throw new ServiceException(status);
             try(BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"))) {
                 return readEvents(reader, listener);
             }
         } finally { connection.disconnect(); }
+        }finally{lease.close();}
     }
     String readEvents(BufferedReader reader, Listener listener) throws Exception {
         StringBuilder text = new StringBuilder(), event = new StringBuilder();

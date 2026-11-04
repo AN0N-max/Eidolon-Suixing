@@ -1,5 +1,15 @@
 # Android安装包
 
+[1.27原签名升级APK](Eidolon-1.27-original-upgrade.apk)，code83，DB/备份18保持。覆盖安装保留聊天/表情和偏好；旧APK保留。聊天、键盘、独立并发和语音状态修复，真机/真实服务未验收。
+
+SHA256：de3b332908b482a33d4bf940544bb3801972bf5fa9b1c2da6072a01e94ba1674
+
+[发布说明](../outputs/eidolon-android/RELEASE-1.27.md) · [验证](../docs/QA-1.27.md)
+
+## 历史安装包说明（1.27之前）
+
+# Android安装包
+
 [1.26原签名升级APK](Eidolon-1.26-original-upgrade.apk)，code82，DB/备份18。朋友圈、天气、城市与逐位日程修复；新功能默认关闭，旧失败需手动重新安排。覆盖安装保留现有数据/表情，旧APK保留。
 
 SHA256：e49451c257f2541f632a866899e56b60091690a5282248101d2b933fafc21134

@@ -20,7 +20,7 @@ final class FishClient {
         if (c != null) c.disconnect();
     }
     static String speech(String text) throws Exception {
-        text=ReplyText.clean(text);
+        text=ReplyMarkup.speech(ReplyText.clean(text));
         Matcher m = Pattern.compile("<ja>(.*?)</ja>", Pattern.DOTALL).matcher(text);
         StringBuilder ja = new StringBuilder();
         while (m.find()) ja.append(m.group(1)).append('\n');

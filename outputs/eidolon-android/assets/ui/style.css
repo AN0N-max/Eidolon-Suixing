@@ -152,3 +152,13 @@
 .release-notes .release-note{margin:14px 0;padding:16px;border:1px solid #8884;border-radius:18px;overflow-wrap:anywhere}.release-note summary{cursor:pointer;line-height:1.6}.release-note summary small{display:block;margin:4px 0 0 18px}.release-note h2{font-size:16px;margin:18px 0 8px}.release-note ul{padding-left:22px;margin:8px 0}.release-note li{line-height:1.75;margin:9px 0}
 
 .life-event{padding:14px;border:1px solid #8884;border-radius:14px;margin:12px 0;overflow-wrap:anywhere}.life-event summary{cursor:pointer;line-height:1.7}.life-event p{line-height:1.7}.life-event .pill{margin:6px 6px 0 0}.life-state-body>h2{font-size:17px;margin:22px 0 12px}
+
+/* Native IME state, independent of focus and the sticker/photo panels. */
+html[data-ime="true"][data-hide-nav="true"] .bottom-nav{display:none}
+.bottom-nav button{min-width:0}.bottom-nav button>span{max-width:100%;width:52px}
+.bottom-nav button>span>.social-dot{position:absolute;right:9px;top:1px;width:6px;height:6px;min-width:0;border-radius:50%;background:#db6b79}
+.bottom-nav .social-dot[hidden]{display:none}.suppressed-message{display:block;height:1px;overflow:hidden}
+.voice-play[data-playback="loading"]{opacity:.6;animation:voice-loading 1s ease-in-out infinite alternate}.voice-play[data-playback="failed"]{color:#c65b67}
+@keyframes voice-loading{to{opacity:1}}
+
+.voice-feedback{font-size:12px;white-space:normal;color:#bf5865;max-width:22em;line-height:1.5}.message-tools{flex-wrap:wrap}

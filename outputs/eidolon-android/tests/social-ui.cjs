@@ -40,7 +40,7 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
    }};
   },data);
   await page.goto('https://eidolon.local/ui/index.html');await page.locator('.roster-row').first().waitFor();
-  await page.evaluate(()=>navigate('calendar'));await page.getByRole('button',{name:'朋友圈',exact:true}).click();await page.locator('.social-post').first().waitFor();
+  await page.evaluate(()=>navigate('calendar'));await page.getByRole('navigation',{name:'主导航'}).getByRole('button',{name:'朋友圈',exact:true}).click();await page.locator('.social-post').first().waitFor();
   await page.getByText('<img src=x onerror="window.injected=true">',{exact:false}).waitFor();assert.equal(await page.evaluate(()=>!!window.injected),false);assert.equal(await page.locator('.social-post img[src="x"]').count(),0);
   await page.waitForFunction(()=>calls.some(q=>q.action==='socialRead'));
   assert((await page.evaluate(()=>readIds)).every(id=>['post-0','post-1'].includes(id)),'initial view never acknowledges the whole loaded page');

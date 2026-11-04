@@ -4,7 +4,7 @@ import android.content.*;import org.json.*;import java.util.*;import java.io.*;i
 /** Isolated local actions; selecting/reading pages never asks the language model. */
 final class SocialActions {
  static final ExecutorService IO=Executors.newFixedThreadPool(2);
- static final Set<String> ACTIONS=new HashSet<>(Arrays.asList("socialGet","socialRead","socialLike","socialComment","socialDeleteComment","socialSettingsGet","socialSettingsSave","socialGenerate","socialCheck","socialMapOpen","socialSourceOpen","weatherGet","weatherSave","weatherRefresh","citySearch","citySave","cityClear"));
+ static final Set<String> ACTIONS=new HashSet<>(Arrays.asList("socialGet","socialRead","socialLike","socialComment","socialDeleteComment","socialSettingsGet","socialSettingsSave","socialGenerate","socialCheck","socialRetry","socialMapOpen","socialSourceOpen","weatherGet","weatherSave","weatherRefresh","citySearch","citySave","cityClear"));
  static Object run(Context c,ChatStore s,String action,JSONObject args)throws Exception {
   long now=System.currentTimeMillis();
   if(action.equals("socialGet")){int offset=args.optInt("offset");if(offset<0||offset>5000)throw new IOException("分页位置无效");return SocialStore.timeline(s,now,offset);}
@@ -20,6 +20,16 @@ final class SocialActions {
   if(action.equals("socialGenerate")){
    if(!args.optBoolean("confirmed"))throw new IOException("请先确认本次模型调用");SharedPreferences p=c.getSharedPreferences("settings",0);if(p.getString("url","").trim().isEmpty()||p.getString("model","").trim().isEmpty()||!Vault.configured(c,"key"))throw new IOException("请先在模型与接口配置聊天模型");
    String id=SocialEngine.manual(c,s,args.getString("character"),now);SocialScheduler.refresh(c);SocialScheduler.check(c);return SocialStore.status(s,now).put("queued",id);
+  }
+  if(action.equals("socialRetry")){
+   if(!args.optBoolean("confirmed"))throw new IOException("请先确认本次模型调用");
+   synchronized(SocialStore.LOCK){SocialStore.requireEnabled(s);JSONObject old=SocialStore.task(s,args.getString("id"));if(old==null||!Arrays.asList("FAILED","SKIPPED","CANCELLED").contains(old.optString("state")))throw new IOException("这条任务当前不能重试");
+    if(old.getString("kind").equals("post"))SocialEngine.manual(c,s,old.getString("character"),now);
+    else{String target=old.getString("target");JSONObject comment=SocialStore.commentById(s,target);if(comment==null||comment.optJSONObject("reply")!=null)throw new IOException("评论已删除或已经收到回复");
+     if(SocialStore.count(s,"SELECT count(*) FROM social_tasks WHERE target=? AND kind='reply' AND state IN ('PENDING','RUNNING')",target)>0)throw new IOException("这条评论已有回复任务");
+     if(SocialStore.used(s,SocialStore.budgetDay(s,now,false),"reply")>=SocialStore.config(s).getInt("repliesPerDay"))throw new IOException("今日回复请求额度已用完，失败与中断也计入额度");
+     SocialStore.addTask(s,old.getString("character"),"reply",target,SocialData.day(now),now,now+2*SocialData.HOUR,new JSONObject().put("manual",true));}
+   }SocialScheduler.refresh(c);SocialScheduler.check(c);return SocialStore.status(s,now);
   }
   if(action.equals("socialCheck")){SocialStore.requireEnabled(s);SocialScheduler.check(c);return SocialStore.status(s,now);}
   if(action.equals("socialMapOpen")){SocialStore.requireEnabled(s);JSONObject p=SocialStore.post(s,args.getString("id"));if(p.getLong("published")>now||p.optJSONObject("place")==null)throw new IOException("这条动态没有已发布地点");return new JSONObject().put("url",PlacePool.map(p.getJSONObject("place"),SocialStore.config(s).getString("map")));}

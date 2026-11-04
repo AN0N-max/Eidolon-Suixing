@@ -89,12 +89,14 @@ with tempfile.TemporaryDirectory(prefix='eidolon-social-') as temp,contextlib.Ex
  assert c.execute('UPDATE social_comments SET body=? WHERE id=?',('old-reply','c1')).rowcount==0
  assert json.loads(c.execute("SELECT body FROM social_comments WHERE id='c2'").fetchone()[0])['text']=='new'
  print('PASS delete/recomment invalidates late reply token/UUID while retaining paid usage')
- # Native queue ignores waiting/failed delivery rows; actual collecting/generating blocks it.
- c.execute('CREATE TABLE pending_replies(status TEXT)')
- busy_sql=sql('ScheduleCandidates',"SELECT 1 FROM pending_replies WHERE status IN")
+ # Same-role social admission defers active chat; independent roles/schedules do not take a global lock.
+ c.execute('CREATE TABLE pending_replies(character TEXT,status TEXT)')
+ busy_sql=sql('SocialEngine',"SELECT count(*) FROM pending_replies WHERE character=? AND status IN")
  for status,expected in [('waiting',False),('failed',False),('collecting',True),('generating',True)]:
-  c.execute('DELETE FROM pending_replies');c.execute('INSERT INTO pending_replies VALUES (?)',(status,));assert bool(c.execute(busy_sql).fetchone())==expected
- print('PASS waiting delivery does not occupy model work; collecting/generating still blocks queue')
+  c.execute('DELETE FROM pending_replies');c.execute('INSERT INTO pending_replies VALUES (?,?)',('mano',status));assert bool(c.execute(busy_sql,('mano',)).fetchone()[0])==expected
+  assert c.execute(busy_sql,('hiori',)).fetchone()[0]==0
+ assert 'WritingEngine.running' not in (SRC/'ScheduleEngine.java').read_text(encoding='utf-8') and 'ScheduleEngine.yieldToChat()' not in (SRC/'ConversationEngine.java').read_text(encoding='utf-8')
+ print('PASS actual same-role admission SQL: active text defers social only for that role; independent schedule/chat workers share no global writing lock')
  # Same schema protects schedule claims and token CAS across cancellation/manual retry.
  c.execute("INSERT INTO schedule_attempts VALUES ('mano/2026-11-04','mano',?,?,'RUNNING','old','')",(day,now))
  c.execute(sql('ScheduleAttempts',"UPDATE schedule_attempts SET state='FAILED',token=''"))

@@ -1,9 +1,10 @@
 # 更新记录与开发文档
 
-当前可安装版本：**1.26/code82**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
+当前可安装版本：**1.27/code83**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
 
 | 版本 | 主要变化 | 完整记录 |
 | --- | --- | --- |
+| 1.27 | 聊天控制语法/历史兼容、键盘与稳定编辑器、五栏导航、独立并发、社交诊断、气泡语音 | [RELEASE-1.27](outputs/eidolon-android/RELEASE-1.27.md) |
 | 1.26 | 朋友圈、天气/城市、共享上下文、逐位日程队列与原因诊断，DB18 | [RELEASE-1.26](outputs/eidolon-android/RELEASE-1.26.md) |
 | 1.25.1 | 行程时间本地规范化、午夜入睡边界和具体失败提示 | [RELEASE-1.25.1](outputs/eidolon-android/RELEASE-1.25.1.md) |
 | 1.25 | 聊天底部表情网格、全屏图片预览、资源/角色/视觉配置归入总设置 | [RELEASE-1.25](outputs/eidolon-android/RELEASE-1.25.md) |

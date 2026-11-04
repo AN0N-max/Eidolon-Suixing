@@ -8,7 +8,7 @@ import java.util.*;
 
 /** Shared foreground/recovery generation. All model work and persistence run on a worker. */
 final class ConversationEngine {
-    private static final java.util.concurrent.ExecutorService FOREGROUND=java.util.concurrent.Executors.newSingleThreadExecutor();
+    private static final java.util.concurrent.ExecutorService FOREGROUND=java.util.concurrent.Executors.newFixedThreadPool(2);
     static void execute(Runnable task){FOREGROUND.execute(task);}
     private static final Object CALL_LOCK=new Object();
     private static final java.util.Map<String,java.util.Set<ModelClient>> ACTIVE=new java.util.HashMap<>();
@@ -22,18 +22,18 @@ final class ConversationEngine {
     private static void finish(String id,long revision){String key=key(id,revision);synchronized(CALL_LOCK){ACTIVE.remove(key);STOPPED.remove(key);OWNERS.remove(key);}}
     private static String chat(ChatStore store,String id,long revision,String url,String token,JSONObject request)throws Exception{
         String key=key(id,revision);ChatStore.PendingReply row=store.pending(id);if(row==null||row.revision!=revision||!row.status.equals("generating"))throw new IOException("回复任务已更新");
-        ModelClient client=new ModelClient();synchronized(CALL_LOCK){if(STOPPED.contains(key))throw new IOException("后台回复任务已停止");ACTIVE.computeIfAbsent(key,k->new java.util.HashSet<>()).add(client);}
+        ModelClient client=new ModelClient();client.foreground=true;synchronized(CALL_LOCK){if(STOPPED.contains(key))throw new IOException("后台回复任务已停止");ACTIVE.computeIfAbsent(key,k->new java.util.HashSet<>()).add(client);}
         try{String result=client.chat(url,token,request,ignored->{CallService.modelFirst(id,revision);});synchronized(CALL_LOCK){if(STOPPED.contains(key))throw new IOException("后台回复任务已停止");}row=store.pending(id);if(row==null||row.revision!=revision||!row.status.equals("generating"))throw new IOException("回复任务已更新");return result;}
         finally{synchronized(CALL_LOCK){java.util.Set<ModelClient> clients=ACTIVE.get(key);if(clients!=null){clients.remove(client);if(clients.isEmpty())ACTIVE.remove(key);}}}
     }
     private static JSONObject judge(ChatStore store,String id,long revision,String url,String token,String model,JSONObject state,JSONObject questions)throws Exception{
         String key=key(id,revision);ChatStore.PendingReply row=store.pending(id);if(row==null||row.revision!=revision||!row.status.equals("generating"))throw new IOException("回复任务已更新");
-        ModelClient client=new ModelClient();synchronized(CALL_LOCK){if(STOPPED.contains(key))throw new IOException("后台回复任务已停止");ACTIVE.computeIfAbsent(key,k->new java.util.HashSet<>()).add(client);}
+        ModelClient client=new ModelClient();client.foreground=true;synchronized(CALL_LOCK){if(STOPPED.contains(key))throw new IOException("后台回复任务已停止");ACTIVE.computeIfAbsent(key,k->new java.util.HashSet<>()).add(client);}
         try{JSONObject result=JevClient.ask(url,token,model,state,questions,client);synchronized(CALL_LOCK){if(STOPPED.contains(key))throw new IOException("后台回复任务已停止");}row=store.pending(id);if(row==null||row.revision!=revision||!row.status.equals("generating"))throw new IOException("回复任务已更新");return result;}
         finally{synchronized(CALL_LOCK){java.util.Set<ModelClient> clients=ACTIVE.get(key);if(clients!=null){clients.remove(client);if(clients.isEmpty())ACTIVE.remove(key);}}}
     }
     static void generate(Context c,ChatStore store,ChatStore.PendingReply p){
-        if(p==null||p.test)return;ScheduleEngine.yieldToChat();SocialEngine.yieldFor(p.character);synchronized(CALL_LOCK){if(!store.markGenerating(p.id,p.revision))return;start(p.id,p.revision);}ReplyTrace.record(c,"后台恢复开始生成正式回复");
+        if(p==null||p.test)return;synchronized(CALL_LOCK){if(!store.markGenerating(p.id,p.revision))return;start(p.id,p.revision);}ReplyTrace.record(c,"后台恢复开始生成正式回复");
         try{
             boolean voiceCall=CallStore.held(store,p);android.content.SharedPreferences prefs=c.getSharedPreferences("settings",0);String key,url,model;MediaContext.Config mediaConfig;synchronized(MediaContext.CONFIG_LOCK){key=Vault.read(c);url=prefs.getString("url","").trim();model=prefs.getString("model","").trim();mediaConfig=MediaContext.config(c);}
             if(key.isEmpty()||url.isEmpty()||model.isEmpty())throw new IOException("请配置聊天模型 API 后重试");ModelClient.endpoint(url);

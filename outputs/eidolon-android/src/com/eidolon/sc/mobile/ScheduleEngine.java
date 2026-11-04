@@ -8,41 +8,47 @@ import org.json.*;
 
 /** Daily model-generated schedules; no model call is made while merely reading status. */
 final class ScheduleEngine {
+    static final java.util.concurrent.ExecutorService MANUAL=java.util.concurrent.Executors.newSingleThreadExecutor();
+    static final java.util.concurrent.atomic.AtomicBoolean manualQueued=new java.util.concurrent.atomic.AtomicBoolean();static volatile String manualTicket="",activeManualTicket="",cancelledManualTicket="";
+    static final java.util.concurrent.atomic.AtomicBoolean running=new java.util.concurrent.atomic.AtomicBoolean();
     static volatile ModelClient active;
     static volatile Thread owner;
     static final java.util.concurrent.atomic.AtomicLong cancellation=new java.util.concurrent.atomic.AtomicLong();
     static void cancel(){synchronized(ScheduleAttempts.LOCK){cancellation.incrementAndGet();ModelClient c=active;if(c!=null)c.cancel();}}
-    static void yieldToChat(){if(owner!=null)cancel();}
+    static void cancelManual(String ticket){synchronized(ScheduleAttempts.LOCK){if(!ticket.isEmpty()&&ticket.equals(manualTicket)){cancelledManualTicket=ticket;if(ticket.equals(activeManualTicket))cancel();}}}
+    static void yieldToChat(){/* Independent, read-only schedule planning continues during text chat. */}
     static void verify(Context c,ChatStore s,java.time.ZoneId zone,long requestEpoch,long dataEpoch)throws Exception{
         if(!ScheduleQueueRules.live(requestEpoch,cancellation.get(),dataEpoch,WritingStore.epoch.get(),c.getSharedPreferences("settings",0).getBoolean("hibiSchedules",false),Thread.currentThread().isInterrupted())||!zone.equals(TemporalRuntime.zone(c,s.personal(),activeWho)))throw new IOException("行程生成已停止或资料已改变，未自动重试");
-        if(ScheduleCandidates.occupied(s))throw new IOException("当前聊天、通话或后台生成优先，行程已停止");
+
     }
     static volatile String activeWho="";
 
     static JSONObject manual(Context context,String who)throws Exception{return manual(context,who,cancellation.get());}
-    static JSONObject manual(Context context,String who,long requestEpoch)throws Exception{
+    static JSONObject manual(Context context,String who,long requestEpoch)throws Exception{return manual(context,who,requestEpoch,"");}
+    static JSONObject manual(Context context,String who,long requestEpoch,String ticket)throws Exception{
         if(!context.getSharedPreferences("settings",0).getBoolean("hibiSchedules",false))throw new IOException("请先在行程设置开启角色行程");
         if(requestEpoch!=cancellation.get())throw new IOException("行程生成已停止");
-        if(!WritingEngine.running.compareAndSet(false,true))throw new IOException("后台模型正在处理另一项任务，请稍候");owner=Thread.currentThread();ChatStore store=new ChatStore(context);
+        if(!running.compareAndSet(false,true))throw new IOException("后台模型正在处理另一项任务，请稍候");owner=Thread.currentThread();ChatStore store=new ChatStore(context);
         try{
+            synchronized(ScheduleAttempts.LOCK){if(!ticket.isEmpty()&&ticket.equals(cancelledManualTicket))throw new IOException("这次行程安排已取消");activeManualTicket=ticket;}
             if(!ScheduleStore.talked(store,who))throw new IOException("先和她聊一轮，再请她安排行程");
-            if(ScheduleCandidates.occupied(store))throw new IOException("请等待当前聊天、通话或后台生成完成");
+
             JSONObject personal=store.personal();ZonedDateTime at=Instant.ofEpochMilli(System.currentTimeMillis()).atZone(TemporalRuntime.zone(context,personal,who));
             if(at.isBefore(DailyScheduleClock.boundary(at.toLocalDate(),at.getZone())))throw new IOException("03:00 前保留上一日安排，请在03:00后安排新一天");
             String day=at.toLocalDate().toString();if(ScheduleStore.plan(store,who,day)!=null)throw new IOException("今天已经有安排，明天会重新生成");
             return generate(context,store,WritingEngine.character(WritingEngine.characters(context),who),personal,day,true,requestEpoch);
-        }finally{active=null;activeWho="";owner=null;store.close();WritingEngine.running.set(false);ScheduleQueue.refresh(context);ScheduleQueue.changed();}
+        }finally{active=null;activeWho="";activeManualTicket="";owner=null;store.close();running.set(false);ScheduleQueue.refresh(context);ScheduleQueue.changed();}
     }
     static JSONObject run(Context context)throws Exception{
         SharedPreferences p=context.getSharedPreferences("settings",0);if(!p.getBoolean("hibiSchedules",false))return null;
-        if(!WritingEngine.running.compareAndSet(false,true))return null;owner=Thread.currentThread();long requestEpoch=cancellation.get();ChatStore store=new ChatStore(context);
+        if(!running.compareAndSet(false,true))return null;owner=Thread.currentThread();long requestEpoch=cancellation.get();ChatStore store=new ChatStore(context);
         try{
-            if(ScheduleCandidates.occupied(store))return null;JSONObject personal=store.personal();ZoneId zone=ScheduleData.zone(personal);long now=System.currentTimeMillis();String day=Instant.ofEpochMilli(now).atZone(zone).toLocalDate().toString();
+            JSONObject personal=store.personal();ZoneId zone=ScheduleData.zone(personal);long now=System.currentTimeMillis();String day=Instant.ofEpochMilli(now).atZone(zone).toLocalDate().toString();
             if(ScheduleAttempts.count(store,day,zone)>=p.getInt("hibiScheduleLimit",3)||!ScheduleCandidates.configured(context))return null;
             List<JSONObject> candidates=ScheduleCandidates.list(context,store,personal,WritingEngine.characters(context),now);if(candidates.isEmpty())return null;
             JSONObject selected=candidates.get(0);String localDay=Instant.ofEpochMilli(now).atZone(TemporalRuntime.zone(context,personal,selected.getString("id"))).toLocalDate().toString();
             return generate(context,store,selected,personal,localDay,false,requestEpoch);
-        }finally{active=null;activeWho="";owner=null;store.close();WritingEngine.running.set(false);ScheduleQueue.refresh(context);ScheduleQueue.changed();}
+        }finally{active=null;activeWho="";activeManualTicket="";owner=null;store.close();running.set(false);ScheduleQueue.refresh(context);ScheduleQueue.changed();}
     }
     static JSONObject generate(Context context,ChatStore store,JSONObject persona,JSONObject personal,String day,boolean manual,long requestEpoch)throws Exception{
         long epoch=WritingStore.epoch.get();String who=persona.getString("id"),token="";activeWho=who;ZoneId requestZone=TemporalRuntime.zone(context,personal,who);SharedPreferences p=context.getSharedPreferences("settings",0);

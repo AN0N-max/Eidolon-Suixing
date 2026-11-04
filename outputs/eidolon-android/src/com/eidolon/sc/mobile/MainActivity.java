@@ -198,12 +198,12 @@ public class MainActivity extends Activity {
         form.addView(label("本应用不会赠送模型额度。网络请求仅发送到你填写的 HTTPS 服务。卸载会删除本机记录和密钥，请谨慎操作。",12,MUTED));
     }
     void playVoice(String reply){
-        if(busy){toast("请等回复完成后再播放");return;}
+
         if(current==null)return;
         String key;try{key=Vault.read(this,"fish");}catch(Exception e){toast("语音密钥无法读取，请重新保存");return;}
         if(key.isEmpty()){toast("先填写 Fish Audio 密钥即可播放角色语音");voiceSettings();return;}
         String voice=prefs.getString("voice-"+current.optString("id"),current.optString("voice_id"));
-        voicePlayer.play(reply,voice,prefs.getString("fish-model","s2.1-pro-free"),key,message->{if(!destroyed){if(status!=null)status.setText(message);toast(message);}});
+        voicePlayer.play(reply,voice,prefs.getString("fish-model","s2.1-pro-free"),key,message->{if(!destroyed){if(status!=null)status.setText(message);if(this instanceof WebActivity)((WebActivity)this).event("voiceChanged",message);else toast(message);}});
     }
     void voiceSettings(){
         LinearLayout form=column();form.setPadding(dp(20),dp(10),dp(20),dp(10));

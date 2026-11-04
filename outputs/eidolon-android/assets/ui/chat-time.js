@@ -1,8 +1,10 @@
 'use strict';
-function cleanReplyText(value){
+function cleanReplyProse(value){
  const stamp='\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}[ T\\s]+\\d{1,2}:\\d{2}(?::\\d{2})?(?:\\s*(?:Z|[+-]\\d{2}:?\\d{2}))?',time='(?:'+stamp+'|发送时间未知（旧记录）|时间未知|未知)';
- return String(value||'').replace(new RegExp('(?:【|\\[)\\s*(?:消息发送时间|发送时间)\\s*[:：]\\s*'+time+'(?:\\s*[;；][^】\\]]{0,180})?\\s*(?:】|\\])','gi'),'').replace(new RegExp('^[\\t ]*(?:\\*\\*)?(?:消息发送时间|发送时间|当前回复生成时间)\\s*[:：]\\s*'+time+'(?:[\\t ]*[;；][^\\r\\n]{0,180})?(?:\\*\\*)?[\\t ]*(?:\\r?\\n|$)','gmi'),'').replace(/<(ja|zh)>\s*<\/\1>/gs,'').trim();
+ return String(value||'').replace(new RegExp('(?:【|\\[)\\s*(?:消息发送时间|发送时间)\\s*[:：]\\s*'+time+'(?:\\s*[;；][^】\\]]{0,180})?\\s*(?:】|\\])','gi'),'').replace(new RegExp('^[\\t ]*(?:\\*\\*)?(?:消息发送时间|发送时间|当前回复生成时间)\\s*[:：]\\s*'+time+'(?:[\\t ]*[;；][^\\r\\n]{0,180})?(?:\\*\\*)?[\\t ]*(?:\\r?\\n|$)','gmi'),'').replace(/<(ja|zh)>\s*<\/\1>/gs,'');
 }
+function cleanReplyText(value){return replyProse(replyMarkup(String(value||'')),cleanReplyProse).trim();}
+function replyProse(text,plain){const re=/```[\s\S]*?(?:```|$)|`[^`\r\n]*`|^[\t ]*>[^\r\n]*/gm;let out='',at=0,m;while((m=re.exec(text))){out+=plain(text.slice(at,m.index))+m[0];at=re.lastIndex;}return out+plain(text.slice(at));}
 function chatClockParts(at,zone){const rows=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(at)),p={};for(const r of rows)p[r.type]=r.value;p.dayKey=p.year+'-'+p.month+'-'+p.day;return p;}
 function chatTimeLabel(at,zone,now=Date.now()){
  if(!Number.isFinite(at)||at<=0)return '较早的聊天 · 时间未记录';
@@ -20,3 +22,8 @@ function appendChatHistory(parent,messages){
 function updateChatTimeLabels(){for(const n of document.querySelectorAll('.chat-time[data-chat-at]'))n.textContent=chatTimeLabel(Number(n.dataset.chatAt),n.dataset.timeZone);}
 window.addEventListener('focus',updateChatTimeLabels);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateChatTimeLabels();});
+
+function replyMarkup(text){
+ const plain=s=>s.replace(/<sticker_id>\s*[\s\S]{0,2048}?\s*<\/sticker_id>/gi,'').replace(/\bs-[a-f0-9]{64}\b/g,'').replace(/<sticker_id>\s*[^<>\s]{1,200}/gi,'').replace(/<\/?sticker_id>/gi,'').replace(/<br[\t ]*\/?>|&lt;br[\t ]*\/?&gt;/gi,'\n').replace(/\r\n?/g,'\n').replace(/\n(?:[\t ]*\n){2,}/g,'\n\n');
+ const re=/```[\s\S]*?(?:```|$)|`[^`\r\n]*`|^[\t ]*>[^\r\n]*/gm;let out='',at=0,m;while((m=re.exec(text))){out+=plain(text.slice(at,m.index))+m[0];at=re.lastIndex;}return (out+plain(text.slice(at))).trim();
+}

@@ -4,9 +4,11 @@ import android.database.Cursor;import java.util.*;import org.json.*;
 /** Local semantic retrieval; the role model chooses whether/how to use the bounded pool. */
 final class StickerEngine {
     static JSONArray candidates(ChatStore s,String who,String query,JSONObject persona,JSONObject life,long now)throws Exception{
+        return candidates(s,who,query,persona,life,now,Long.MAX_VALUE);}
+    static JSONArray candidates(ChatStore s,String who,String query,JSONObject persona,JSONObject life,long now,long before)throws Exception{
         JSONObject pref=MediaStore.profile(s,who);String frequency=pref.optString("frequency","normal");JSONArray out=new JSONArray();if(frequency.equals("off"))return out;
         long gap=frequency.equals("low")?30*60000L:frequency.equals("high")?2*60000L:5*60000L;Set<String> recent=new HashSet<>();
-        try(Cursor r=s.getReadableDatabase().rawQuery("SELECT content,sent_at FROM messages WHERE character=? AND role='assistant' AND content LIKE '%stickerId%' ORDER BY id DESC LIMIT 3",new String[]{who})){
+        try(Cursor r=s.getReadableDatabase().rawQuery("SELECT content,sent_at FROM messages WHERE character=? AND id<? AND sent_at<=? AND role='assistant' AND content LIKE '%stickerId%' ORDER BY id DESC LIMIT 3",new String[]{who,""+before,""+now})){
             boolean first=true;while(r.moveToNext()){if(first&&now-r.getLong(1)<gap)return out;first=false;if(now-r.getLong(1)>=30*60000L)continue;JSONArray blocks=MediaData.array(r.getString(0));for(int i=0;i<blocks.length();i++)recent.add(blocks.getJSONObject(i).optString("stickerId"));}}
         String context=MediaData.cut(persona.optString("sheet"),2500)+" "+MediaData.cut(life.toString(),1600);List<JSONObject> ranked=new ArrayList<>();
         try(Cursor r=s.getReadableDatabase().rawQuery("SELECT body FROM stickers",null)){while(r.moveToNext()){

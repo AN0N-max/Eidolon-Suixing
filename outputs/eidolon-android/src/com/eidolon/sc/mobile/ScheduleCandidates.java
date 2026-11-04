@@ -3,11 +3,7 @@ import android.content.*;import java.time.*;import java.util.*;import org.json.*
 
 /** Read-only admission/diagnostics. Waiting delivery is not active model work. */
 final class ScheduleCandidates {
- static boolean occupied(ChatStore s){
-  if(Thread.currentThread().isInterrupted()||CallService.live()||!CallLaunch.CURRENT.id().isEmpty()||!WebActivity.activeGenerations.isEmpty()||ReplyFallback.generating()||NotebookEngine.running.get()||ReachOut.active!=null)return true;
-  try(android.database.Cursor c=s.getReadableDatabase().rawQuery("SELECT 1 FROM pending_replies WHERE status IN ('collecting','generating') LIMIT 1",null)){if(c.moveToFirst())return true;}
-  try(android.database.Cursor c=s.getReadableDatabase().rawQuery("SELECT 1 FROM social_tasks WHERE state='RUNNING' UNION ALL SELECT 1 FROM reach_tasks WHERE state='RUNNING' LIMIT 1",null)){return c.moveToFirst();}
- }
+ static boolean occupied(ChatStore s){return ScheduleEngine.running.get();}
  static String intrinsic(Context c,ChatStore s,JSONObject personal,String who,long now)throws Exception{
   ZonedDateTime at=Instant.ofEpochMilli(now).atZone(TemporalRuntime.zone(c,personal,who));if(at.isBefore(DailyScheduleClock.boundary(at.toLocalDate(),at.getZone())))return ScheduleQueueRules.intrinsic(at,now,false,0,false,false);
   List<ChatStore.Conversation> conversations=s.conversations(who);boolean talked=!conversations.isEmpty()&&ScheduleStore.talked(s,who),ended=!conversations.isEmpty()&&Progression.session(personal,conversations.get(0).id).optBoolean("ended");
@@ -35,7 +31,7 @@ final class ScheduleCandidates {
      if(!configured(c)){code="model";message="请先配置聊天或后台模型。";}
      else {ZoneId zone=ScheduleData.zone(personal);String today=Instant.ofEpochMilli(now).atZone(zone).toLocalDate().toString();int used=ScheduleAttempts.count(s,today,zone),limit=prefs.getInt("hibiScheduleLimit",3);
       if(used>=limit){code="limit";message="今天已安排或尝试 "+used+" 位角色，达到自动上限 "+limit+"；失败不会自动重复请求。";}
-      else if(occupied(s)||WritingEngine.running.get()){code="busy";message="等待当前聊天、通话或后台生成完成，然后继续安排。";}
+      else if(occupied(s)){code="busy";message="上一项行程正在生成，完成后继续逐位安排；聊天可同时进行。";}
       else{code="queued";message=prefs.getString("schedulePrepareError",prefs.getString("scheduleQueueError",""));if(message.isEmpty())message="已符合自动安排条件，等待系统执行；可直接手动安排。";}
      }break;
    }

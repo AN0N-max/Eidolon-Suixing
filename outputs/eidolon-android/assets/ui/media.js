@@ -1,7 +1,7 @@
 'use strict';
 let mediaLibraryEpoch=0,mediaSending=false;
 function mediaUrl(id,thumb=true){return /^[a-f0-9]{64}$/.test(id)?'/media/'+id+'/'+(thumb?'thumb.webp':'image.png'):'';}
-function mediaImage(block,large=false){const img=el('img','chat-media-image');img.alt=block.type==='sticker'?(block.name||'表情包'):'聊天图片';img.loading='lazy';img.decoding='async';img.src=mediaUrl(block.asset,!large);img.onerror=()=>{const note=el('span','muted','图片暂不可用');img.replaceWith(note);};return img;}
+function mediaImage(block,large=false){const img=el('img','chat-media-image');img.alt=block.type==='sticker'?(block.name||'表情包'):'聊天图片';img.loading='lazy';img.decoding='async';img.src=mediaUrl(block.asset,!large);img.onerror=()=>{if(block.type==='sticker'){const row=img.closest('.message');if(row)row.remove();else img.remove();return;}const note=el('span','muted','图片暂不可用');img.replaceWith(note);};return img;}
 function mediaLarge(block){const dialog=el('dialog','media-large'),image=mediaImage(block,true);dialog.append(image,btn('关闭',()=>{dialog.close();dialog.remove();},'pill wide'));document.body.append(dialog);dialog.addEventListener('cancel',()=>dialog.remove());dialog.showModal();}
 function mediaBubble(message){if(!message.content?.length)return bubble(message.text,message.role==='user',false,message.id);const group=document.createDocumentFragment(),own=message.role==='user';message.content.forEach((block,index)=>{const last=index===message.content.length-1;
  if(block.type==='text'){group.append(bubble(block.text,own,false,last?message.id:0));return;}

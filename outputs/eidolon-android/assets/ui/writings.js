@@ -38,7 +38,7 @@ function writingCompose(kind){
  const selected=writingCharacter||state.current||state.characters.find(c=>c.lastActivity>0)?.id||state.characters[0].id;
  const who=choiceField(modal,'角色',state.characters.map(c=>[c.id,c.name]),selected);
  modal.append(el('p','notice','会调用已配置的后台模型，未单独配置时使用聊天模型。每位角色每天同类记录最多一篇，每天最多三封来信。'),btn('开始写',async()=>{
-  if(writingPending)return;writingPending=true;modal.replaceChildren(el('h2','','她正在写…'),el('p','muted','完成后会保存到本机。'),btn('停止',async()=>{await api('cancel');modal.close();},'pill wide'));
+  if(writingPending)return;manualOperationScope='writing';writingPending=true;modal.replaceChildren(el('h2','','她正在写…'),el('p','muted','完成后会保存到本机。'),btn('停止',async()=>{await api('cancel',{scope:'writing'});modal.close();},'pill wide'));
   try{state=await api('writingGenerate',{kind,character:who.value});writingCharacter=who.value;modal.close();page=kind==='letter'?'mailbox':'diary';render();toast('已经写好并保存');}
   catch(e){modal.close();toast(e.message);}finally{writingPending=false;}
  },'pill primary wide'),btn('取消',()=>modal.close(),'pill wide'));
