@@ -1,9 +1,11 @@
 """Exercise production ChatStore ownership with a fake Android helper, not Android SQL."""
 from pathlib import Path
-import subprocess,tempfile
+import subprocess,tempfile,os
 base=Path(__file__).resolve().parents[1];root=base.parents[1]
-jdk=next((root/'work/android-tools/jdk').iterdir());android=root/'work/android-tools/platform/android-35/android.jar';json=root/'work/android-test-tools/json.jar'
-classes=root/'work/android-build-1.28/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
+jdk=Path(os.environ['JAVA_HOME']) if os.environ.get('JAVA_HOME') else next((root/'work/android-tools/jdk').iterdir())
+android=Path(os.environ['ANDROID_HOME'])/'platforms/android-35/android.jar' if os.environ.get('ANDROID_HOME') else root/'work/android-tools/platform/android-35/android.jar'
+json=Path(os.environ.get('JSON_JAR',str(root/'work/android-test-tools/json.jar')))
+classes=root/'work/android-build-1.28.1/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
 sources={
 'android/content/Context.java':'package android.content;public class Context {public Context getApplicationContext(){return this;}}',
 'android/database/sqlite/SQLiteDatabase.java':'package android.database.sqlite;public class SQLiteDatabase {public interface CursorFactory{}}',

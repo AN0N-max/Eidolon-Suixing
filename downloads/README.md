@@ -1,5 +1,15 @@
 # Android安装包
 
+[1.28.1原签名升级APK](Eidolon-1.28.1-original-upgrade.apk)，code85，DB18保持。旧APK保留。
+
+SHA256：136369b3e851d4ff7c2561f562012832de1236d97f2f097b68a571291cbb897f
+
+[发布说明](../outputs/eidolon-android/RELEASE-1.28.1.md) · [验证](../docs/QA-1.28.1.md)
+
+以下为历史安装包说明。
+
+# Android安装包
+
 [1.28原签名升级APK](Eidolon-1.28-original-upgrade.apk)，code84，DB18保持。旧APK保留。
 
 SHA256：c9c7bb743b3203bd3173fcd57c8bad2ef44eed6ded4a21460740f7e8828a847c

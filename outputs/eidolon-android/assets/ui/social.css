@@ -47,3 +47,5 @@
 .profile-city{margin:16px 0}
 .city-profile-choice{display:block;width:100%;text-align:left}
 @media(max-width:359px){.social-roles{grid-template-columns:1fr}.social-post{padding:16px 0}.social-author-reply{margin-left:10px}}
+
+.social-task>strong,.social-task-meta{display:block}.social-task-meta,.social-task-trace small{white-space:normal;overflow-wrap:anywhere}.social-task-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.social-task-trace{margin-top:8px}.social-local-check{margin:14px 0;padding:12px;border:1px solid var(--line);border-radius:14px}

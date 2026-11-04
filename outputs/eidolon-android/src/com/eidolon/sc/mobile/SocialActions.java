@@ -4,9 +4,10 @@ import android.content.*;import org.json.*;import java.util.*;import java.io.*;i
 /** Isolated local actions; selecting/reading pages never asks the language model. */
 final class SocialActions {
  static final ExecutorService IO=Executors.newFixedThreadPool(2);
- static final Set<String> ACTIONS=new HashSet<>(Arrays.asList("socialGet","socialRead","socialLike","socialComment","socialDeleteComment","socialSettingsGet","socialSettingsSave","socialGenerate","socialCheck","socialRetry","socialMapOpen","socialSourceOpen","weatherGet","weatherSave","weatherRefresh","citySearch","citySave","cityClear"));
+ static final Set<String> ACTIONS=new HashSet<>(Arrays.asList("socialDiagnose","socialGet","socialRead","socialLike","socialComment","socialDeleteComment","socialSettingsGet","socialSettingsSave","socialGenerate","socialCheck","socialRetry","socialMapOpen","socialSourceOpen","weatherGet","weatherSave","weatherRefresh","citySearch","citySave","cityClear"));
  static Object run(Context c,ChatStore s,String action,JSONObject args)throws Exception {
   long now=System.currentTimeMillis();
+  if(action.equals("socialDiagnose"))return new SocialEngine().diagnose(c,s,args.getString("character"));
   if(action.equals("socialGet")){int offset=args.optInt("offset");if(offset<0||offset>5000)throw new IOException("分页位置无效");return SocialStore.timeline(s,now,offset);}
   if(action.equals("socialRead")){SocialStore.markRead(s,args.optJSONArray("posts")==null?new JSONArray():args.getJSONArray("posts"),args.optJSONArray("replies")==null?new JSONArray():args.getJSONArray("replies"),now);return new JSONObject().put("unseen",SocialStore.unseen(s,now));}
   if(action.equals("socialLike"))return SocialStore.like(s,args.getString("id"),args.getBoolean("liked"),now);

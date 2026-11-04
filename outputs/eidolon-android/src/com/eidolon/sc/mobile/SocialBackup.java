@@ -51,7 +51,7 @@ final class SocialBackup {
   Map<String,Long> posts=new HashMap<>(),replies=new HashMap<>();Set<String> ids=new HashSet<>(),roleDays=new HashSet<>();
   JSONArray a=root.getJSONArray("posts");if(a.length()>5000)throw new IOException("动态过多");
   for(int i=0;i<a.length();i++) {
-   JSONObject p=a.getJSONObject(i);String id=id(p,"id"),who=p.getString("character"),date=p.getString("day");day(date);SocialData.pair(p);bools(p,"liked");
+   JSONObject p=a.getJSONObject(i);String id=id(p,"id"),who=p.getString("character"),date=p.getString("day");day(date);SocialData.storedPair(p);bools(p,"liked");
    if(!known.contains(who)||posts.put(id,stamp(p,"published",true))!=null||!roleDays.add(who+"/"+date))throw new IOException("动态角色或编号重复");
    JSONObject place=p.optJSONObject("place");if(place!=null){SocialData.coordinate(place.getDouble("lat"),place.getDouble("lon"));SocialData.text(place,"name",120,true);SocialData.text(place,"id",100,true);}
   }
@@ -59,12 +59,12 @@ final class SocialBackup {
   for(int i=0;i<a.length();i++) {
    JSONObject c=a.getJSONObject(i);String id=id(c,"id"),post=id(c,"post");
    if(!posts.containsKey(post)||!ids.add(id)||!commented.add(post))throw new IOException("评论引用无效");SocialData.comment(c.getString("text"));stamp(c,"at",true);
-   if(c.has("reply")){SocialData.pair(c.getJSONObject("reply"));replies.put(id,stamp(c,"replyAt",true));}else if(c.has("replyAt"))throw new IOException("评论回复时间缺少正文");
+   if(c.has("reply")){SocialData.storedPair(c.getJSONObject("reply"));replies.put(id,stamp(c,"replyAt",true));}else if(c.has("replyAt"))throw new IOException("评论回复时间缺少正文");
   }
   a=root.getJSONArray("circle");if(a.length()>80000)throw new IOException("互动过多");ids.clear();
   for(int i=0;i<a.length();i++) {
    JSONObject c=a.getJSONObject(i);if(!posts.containsKey(id(c,"post"))||!known.contains(c.getString("character"))||!ids.add(id(c,"id"))||!Arrays.asList("like","comment").contains(c.getString("kind")))throw new IOException("互动引用无效");
-   stamp(c,"shown",true);if(c.getString("kind").equals("comment"))SocialData.pair(c);
+   stamp(c,"shown",true);if(c.getString("kind").equals("comment"))SocialData.storedPair(c);
   }
   reads(root.getJSONObject("reads"),posts,replies);
   a=root.getJSONArray("usage");if(a.length()>50000)throw new IOException("请求记录过多");ids.clear();

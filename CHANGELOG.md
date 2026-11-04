@@ -1,9 +1,10 @@
 # 更新记录与开发文档
 
-当前可安装版本：**1.28/code84**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
+当前可安装版本：**1.28.1/code85**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
 
 | 版本 | 主要变化 | 完整记录 |
 | --- | --- | --- |
+| 1.28.1 | 朋友圈准备/解析/诊断、发送前原子额度、本地资料只读检查 | [RELEASE-1.28.1](outputs/eidolon-android/RELEASE-1.28.1.md) |
 | 1.28 | 双语解析、睡眠/时间校验、回铃等待、整轮聆听与ASR结束确认 | [RELEASE-1.28](outputs/eidolon-android/RELEASE-1.28.md) |
 | 1.27 | 聊天控制语法/历史兼容、键盘与稳定编辑器、五栏导航、独立并发、社交诊断、气泡语音 | [RELEASE-1.27](outputs/eidolon-android/RELEASE-1.27.md) |
 | 1.26 | 朋友圈、天气/城市、共享上下文、逐位日程队列与原因诊断，DB18 | [RELEASE-1.26](outputs/eidolon-android/RELEASE-1.26.md) |

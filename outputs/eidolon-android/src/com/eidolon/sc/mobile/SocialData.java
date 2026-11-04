@@ -9,8 +9,9 @@ final class SocialData {
  static String budgetDay(String today,String high){LocalDate.parse(today);LocalDate.parse(high);return today.compareTo(high)<0?high:today;}
  static long end(String day){return LocalDate.parse(day).plusDays(1).atStartOfDay(TOKYO).toInstant().toEpochMilli();}
  static String text(JSONObject o,String k,int max,boolean required)throws Exception{Object value=o.opt(k);if(value==null&&!required)return "";if(!(value instanceof String))throw new IOException("字段无效："+k);String s=((String)value).trim();if(s.length()>max||required&&s.isEmpty())throw new IOException("字段无效："+k);return s;}
- static JSONObject object(String raw)throws Exception{if(raw==null||raw.length()>64000)throw new IOException("模型内容过长");int a=raw.indexOf('{'),b=raw.lastIndexOf('}');if(a<0||b<a)throw new IOException("模型没有返回有效结构");return new JSONObject(raw.substring(a,b+1));}
- static JSONObject pair(JSONObject o)throws Exception{return new JSONObject().put("ja",text(o,"ja",2000,true)).put("zh",text(o,"zh",2000,true));}
+ static JSONObject object(String raw)throws Exception{return SocialReply.object(raw);}
+ static JSONObject pair(JSONObject o)throws Exception{return SocialReply.pair(o);}
+ static JSONObject storedPair(JSONObject o)throws Exception{return new JSONObject().put("ja",text(o,"ja",2000,true)).put("zh",text(o,"zh",2000,true));}
  static double score(JSONObject personal,String who){return personal.optJSONObject("affinity")==null?50:personal.optJSONObject("affinity").optDouble(who,50);}
  static String tier(double s){return s<20?"cold":s<40?"distant":s<65?"trust":s<85?"close":"intimate";}
  static boolean eligible(JSONObject personal,String who,boolean affinity){JSONObject relations=personal.optJSONObject("relations"),r=relations==null?null:relations.optJSONObject(who);return !affinity||score(personal,who)>=40&&(r==null||!r.optBoolean("cooling"));}
