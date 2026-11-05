@@ -5,7 +5,7 @@ import os,subprocess,tempfile,json
 S=Path(__file__).resolve().parents[1];B=S.parents[1]
 jdk=Path(os.environ['JAVA_HOME']) if os.environ.get('JAVA_HOME') else next((B/'work/android-tools/jdk').iterdir())
 android=Path(os.environ.get('ANDROID_HOME',str(B/'work/android-tools/sdk')))/'platforms/android-35/android.jar'
-classes=B/'work/android-build-1.28.1/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
+classes=B/'work/android-build-1.28.2/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
 cp=os.pathsep.join(map(str,[Path(os.environ.get('JSON_JAR',str(B/'work/android-test-tools/json.jar'))),classes,android]))
 sources={
 'android/content/Context.java':'''package android.content;public class Context {public android.content.res.AssetManager getAssets(){return new android.content.res.AssetManager();}public SharedPreferences getSharedPreferences(String s,int n){return null;}}''',

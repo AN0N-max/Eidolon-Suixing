@@ -10,6 +10,7 @@ final class ReachPlanCheck {
     static void resume(Context context){
         Context c=context.getApplicationContext();
         if(!c.getSharedPreferences("settings",0).getBoolean("reachEnabled",false))return;
+        c.getSharedPreferences("settings",0).edit().putLong("reachForegroundAt",System.currentTimeMillis()).apply();
         EXECUTOR.execute(()->{try{check(c,false);}catch(Exception e){android.util.Log.w("EidolonReach","Foreground planner check failed",e);}});
     }
     static boolean databaseBusy(Exception error){for(Throwable e=error;e!=null;e=e.getCause())if(e instanceof android.database.sqlite.SQLiteDatabaseLockedException||e instanceof android.database.sqlite.SQLiteTableLockedException)return true;return false;}
@@ -56,6 +57,7 @@ final class ReachPlanCheck {
         long wake=p.getLong("reachNextWake",0);
         return new JSONObject().put("enabled",p.getBoolean("reachEnabled",false)).put("date",ReachPolicy.date(config,now)).put("zone",config.text("zone")).put("now",now)
             .put("nextWake",wake).put("wakeOverdue",ReachPlanCheckRules.overdue(wake,now)).put("wakeError",p.getString("reachWakeError",""))
+            .put("background",ReachWake.snapshot(c))
             .put("checkedAt",p.getLong("reachCheckAt",0)).put("checkError",p.getString("reachCheckError","")).put("checkResult",p.getString("reachCheckResult","尚未完成本地检查"))
             .put("tasks",ReachPlanStore.today(s,config,now)).put("assessments",ReachPlans.explain(c,s,now));
     }

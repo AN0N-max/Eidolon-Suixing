@@ -48,5 +48,12 @@ final class ReachPlanRules {
         return "间隔满足后已无符合免打扰或固定时间窗口的空档";
     }
     static long nextMorning(ReachConfig c,long now){return DailyScheduleClock.nextBoundary(ReachPolicy.local(c,now));}
+    // Keep the same unsent opportunity and original deadline; never replay a paid attempt.
+    static long recheckAt(ReachConfig c,long now,long due,long expires,int attempts,List<Long> occupied,Available available)throws Exception{
+        if(attempts!=0||now>=expires)return -1;
+        long first=Math.max(due,now+30000L);first=((first+5*MINUTE-1)/(5*MINUTE))*(5*MINUTE);
+        for(long at=first;at<expires;at+=5*MINUTE)if(!ReachPolicy.quiet(c,at)&&spaced(at,occupied,c.integer("planGapMinutes")*MINUTE)&&available.at(at))return at;
+        return -1;
+    }
     private ReachPlanRules(){}
 }

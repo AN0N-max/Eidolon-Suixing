@@ -6,8 +6,9 @@ public final class ReachWorker extends Worker {
     private final ReachExecution execution=new ReachExecution();
     public ReachWorker(Context c,WorkerParameters p){super(c,p);}
     @Override public Result doWork(){Context c=getApplicationContext();try{
+        c.getSharedPreferences("settings",0).edit().putLong("reachGenerateStartedAt",System.currentTimeMillis()).apply();
         JSONObject message=execution.run(c);if(message!=null)ReplyManager.show(c,message,false);return Result.success();
     }catch(Exception e){android.util.Log.w("EidolonReach","Generation failed; no blind network retry",e);return Result.failure();}
     finally{try(ChatStore s=new ChatStore(c)){ReachScheduler.schedule(c,s,true);}catch(Exception e){android.util.Log.w("EidolonReach","Follow-up schedule failed",e);}}}
-    @Override public void onStopped(){execution.stop(getApplicationContext());}
+    @Override public void onStopped(){getApplicationContext().getSharedPreferences("settings",0).edit().putLong("reachGenerateStoppedAt",System.currentTimeMillis()).apply();execution.stop(getApplicationContext());}
 }

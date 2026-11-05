@@ -15,7 +15,7 @@
 gradle --no-daemon -p outputs/eidolon-android assembleDebug
 ```
 
-Gradle 首次会从 Google Maven/Maven Central 下载依赖，应用运行时不需要电脑后台。产物位于 work/android-build-1.28.1/gradle/outputs/apk/debug/；该目录不进版本库。也可在 Windows 执行：
+Gradle 首次会从 Google Maven/Maven Central 下载依赖，应用运行时不需要电脑后台。产物位于 work/android-build-1.28.2/gradle/outputs/apk/debug/；该目录不进版本库。也可在 Windows 执行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File outputs/eidolon-android/build.ps1
@@ -45,7 +45,7 @@ node outputs/eidolon-android/tests/schedule-rollover-ui.cjs
 
 ## 当前源码
 
-当前Android源码与APK为1.28.1/code85，数据库和加密备份18。变更与验证范围见[本版QA](QA-1.28.1.md)。
+当前Android源码与APK为1.28.2/code86，数据库和加密备份18。变更与验证范围见[本版QA](QA-1.28.2.md)。
 
 ## 首次公开时的源码对应
 
@@ -57,4 +57,4 @@ outputs/eidolon-android 下的历史发布说明保留原开发记录，一些�
 
 每次发版更新 `outputs/eidolon-android/assets/update-notices.json`，版本/递增code与build.gradle一致。PowerShell构建入口自动执行检查；直接Gradle构建前应手动执行 `tools/check-release-notes.ps1`。更多步骤见[发版说明](../outputs/eidolon-android/RELEASING.md)。
 
-1.28.1新增AndroidX Core1.15.0用于WindowInsetsCompat，保持SDK35。新增repair-ui.cjs和RepairTests（纯离线/假HTTP）。
+1.28.2新增AndroidX Core1.15.0用于WindowInsetsCompat，保持SDK35。新增repair-ui.cjs和RepairTests（纯离线/假HTTP）。

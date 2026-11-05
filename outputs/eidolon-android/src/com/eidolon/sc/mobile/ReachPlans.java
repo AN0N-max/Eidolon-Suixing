@@ -49,8 +49,10 @@ final class ReachPlans {
     static void reconcile(Context c,ChatStore s,long now)throws Exception{synchronized(LOCK){
         ReachConfig config=ReachConfig.read(c.getSharedPreferences("settings",0));JSONObject personal=s.personal();JSONArray rows=ReachPlanStore.today(s,config,now);
         for(int i=0;i<rows.length();i++){JSONObject row=rows.getJSONObject(i);if(!row.getString("status").equals("PENDING"))continue;long due=row.getLong("due");String who=row.getString("character");if(ReachPlanRules.suitable(ScheduleRuntime.state(c,s,personal,who,due)))continue;
-            // Changes invalidate only remaining tasks; never create extra chances or alter a running call.
-            ReachPlanStore.skip(s,row.getString("id"),"日程变化，原时段不适合搭话；可手动重新安排",now);
+            List<Long> other=occupied(s);other.remove(Long.valueOf(due));
+            long next=row.getLong("revision")==c.getSharedPreferences("settings",0).getLong("reachSettingsRevision",0)?ReachPlanRules.recheckAt(config,now,due,row.getLong("expires"),row.getInt("attempts"),other,availability(c,s,personal,who)):-1;
+            if(next>0)ReachPlanStore.defer(s,row.getString("id"),"日程变化，已在原有效期内调整到合适空档；未请求模型",next);
+            else ReachPlanStore.skip(s,row.getString("id"),"日程变化，原有效期内已无合适空档；未补发历史搭话",now);
         }
     }}
     private ReachPlans(){}

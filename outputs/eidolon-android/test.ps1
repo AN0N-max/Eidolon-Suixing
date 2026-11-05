@@ -5,7 +5,7 @@ if(!$jdk){throw 'Set JAVA_HOME to JDK17'}
 $python=if($env:EIDOLON_PYTHON){$env:EIDOLON_PYTHON}else{'python'}
 $android=Join-Path $env:ANDROID_HOME 'platforms/android-35/android.jar'
 $json=if($env:JSON_JAR){$env:JSON_JAR}else{Join-Path $workspace 'work/android-test-tools/json.jar'}
-$classes=Join-Path $workspace 'work/android-build-1.28.1/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
+$classes=Join-Path $workspace 'work/android-build-1.28.2/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
 $testClasses=Join-Path $workspace 'work/android-tests/classes'
 New-Item -ItemType Directory -Force $testClasses | Out-Null
 $bc=if($env:BC_JAR){$env:BC_JAR}else{Join-Path $workspace 'work/android-test-tools/bcprov-jdk18on-1.86.jar'}
@@ -170,3 +170,8 @@ if($LASTEXITCODE -ne 0){throw 'Social repair parsing and diagnostics failed'}
 if($LASTEXITCODE -ne 0){throw 'Production social preparation check failed'}
 & $python (Join-Path $PSScriptRoot 'tests/test_social_admission.py')
 if($LASTEXITCODE -ne 0){throw 'Social model-admission transactions failed'}
+
+& (Join-Path $jdk 'bin/java.exe') -cp "$testClasses;$cp" com.eidolon.sc.mobile.ReachWakeTests
+if($LASTEXITCODE -ne 0){throw 'Reach wake/recheck rules failed'}
+& $python (Join-Path $PSScriptRoot 'tests/test_reach_wake.py')
+if($LASTEXITCODE -ne 0){throw 'Production reach wake adapters failed'}
