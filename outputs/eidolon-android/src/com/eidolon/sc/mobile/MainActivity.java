@@ -203,7 +203,8 @@ public class MainActivity extends Activity {
         String key;try{key=Vault.read(this,"fish");}catch(Exception e){toast("语音密钥无法读取，请重新保存");return;}
         if(key.isEmpty()){toast("先填写 Fish Audio 密钥即可播放角色语音");voiceSettings();return;}
         String voice=prefs.getString("voice-"+current.optString("id"),current.optString("voice_id"));
-        voicePlayer.play(reply,voice,prefs.getString("fish-model","s2.1-pro-free"),key,message->{if(!destroyed){if(status!=null)status.setText(message);if(this instanceof WebActivity)((WebActivity)this).event("voiceChanged",message);else toast(message);}});
+        String spokenReply;try{spokenReply=CallAudioText.forVoice(reply,prefs.getBoolean("bilingual",true));}catch(Exception e){toast(e.getMessage());if(this instanceof WebActivity)((WebActivity)this).event("voiceChanged",e.getMessage());return;}
+        voicePlayer.play(reply,spokenReply,voice,prefs.getString("fish-model","s2.1-pro-free"),key,message->{if(!destroyed){if(status!=null)status.setText(message);if(this instanceof WebActivity)((WebActivity)this).event("voiceChanged",message);else toast(message);}});
     }
     void voiceSettings(){
         LinearLayout form=column();form.setPadding(dp(20),dp(10),dp(20),dp(10));

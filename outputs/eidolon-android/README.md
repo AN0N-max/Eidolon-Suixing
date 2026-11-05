@@ -1,22 +1,16 @@
-# Eidolon 随行 · 1.28.2
+# Eidolon 随行 · 1.28.3
 
-主动搭话持久唤醒、同窗日程调整和后台时间线。code86、DB18、原签名。[发布说明](RELEASE-1.28.2.md) · [原因/文件](REPAIR-1.28.2.md) · [验证](QA-1.28.2.md)。锁屏真机及真实服务待验证。以下保留历史说明。
+双语/朗读、IME消息视野、表情只读释义与历史时间修复；code87、DB18、原签名。
 
-# Eidolon 随行 · 1.28.1
-
-朋友圈准备/返回/额度/错误说明修复，新增不请求接口的本地资料检查。code85，DB18，原签名升级。[发布说明](RELEASE-1.28.1.md) · [原因/文件](REPAIR-1.28.1.md) · [验证](QA-1.28.1.md)。真机/真实接口待验证。以下为历史说明。
-
-# Eidolon 随行 · 1.28
-
-修复双语解析、睡眠日期与时间一致性，新增原生回铃等待、整轮聆听和百炼结束确认。code84，DB18保持，原签名升级。[发布说明](RELEASE-1.28.md) · [功能/文件](REPAIR-1.28.md) · [验证](QA-1.28.md)。真机及真实服务待验证。以下为历史说明。
+[发布](RELEASE-1.28.3.md) · [原因与文件](REPAIR-1.28.3.md) · [操作说明](CHAT-REPAIR-1.28.3.md) · [验证](QA-1.28.3.md)。实机IME/触摸/语音和真实模型效果仍待验证。以下保留历史说明。
 
 # Eidolon 随行 · 1.27
 
-修复聊天控制标记、稳定输入框、原生键盘状态与五栏导航、独立有界并发、朋友圈诊断和气泡语音状态。code83，DB18保持，原签名升级。见[发布说明](RELEASE-1.27.md)、[修改索引](REPAIR-1.27.md)、[验证](QA-1.27.md)。手机/真实服务未验收。
+聊天内容/历史兼容、稳定输入框、原生键盘状态、五栏导航、独立有界并发与气泡语音状态。code83，DB/备份18保持，原签名升级。见[发布说明](RELEASE-1.27.md)、[修改清单](REPAIR-1.27.md)及[验证](QA-1.27.md)。未做真机或真实付费服务测试。
 
 # Eidolon 随行 · 1.26
 
-朋友圈、天气、城市与日程队列；code82，DB/备份18，原签名升级。详见[发布说明](RELEASE-1.26.md)、[文件索引](SOCIAL-1.26.md)、[验证](QA-1.26.md)。新功能默认关闭，手机/真实服务未验收。
+朋友圈、天气、所在城市和日程队列修复；原签名升级，SQLite/备份18。新功能默认关闭，设置统一归总。详见[本版说明](RELEASE-1.26.md)与[文件索引](SOCIAL-1.26.md)。离线及页面模拟通过不代表手机/真实服务通过。
 
 # Eidolon 随行 · 1.12
 
@@ -236,7 +230,7 @@ WebView 从 APK 的 `assets/ui` 读取界面，通过拦截的 `https://eidolon.
 
 ## 构建与测试
 
-构建需JDK17、Android SDK35和Gradle8.9，公开构建脚本只生成debug或未签名release；见[构建指南](../../docs/BUILD.md)。维护者原升级签名私钥不随源码分发。
+JDK 17 + Android platform 35 + build-tools 35.0.0 + PowerShell。`build.ps1` 支持 `-Jdk`、`-BuildTools`、`-AndroidJar`、`-BuildDirectory`、`-SigningStore`、`-SigningAlias`。默认工具在 `work/android-tools`，签名文件在 `work/android-signing/local-test.jks`，别名 `local-test`。原版证书 SHA-256 为 `d576e97cae45aca6dedb80064e56a2aae97553fdaa8705904b63420b1d4503db`，与电脑保存的 0.8.8 原版 APK 实际比对；源码包不包含密钥文件。缺少原密钥时构建脚本拒绝创建其他签名。Java R 类通过 aapt2 的 custom-package 保留原代码包名，Manifest 中的 Activity 和服务使用完整类名。
 
 `test.ps1` 使用 `work/android-test-tools/json.jar`（org.json:json:20250517）和 Python 3，不调用收费 API。`tests/browser-ui.cjs` 需要 Playwright，可通过 `PLAYWRIGHT_MODULE` 指定模块位置，使用本机 Chrome 与模拟 Native 桥接；截图输出到 cwd 的 outputs。
 

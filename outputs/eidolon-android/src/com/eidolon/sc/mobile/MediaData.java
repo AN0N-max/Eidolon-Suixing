@@ -43,6 +43,12 @@ final class MediaData {
         JSONObject b=new JSONObject().put("type","sticker").put("asset",e.getString("asset")).put("stickerId",e.getString("id")).put("series",series(e));
         for(String k:new String[]{"name","category","description","emotion","intent","tone","ocr","meme"})b.put(k,cut(e.optString(k),k.equals("description")||k.equals("ocr")||k.equals("meme")?1500:120));return b;
     }
+    static JSONObject detail(JSONObject row,String asset)throws Exception{
+        JSONObject out=new JSONObject().put("found",false);
+        if(row==null||row.optBoolean("deleted")||!row.optString("asset").equals(asset)||!row.optString("id").equals("s-"+asset))return out;
+        out.put("found",true);for(String k:new String[]{"name","category","description","emotion","intent","tone","ocr","meme"})if(!row.optString(k).trim().isEmpty())out.put(k,cut(row.optString(k),1500));
+        String series=series(row);if(!series.isEmpty())out.put("series",series);return out;
+    }
     static String series(JSONObject row){
         if(row.has("series"))return cut(row.optString("series"),80);
         String name=row.optString("name");int at=name.indexOf('·');if(at<0)return "";String prefix=name.substring(0,at);

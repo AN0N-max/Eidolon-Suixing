@@ -162,3 +162,5 @@ html[data-ime="true"][data-hide-nav="true"] .bottom-nav{display:none}
 @keyframes voice-loading{to{opacity:1}}
 
 .voice-feedback{font-size:12px;white-space:normal;color:#bf5865;max-width:22em;line-height:1.5}.message-tools{flex-wrap:wrap}
+
+html,body{height:100%;overflow:hidden}#app{height:100%;min-height:0}.chat-content{min-height:0;overflow-anchor:none}.composer,.chat-tools-dock,.status-line,.sticker-tray{flex-shrink:0}.bubble>span.translation,.bubble>span.japanese,.bubble>span.dialogue-uncertain,.bubble>span.literal-example{display:inline;white-space:pre-wrap}.bubble>span.translation+.japanese,.bubble>span.japanese+.translation{display:block;margin-top:7px}.voice-text-missing{font-size:11px;color:#8b8d94;max-width:180px}.message-tools{flex-wrap:wrap;gap:4px}

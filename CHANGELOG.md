@@ -1,9 +1,10 @@
 # 更新记录与开发文档
 
-当前可安装版本：**1.28.2/code86**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
+当前可安装版本：**1.28.3/code87**。下表汇总Android分支已有发布记录，旧记录保留当时的功能、验证结果与限制，不把过去的“待实现”当作当前状态。当前使用说明见[功能介绍](docs/FEATURES.md)。
 
 | 版本 | 主要变化 | 完整记录 |
 | --- | --- | --- |
+| 1.28.3 | 双语/朗读兼容、IME底部与历史锚点、表情释义、真实请求历史时间 | [RELEASE-1.28.3](outputs/eidolon-android/RELEASE-1.28.3.md) |
 | 1.28.2 | 主动搭话持久/周期唤醒、有效期内同计划日程调整、后台执行时间线 | [RELEASE-1.28.2](outputs/eidolon-android/RELEASE-1.28.2.md) |
 | 1.28.1 | 朋友圈准备/解析/诊断、发送前原子额度、本地资料只读检查 | [RELEASE-1.28.1](outputs/eidolon-android/RELEASE-1.28.1.md) |
 | 1.28 | 双语解析、睡眠/时间校验、回铃等待、整轮聆听与ASR结束确认 | [RELEASE-1.28](outputs/eidolon-android/RELEASE-1.28.md) |

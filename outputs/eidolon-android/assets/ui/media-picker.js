@@ -1,14 +1,15 @@
 'use strict';
 // Chat-only controls. Catalogue editing and provider configuration live in Settings.
 let mediaTray=null,mediaTrayEpoch=0,mediaPreviewState=null;
-function mediaObscuresChat(){return !!mediaTray||!!document.querySelector('.media-photo-preview[open],.media-large[open]');}
+function mediaObscuresChat(){return !!mediaTray||!!document.querySelector('.media-photo-preview[open],.media-large[open],.sticker-meaning[open]');}
 function mediaCloseTray(focus=false){
  mediaTrayEpoch++;document.querySelector('#sticker-tray')?.remove();mediaTray=null;app.classList.remove('sticker-tray-open');
  const toggle=document.querySelector('[aria-label="表情包"]');toggle?.setAttribute('aria-expanded','false');toggle?.classList.remove('selected');
  if(focus)document.querySelector('.composer textarea')?.focus();queueVisibleRead();
 }
-function mediaCloseTransient(){mediaCloseTray();mediaPreviewState?.dialog.close();}
+function mediaCloseTransient(){stickerMeaningDialog?.close();mediaCloseTray();mediaPreviewState?.dialog.close();}
 function mediaBeforeRender(){
+ if(stickerMeaningDialog&&(page!=='chat'||state?.session!==stickerMeaningDialog.dataset.session||callShown))stickerMeaningDialog.close();
  if(mediaTray&&(page!=='chat'||state?.session!==mediaTray.session||callShown))mediaCloseTray();
  if(mediaPreviewState&&(page!=='chat'||state?.session!==mediaPreviewState.session||callShown))mediaPreviewState.dialog.close();
 }
@@ -29,7 +30,7 @@ function mediaMountTray(){
  const tray=mediaTray;if(!tray||page!=='chat'||state?.session!==tray.session)return;
  document.querySelector('#sticker-tray')?.remove();const panel=el('section','sticker-tray');panel.id='sticker-tray';panel.setAttribute('aria-label','选择表情包');
  const top=el('div','sticker-tray-top'),search=el('input','sticker-search');search.placeholder='搜索表情';search.setAttribute('aria-label','搜索要发送的表情');search.value=tray.query;
- top.append(search,el('small','muted','点击即发送'),ib('close','收起表情面板',()=>mediaCloseTray()));panel.append(top);
+ top.append(search,el('small','muted','点击发送 · 长按查看释义'),ib('close','收起表情面板',()=>mediaCloseTray()));panel.append(top);
  const grid=el('div','sticker-send-grid');grid.setAttribute('aria-label','表情图片');panel.append(grid);
  const tabs=el('div','sticker-series-tabs');tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','表情分类');panel.append(tabs);
  const series=[...new Set(tray.rows.map(r=>r.series).filter(Boolean))];
@@ -39,7 +40,7 @@ function mediaMountTray(){
   if(!tray.loaded){grid.append(el('p','empty','正在读取表情…'));return;}
   const query=tray.query.trim().toLowerCase();let rows=tray.rows.filter(r=>(tray.tab==='all'||tray.tab==='favorites'&&r.favorite||tray.tab==='recent'&&r.lastUsed>0||tray.tab==='series:'+r.series)&&(!query||[r.name,r.series,r.category,r.emotion,r.intent,r.ocr].join(' ').toLowerCase().includes(query)));
   if(tray.tab==='recent')rows=rows.slice().sort((a,b)=>(b.lastUsed||0)-(a.lastUsed||0));
-  for(const row of rows){const b=btn('',()=>mediaSendSticker(row,tray.session),'sticker-send-item');b.setAttribute('aria-label','发送表情：'+row.name);b.title=row.name;b.append(mediaImage({type:'sticker',asset:row.asset,name:row.name}));grid.append(b);}
+  for(const row of rows){const b=btn('',()=>mediaSendSticker(row,tray.session),'sticker-send-item');b.setAttribute('aria-label','发送表情：'+row.name);b.title=row.name;b.append(mediaImage({type:'sticker',asset:row.asset,name:row.name}));const block={type:'sticker',asset:row.asset,stickerId:row.id,name:row.name};stickerBindMeaning(b,block);const cell=el('div','sticker-send-cell'),info=btn('释义',()=>stickerMeaning(block),'sticker-meaning-button');info.setAttribute('aria-label','查看表情释义：'+row.name);cell.append(b,info);grid.append(cell);}
   if(!rows.length)grid.append(el('p','empty',tray.rows.length?'这里还没有表情':'还没有表情。可在设置 → 聊天与关系中导入。'));
  }
  for(const [id,title]of options){const b=btn('',()=>{tray.tab=id;for(const n of tabs.children)n.setAttribute('aria-selected',String(n===b));fill();},'sticker-series-tab');b.setAttribute('role','tab');b.setAttribute('aria-selected',String(id===tray.tab));b.setAttribute('aria-label',title);

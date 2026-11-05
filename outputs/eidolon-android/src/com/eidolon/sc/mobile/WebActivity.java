@@ -97,6 +97,7 @@ public final class WebActivity extends MainActivity {
             v.setPadding(bars.left,bars.top,bars.right,Math.max(bars.bottom,ime.bottom));
             if(visible!=imeVisible||imeHeight!=ime.bottom){imeVisible=visible;imeHeight=ime.bottom;publishKeyboard();}return insets;
         });
+        web.addOnLayoutChangeListener((v,l,t,r,b,ol,ot,or,ob)->{if(b-t!=ob-ot||r-l!=or-ol)publishKeyboard();});
         setContentView(frame);
         ThemePrefs.apply(this);if(CallService.live()||!CallLaunch.CURRENT.id().isEmpty())setCallChrome(true);
         ReachOut.schedule(this);WritingEngine.schedule(this);try{initialConversation=openReachIntent();}catch(Exception ignored){}
@@ -112,7 +113,7 @@ public final class WebActivity extends MainActivity {
                     if(fileBusy)throw new IOException("正在处理文件，请稍候");fileBusy=true;final int rid=id;final JSONObject packArgs=args;final String packAction=action;
                     worker.execute(()->{try(ChatStore db=new ChatStore(getApplicationContext())){Object result;if(packAction.equals("stickerPackCommit"))result=StickerPackImport.commit(getApplicationContext(),db,packArgs);else{StickerPackImport.cancel(getApplicationContext(),packArgs.getString("token"));result=new JSONObject();}runOnUiThread(()->{fileBusy=false;if(!destroyed)reply(rid,result,null);});}catch(OutOfMemoryError e){runOnUiThread(()->{fileBusy=false;if(!destroyed)reply(rid,null,"图片占用内存过大，请选择较小的表情包");});}catch(Exception e){runOnUiThread(()->{fileBusy=false;if(!destroyed)reply(rid,null,e.getMessage()==null?"表情包导入未完成，请重新选择文件":e.getMessage());});}});return;
                 }
-                if(Arrays.asList("mediaLibrary","mediaUpdate","mediaLibraryAdd","mediaProfile","mediaSettings","mediaAnalyze","mediaDraft","mediaCleanup").contains(action)){
+                if(Arrays.asList("mediaLibrary","mediaStickerDetail","mediaUpdate","mediaLibraryAdd","mediaProfile","mediaSettings","mediaAnalyze","mediaDraft","mediaCleanup").contains(action)){
                     if(fileBusy&&action.equals("mediaCleanup"))throw new IOException("请等待图片导入完成后清理");
                     if(action.equals("mediaAnalyze")&&mediaAnalysisClient!=null)throw new IOException("正在分析图片，请勿重复提交");final int requestId=id;final JSONObject mediaArgs=args;final ModelClient visualClient=new ModelClient();if(action.equals("mediaAnalyze"))mediaAnalysisClient=visualClient;
                     worker.execute(()->{try(ChatStore mediaDb=new ChatStore(getApplicationContext())){Object result=MediaActions.run(getApplicationContext(),mediaDb,action,mediaArgs,visualClient);runOnUiThread(()->{if(!destroyed)reply(requestId,result,null);});}catch(Exception e){runOnUiThread(()->{if(!destroyed)reply(requestId,null,e.getMessage()==null?"媒体操作未完成，请重试":e.getMessage());});}finally{if(mediaAnalysisClient==visualClient)mediaAnalysisClient=null;}});return;
@@ -197,7 +198,7 @@ public final class WebActivity extends MainActivity {
         if(error==null&&result instanceof SnapshotRequest){sendSnapshot(id,(SnapshotRequest)result,null);return;}
         if(error==null&&result instanceof JSONObject&&((JSONObject)result).opt("snapshot") instanceof SnapshotRequest){sendSnapshot(id,(SnapshotRequest)((JSONObject)result).opt("snapshot"),(JSONObject)result);return;}
         String value=result==null?"null":result instanceof String?JSONObject.quote((String)result):result.toString();evaluate("window.nativeReply("+id+","+value+","+(error==null?"null":JSONObject.quote(error))+")");}
-    void publishKeyboard(){try{event("keyboard",new JSONObject().put("visible",imeVisible).put("height",imeHeight).toString());}catch(Exception ignored){}}
+    void publishKeyboard(){try{event("keyboard",new JSONObject().put("visible",imeVisible).put("height",imeHeight).put("viewportHeight",web==null?0:web.getHeight()/getResources().getDisplayMetrics().density).toString());}catch(Exception ignored){}}
     void event(String type,String value){if(Arrays.asList("inboxRefresh","writingsRefresh","writingsChanged","reach","delayedReply","replyPending","replyFailed","complete","conversationOpened","producerAvatar","scheduleChanged","storyImported").contains(type))uiRevision++;evaluate("window.nativeEvent("+JSONObject.quote(type)+","+JSONObject.quote(value)+")");}
     JSONObject character(String id)throws Exception{for(int i=0;i<characters.length();i++)if(id.equals(characters.getJSONObject(i).getString("id")))return CharacterPrompts.apply(characters.getJSONObject(i),store.personal());throw new Exception("未知角色");}
     int uiRevision;

@@ -9,6 +9,7 @@ final class MediaActions {
     static void draft(Context c,String session,JSONArray a)throws Exception{if(!c.getSharedPreferences("settings",0).edit().putString(draftKey(session),a.toString()).commit())throw new IOException("图片草稿保存失败");}
     static Object run(Context c,ChatStore s,String action,JSONObject a,ModelClient client)throws Exception{
         if(action.equals("mediaLibrary"))return MediaStore.library(s,MediaData.cut(a.optString("query"),200),a.optString("filter"),Math.max(0,a.optInt("offset")));
+        if(action.equals("mediaStickerDetail"))return MediaStore.stickerDetail(s,a.optString("id"),a.optString("asset"));
         if(action.equals("mediaUpdate"))return MediaStore.updateSticker(s,a,known(c));
         if(action.equals("mediaLibraryAdd"))return MediaStore.addSticker(s,a.getString("asset"));
         if(action.equals("mediaSettings"))return MediaContext.settings(c,a);

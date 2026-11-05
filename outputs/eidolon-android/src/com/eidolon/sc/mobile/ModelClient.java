@@ -64,14 +64,19 @@ final class ModelClient {
     }
     static JSONObject request(String model,String system,List<ChatStore.Message> history,String user,java.time.Clock clock,java.time.ZoneId zone)throws Exception{return buildRequest(model,system,history,user,java.util.Collections.emptyList(),clock,zone);}
     private static JSONObject buildRequest(String model,String system,List<ChatStore.Message> history,String user,List<ChatStore.Message> batch)throws Exception{return buildRequest(model,system,history,user,batch,null,null);}
-    private static JSONObject buildRequest(String model,String system,List<ChatStore.Message> history,String user,List<ChatStore.Message> batch,java.time.Clock clock,java.time.ZoneId zone)throws Exception{
+    static JSONObject conversationRequest(String model,String system,List<ChatStore.Message> history,List<ChatStore.Message> batch,java.time.Clock clock,java.time.ZoneId roleZone,java.time.ZoneId userZone)throws Exception{
+        if(batch.isEmpty())throw new IOException("待回复的用户消息不存在");return buildRequest(model,system,history,"",batch,clock,roleZone,userZone);
+    }
+    static JSONObject request(String model,String system,List<ChatStore.Message> history,String user,java.time.Clock clock,java.time.ZoneId roleZone,java.time.ZoneId userZone)throws Exception{return buildRequest(model,system,history,user,java.util.Collections.emptyList(),clock,roleZone,userZone);}
+    private static JSONObject buildRequest(String model,String system,List<ChatStore.Message> history,String user,List<ChatStore.Message> batch,java.time.Clock clock,java.time.ZoneId zone)throws Exception{return buildRequest(model,system,history,user,batch,clock,zone,null);}
+    private static JSONObject buildRequest(String model,String system,List<ChatStore.Message> history,String user,List<ChatStore.Message> batch,java.time.Clock clock,java.time.ZoneId zone,java.time.ZoneId userZone)throws Exception{
         JSONArray messages = new JSONArray();
         messages.put(new JSONObject().put("role", "system").put("content", system));
         List<ChatStore.Message> included=new java.util.ArrayList<>();
         // Bound context by whole turns; all stored messages remain on the phone.
         int start = history.size(), budget = 24000;
         int end=history.size();
-        while(end>0){int begin=end-1;while(begin>0&&!history.get(begin).role.equals("user"))begin--;int cost=0;for(int i=begin;i<end;i++)cost+=MessageTime.content(history.get(i)).length();if(cost>budget)break;budget-=cost;start=begin;end=begin;}
+        while(end>0){int begin=end-1;while(begin>0&&!history.get(begin).role.equals("user"))begin--;int cost=0;for(int i=begin;i<end;i++)cost+=MessageTime.content(history.get(i)).length()+MessageTime.reference(history.get(i),i+1,zone).toString().length();if(cost>budget)break;budget-=cost;start=begin;end=begin;}
         for(int i=start;i<history.size();i++){
             ChatStore.Message item=history.get(i);
             if(MessageTime.content(item).trim().isEmpty())continue;
@@ -81,7 +86,7 @@ final class ModelClient {
         }
         if(batch.isEmpty())messages.put(new JSONObject().put("role","user").put("content",user));
         else for(ChatStore.Message item:batch){messages.put(new JSONObject().put("role","user").put("content",MessageTime.content(item)));included.add(item);}
-        String dated=system+(!included.isEmpty()?MessageTime.context(included,zone):"");if(clock!=null)dated+=RecentTimeFacts.prompt(included,clock,zone);messages.getJSONObject(0).put("content",dated);
+        String dated=system+MessageTime.clocks(clock,zone,userZone)+(!included.isEmpty()?MessageTime.context(included,zone):"");if(start>0)dated+="\n较早的"+start+"条历史因上下文长度未纳入，缺少的时间和经过保持未知，不把保留片段当作整段连续聊天。";if(clock!=null&&zone!=null)dated+=RecentTimeFacts.prompt(included,clock,zone);messages.getJSONObject(0).put("content",dated);
         return new JSONObject().put("model",model).put("messages",messages).put("stream",true);
     }
     String chat(String address, String key, JSONObject body, Listener listener) throws Exception {

@@ -77,6 +77,10 @@ final class VoicePlayer {
         return true;
     }
     void play(String text, String voice, String model, String key, Listener listener) {
+        play(text,text,voice,model,key,listener);
+    }
+    /** Preserve the UI/control identity while deriving speech for the configured language mode. */
+    void play(String text, String speechText, String voice, String model, String key, Listener listener) {
         if(!externalFocus&&CallService.live()){listener.status("通话正在使用音频，请挂断后播放");return;}
         String identity;
         try { identity=VoiceCache.digest(text+"\n"+voice+"\n"+model+"\n"+VoiceCache.digest(key)); }
@@ -88,7 +92,7 @@ final class VoicePlayer {
         active = s;
         s.trace.event("button_received");
         listener.status("正在连接角色语音…");
-        network.execute(() -> generate(s, text, voice, model, key));
+        network.execute(() -> generate(s, speechText, voice, model, key));
     }
     void playSaved(File file, Listener listener) {
         String identity="saved:"+file.getAbsolutePath();

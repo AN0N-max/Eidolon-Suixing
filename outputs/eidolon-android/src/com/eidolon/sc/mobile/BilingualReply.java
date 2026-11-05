@@ -19,11 +19,11 @@ final class BilingualReply {
     static String withChinese(String original,String translated) throws IOException {
         original=ReplyText.clean(original);translated=ReplyText.clean(translated);
         if(!needsChinese(original))throw new IOException("这条消息已有中文，无需修复");
-        String chinese=translated.trim().replaceAll("(?s)</?(?:ja|zh)>","").trim();
-        if(chinese.isEmpty()||!HAN.matcher(chinese).find()||KANA.matcher(chinese).find()||chinese.length()>12000)
-            throw new IOException("模型未返回有效的简体中文，请稍后重试");
-        String base=original.replaceAll("(?s)<zh>\\s*</zh>","").trim();
-        if(!JA.matcher(base).find())base="<ja>"+base+"</ja>";
+        String chinese=DialogueText.language(DialogueText.fields("",translated,false),"zh",true);
+        if(chinese.isEmpty()||!HAN.matcher(chinese).find()||chinese.length()>12000)
+            throw new IOException("模型未返回可确认的中文译文，请稍后重试");
+        String base=original;
+        if(DialogueText.language(base,"ja",false).isEmpty())throw new IOException("没有可确认的日文原文，未修改消息");
         return base+"<zh>"+chinese+"</zh>";
     }
 }
