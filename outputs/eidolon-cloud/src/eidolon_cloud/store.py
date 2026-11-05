@@ -44,9 +44,15 @@ class Store:
                 "SELECT value FROM cloud_meta WHERE key='schema'"
             ).fetchone()
             if (version is None and tables) or (
-                version is not None and version[0] != "1"
+                version is not None and version[0] not in {"1", "2"}
             ):
                 raise RuntimeError("Unsupported cloud infrastructure schema")
+            if (
+                version is not None
+                and version[0] == "2"
+                and "cloud_tts_requests" not in tables
+            ):
+                raise RuntimeError("Missing TTS ledger in schema2")
             db.execute("INSERT OR IGNORE INTO cloud_meta VALUES('schema','1')")
             db.execute(
                 "INSERT OR IGNORE INTO cloud_meta VALUES('stream',?)", (str(uuid4()),)

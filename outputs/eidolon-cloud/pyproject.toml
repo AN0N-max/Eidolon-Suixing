@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "eidolon-suixing-cloud"
-version = "0.1.0.dev1"
+version = "0.1.0.dev2"
 description = "Private cloud runtime for the existing Eidolon Suixing domain logic"
 requires-python = ">=3.11"
 license = "AGPL-3.0-or-later"
-dependencies = ["fastapi>=0.143,<0.144", "uvicorn>=0.54,<0.55"]
+dependencies = ["fastapi>=0.143,<0.144", "uvicorn>=0.54,<0.55", "httpx>=0.28,<0.29"]
 
 [project.optional-dependencies]
-test = ["pytest>=9.1,<10", "pytest-asyncio>=1.4,<2", "httpx>=0.28,<0.29"]
+test = ["pytest>=9.1,<10", "pytest-asyncio>=1.4,<2"]
 
 [project.scripts]
 eidolon-cloud = "eidolon_cloud.__main__:main"

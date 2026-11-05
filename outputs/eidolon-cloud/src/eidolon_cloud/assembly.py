@@ -6,6 +6,7 @@ from .domain import DomainPort, UnboundDomain
 from .reach_outs import ReachOutRuntime
 from .runtime_lock import RuntimeLock
 from .store import Store
+from .tts import MockRelay
 
 
 class Backend:
@@ -17,6 +18,7 @@ class Backend:
         self.reach_outs = ReachOutRuntime(self.store, settings.tick_seconds)
         self._runtime_lock = RuntimeLock(settings.data / "runtime.lock")
         self._started = False
+        self.tts = MockRelay(self.store) if settings.tts_mock else None
 
     async def start(self) -> None:
         if self._started:
@@ -24,6 +26,8 @@ class Backend:
         self._runtime_lock.acquire()
         try:
             await self.store.initialize()
+            if self.tts is not None:
+                await self.tts.initialize()
             if self.settings.diagnostics:
                 self.reach_outs.start_diagnostics()
             self._started = True
@@ -33,8 +37,14 @@ class Backend:
 
     async def close(self) -> None:
         try:
-            await self.reach_outs.close()
-            await self.database.close()
+            try:
+                if self.tts is not None:
+                    await self.tts.close()
+            finally:
+                try:
+                    await self.reach_outs.close()
+                finally:
+                    await self.database.close()
         finally:
             self._runtime_lock.release()
             self._started = False

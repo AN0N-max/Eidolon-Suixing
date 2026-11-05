@@ -26,7 +26,7 @@ def main() -> None:
             "domain-baseline.json",
         )
     ]
-    for directory in ("src", "tests", "tools", "docs", "shared-clock"):
+    for directory in ("src", "tests", "tools", "docs", "shared-clock", "deploy"):
         files.extend(
             path
             for path in (root / directory).rglob("*")

@@ -1,6 +1,8 @@
 # Eidolon 随行：自编云端框架
 
-状态：`0.1.0.dev1`，仅本地框架阶段，尚未接入手机业务或部署到服务器。
+状态：`0.1.0.dev2`，新增默认关闭的云端 TTS 模拟协议。只生成固定静音，不调用 Fish；手机尚未接入。用户截图已确认服务器上的 **dev1** 由 systemd 运行、健康/认证与在线备份通过；本开发版尚未部署。
+
+本批实现、运行方式和下一步见 [TTS-DEV2.md](docs/TTS-DEV2.md)。服务器出口探测脚本只做 DNS/TCP/TLS；真实服务器可达性仍待运行确认。
 
 **框架组织参考上游，后端代码自行编写，现有业务规则保持原样。** 本目录不依赖或导入上游 `eidolon` 包，也没有把上游角色、日程、记忆、关系系统复制为第二套。
 
@@ -17,6 +19,7 @@
 | `reach_outs.py` | 后台循环的启动、停止、任务执行入口 | 不决定睡眠/洗澡/忙碌、好感门槛或搭话间隔 |
 | `domain.py` | 接现有业务核心的适配接口与版本字段 | 没接上时明确不可用，不用简化版算法顶替 |
 | `runtime_lock.py` | 同一数据目录只允许一个任务运行进程 | 本地管理命令仍通过 SQLite 事务工作 |
+| `tts.py` | 设备隔离的模拟 TTS 流、持久请求状态与取消 | 不调用真实 Fish、不声明用户已听见、不提交关系/记忆 |
 
 日程与判断的当前来源保持为 Android 的 ReachConfig、ReachPolicy、ReachPlanRules、ReachPlans、ReachExecution、ScheduleData/Runtime、DailyScheduleClock、LifeData/Store、TemporalRuntime 等。现有配置字段、默认值与规则没有改写成另一份 Python 版本。
 
@@ -28,7 +31,7 @@
 
 ## 已实现的基础能力
 
-- 独立 SQLite 基础设施库 `cloud-control.sqlite3`；不接管无关数据库，不改手机 SQLite/备份 v17。
+- 独立 SQLite 基础设施库 `cloud-control.sqlite3`；不接管无关数据库，不改当前手机 SQLite/备份 v18。默认 schema1；显式启用模拟 TTS 才增量迁移为 schema2。
 - 单个私有用户的设备登记、256 位随机令牌、摘要保存和撤销；管理操作只有本机 CLI。
 - 明确标识的固定诊断任务：持久化、幂等入队、过期、取消、原子投放。
 - 消息稳定 UUID、数据库消息流 UUID、分页游标、重复补拉和单设备保存确认。
@@ -61,7 +64,7 @@ Windows 如默认 pytest 临时目录不可访问，可使用：
 python tools/verify_domain.py --android-source ../eidolon-android
 ```
 
-`domain-baseline.json` 记录已审查的 Android 1.22/code77、v17 数据格式和 23 个关键文件的原始 SHA-256，不包含本机敏感路径或私人内容。它用于确认框架开发没有误改现有模块，不是已经完成业务适配的证明。
+`domain-baseline.json` 保留历史 Android 1.22/code77、v17 与 23 个文件的审查摘要。当前 Android 已为 1.28.1/code85、v18，后续 Android 发版使其中12个摘要不同；不能把旧摘要全部通过作为本批验收，也不能为消除差异重置基线。本批未改 Android 文件。
 
 原始 Java 规则桥接验收（需要 JDK 17，构建目标为 Java 8）：
 
@@ -100,6 +103,10 @@ HTTP API：
 | `GET /api/device` | 设备信息、消息流 UUID、已保存游标 |
 | `GET /api/inbox?after=0&limit=50` | 稳定顺序补拉，limit 为 1–100 |
 | `POST /api/inbox/ack` | `{"through":1,"streamId":"消息流UUID"}` |
+| `GET /api/tts/capabilities` | 认证后查询 off/mock；永远 paidRequestsSupported=false |
+| `POST /api/tts/stream` | 显式启用后返回固定测试 PCM；默认503 |
+| `GET /api/tts/requests/{requestId}` | 同设备读取状态/字节数/摘要，不发起合成 |
+| `POST /api/tts/requests/{requestId}/cancel` | 同设备幂等取消，不改已结束状态 |
 
 除健康检查外要求 `Authorization: Bearer DEVICE_TOKEN`。没有 HTTP 注册、管理、创建任意任务、模型调用、配置覆盖或日程计算接口。
 
@@ -107,14 +114,14 @@ HTTP API：
 
 ## 服务器部署边界
 
-此阶段服务端框架在本机验证；Ubuntu/systemd、HTTPS、手机流量和真实后台通知尚未验收。仅有源代码或诊断消息通过不代表真实云端生活功能完成。
+dev1 的 Ubuntu/systemd 启动、启用自启动、健康/认证和在线备份已有用户截图证据；服务器重启恢复、真实恢复、HTTPS、手机流量和后台通知尚未验收。dev2 只在本机验证，不能沿用 dev1 的运行结果宣称部署成功。
 
 没有公网域名也可以继续开发。回环监听可经 SSH 隧道联调；正式手机访问再配置 VPN 或认证 HTTPS，保留现有 App 的证书和明文限制。不会为诊断直接把明文业务端口暴露到公网。
 
 ## 下一步接入
 
-先实现既有 Java 核心的受控适配，保持相同配置与相同判断结果；再加入角色/会话的跨端执行权、配置版本、聊天/通话准入、上下文同步及消息导入。之后才开启真实主动搭话。付费请求结果未知时不能沿用诊断任务的重试假设。
+当前优先完成独立 TTS 中转：模拟协议 → 真实 HTTP 上游的离线假服务验证与私密配置 → 手机原播放器适配 → 私网及经授权的真实验证。角色云端托管仍需受控 Java 业务适配、跨端执行权与上下文同步，不能由 TTS 中转替代。
 
-Android 仍为 1.22/code77，SQLite/备份 v17，本轮没有新 APK。旧 `eidolon-backend` 是暂停的 Java/PostgreSQL 实验，本目录 `eidolon-cloud` 是当前自编框架目录。
+Android 当前为 1.28.1/code85，SQLite/备份 v18，本轮没有新 APK。旧 `eidolon-backend` 是暂停的 Java/PostgreSQL 实验，本目录 `eidolon-cloud` 是当前自编框架目录。
 
 许可沿用项目 AGPL-3.0-or-later；全文见 LICENSE。FastAPI、Uvicorn 及其依赖保留各自许可。自编代码组织参考上游，但不是上游源码的改名复制或完整服务部署。

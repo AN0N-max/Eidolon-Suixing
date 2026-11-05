@@ -9,8 +9,10 @@ from collections import OrderedDict
 from contextlib import asynccontextmanager
 from uuid import UUID, uuid4
 
+import anyio
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
+from starlette.responses import StreamingResponse
 
 from . import __version__
 from .assembly import Backend
@@ -106,6 +108,75 @@ def create_app(backend: Backend) -> FastAPI:
     async def health():
         await backend.store.health()
         return {"status": "ok", "version": __version__, "domainConnected": False}
+
+    def tts():
+        if backend.tts is None:
+            raise Refused(503, "tts_disabled")
+        return backend.tts
+
+    @app.get("/api/tts/capabilities")
+    async def tts_capabilities(device_id: str = Depends(device)):
+        return {
+            "enabled": backend.tts is not None,
+            "mode": "mock" if backend.tts else "off",
+            "paidRequestsSupported": False,
+        }
+
+    @app.get("/api/tts/requests/{identifier}")
+    async def tts_status(identifier: str, device_id: str = Depends(device)):
+        return await tts().state(device_id, identifier)
+
+    @app.post("/api/tts/requests/{identifier}/cancel")
+    async def tts_cancel(identifier: str, device_id: str = Depends(device)):
+        return await tts().cancel(device_id, identifier)
+
+    @app.post("/api/tts/stream")
+    async def tts_stream(request: Request, device_id: str = Depends(device)):
+        relay = tts()
+        if request.query_params:
+            raise Refused(400, "invalid_query")
+        if (
+            request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+            != "application/json"
+        ):
+            raise Refused(415, "json_required")
+        body = bytearray()
+        async for part in request.stream():
+            if len(body) + len(part) > 65536:
+                raise Refused(413, "body_too_large")
+            body.extend(part)
+        try:
+            value = json.loads(body.decode("utf-8"), object_pairs_hook=_pairs)
+        except (ValueError, UnicodeError, RecursionError):
+            raise Refused(400, "invalid_json") from None
+        iterator = await relay.open(device_id, value)
+
+        class AudioResponse(StreamingResponse):
+            async def __call__(self, scope, receive, send):
+                try:
+                    await super().__call__(scope, receive, send)
+                finally:
+
+                    async def cleanup():
+                        try:
+                            await iterator.aclose()
+                        finally:
+                            await relay.abandon(device_id, value["requestId"])
+
+                    # Starlette cancels an AnyIO scope on disconnect. Shield the
+                    # cleanup itself so the ledger commit precedes slot release.
+                    with anyio.CancelScope(shield=True):
+                        await cleanup()
+
+        return AudioResponse(
+            iterator,
+            media_type="audio/pcm",
+            headers={
+                "X-Eidolon-TTS-Mode": "mock",
+                "X-Eidolon-Sample-Rate": "44100",
+                "Cache-Control": "no-store",
+            },
+        )
 
     @app.get("/api/device")
     async def device_status(device_id: str = Depends(device)):

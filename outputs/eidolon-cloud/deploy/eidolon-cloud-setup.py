@@ -51,7 +51,7 @@ RAW_URL = (
     + PACKAGE
 )
 VERSION = "0.1.0.dev1"
-TOOL_VERSION = "2026.11.05.1"
+TOOL_VERSION = "2026.11.05.2"
 SERVICE = "eidolon-cloud.service"
 CLOUD_TABLES = {"cloud_meta", "cloud_devices", "cloud_diagnostic_jobs", "cloud_inbox"}
 
@@ -86,18 +86,22 @@ def inspect_database(path: Path) -> dict:
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
             )
         }
-        if tables != CLOUD_TABLES:
+        if "cloud_meta" not in tables:
             raise RuntimeError("Not the supported cloud infrastructure database")
         metadata = dict(db.execute("SELECT key,value FROM cloud_meta"))
-        if metadata.get("schema") != "1":
+        schema = metadata.get("schema")
+        if schema not in {"1", "2"}:
             raise RuntimeError("Unsupported cloud database schema; preserved")
+        expected = CLOUD_TABLES | ({"cloud_tts_requests"} if schema == "2" else set())
+        if tables != expected:
+            raise RuntimeError("Not the supported cloud infrastructure database")
         try:
             UUID(metadata["stream"])
         except (ValueError, KeyError):
             raise RuntimeError("Invalid cloud message stream") from None
         if db.execute("PRAGMA foreign_key_check").fetchone() is not None:
             raise RuntimeError("Database foreign key check failed")
-        return {"schema": "1", "streamId": metadata["stream"]}
+        return {"schema": schema, "streamId": metadata["stream"]}
 
 
 def copy_database(source: Path, target: Path, *, create: bool) -> None:
