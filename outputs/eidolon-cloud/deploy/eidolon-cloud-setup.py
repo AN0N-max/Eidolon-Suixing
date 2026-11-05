@@ -51,7 +51,7 @@ RAW_URL = (
     + PACKAGE
 )
 VERSION = "0.1.0.dev1"
-TOOL_VERSION = "2026.11.04.1"
+TOOL_VERSION = "2026.11.05.1"
 SERVICE = "eidolon-cloud.service"
 CLOUD_TABLES = {"cloud_meta", "cloud_devices", "cloud_diagnostic_jobs", "cloud_inbox"}
 
@@ -292,15 +292,23 @@ class ServiceManager:
             "--no-pager",
             *args,
         ]
-        return subprocess.run(
-            command, check=check, text=True, capture_output=True, timeout=40
+        result = subprocess.run(
+            command, check=False, text=True, capture_output=True, timeout=40
         )
+        if check and result.returncode:
+            detail = (
+                result.stderr or result.stdout or "no controller error text"
+            ).strip()[:1500]
+            raise RuntimeError(
+                f"systemctl {args[0]} failed ({result.returncode}): {detail}"
+            )
+        return result
 
     def state(self) -> dict:
         result = self.command(
             "show",
             SERVICE,
-            "--property=LoadState,FragmentPath,DropInPaths,ActiveState,SubState,MainPID,UnitFileState,NeedDaemonReload",
+            "--property=LoadState,FragmentPath,DropInPaths,ActiveState,SubState,MainPID,UnitFileState,NeedDaemonReload,Result,ExecMainCode,ExecMainStatus",
             check=False,
         )
         if result.returncode and "LoadState=not-found" not in result.stdout:
@@ -400,22 +408,35 @@ class ServiceManager:
         try:
             self.start()
             self.command("enable", SERVICE, changing=True)
-        except (OSError, RuntimeError, subprocess.SubprocessError):
+        except (OSError, RuntimeError, subprocess.SubprocessError) as error:
             # Keep the validated unit and backups for retry; no legacy double-start.
-            self.command("stop", SERVICE, changing=True, check=False)
+            cleanup = "stop attempted"
+            try:
+                stopped = self.command("stop", SERVICE, changing=True, check=False)
+                cleanup = (
+                    "stop accepted"
+                    if stopped.returncode == 0
+                    else "stop failed; inspect status"
+                )
+            except (OSError, RuntimeError, subprocess.SubprocessError):
+                cleanup = "stop could not be confirmed; inspect status"
             raise RuntimeError(
-                "systemd activation failed; service stopped, inspect logs; unit/backups retained"
+                f"systemd activation failed: {error}; {cleanup}; unit/backups retained"
             ) from None
         self.status(required=True)
 
     def start(self) -> None:
-        self.checked()
+        initial = self.checked()
         if self.setup.owned_pid() is not None:
             raise RuntimeError(
                 "Legacy process still exists; run service-install to finish migration"
             )
-        self.command("reset-failed", SERVICE, changing=True)
+        # An inactive unit may be garbage-collected by systemd. ResetFailedUnit
+        # need not load it, so a mandatory reset can fail before StartUnit runs.
+        if initial.get("ActiveState") == "failed":
+            self.command("reset-failed", SERVICE, changing=True)
         self.command("start", SERVICE, changing=True)
+        last_error = "service has not reached active state"
         for _ in range(30):
             state = self.checked()
             if state.get("ActiveState") == "failed":
@@ -425,11 +446,11 @@ class ServiceManager:
                     self.verify_pid(state)
                     self.setup.health()
                     return
-            except (OSError, ValueError, RuntimeError):
-                pass
+            except (OSError, ValueError, RuntimeError) as error:
+                last_error = str(error)
             time.sleep(0.5)
         raise RuntimeError(
-            "Service did not pass health/authentication checks; inspect logs"
+            "Service readiness failed: " + last_error + "; state=" + json.dumps(state)
         )
 
     def stop(self) -> None:

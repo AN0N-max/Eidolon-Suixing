@@ -340,3 +340,61 @@ def test_restore_guard_rejects_running_service(tmp_path, monkeypatch):
     state.update(LoadState="loaded", ActiveState="active")
     with pytest.raises(RuntimeError, match="Stop"):
         service.require_stopped()
+
+
+def test_inactive_unit_starts_without_reset_failed(tmp_path, monkeypatch):
+    service, state, events, pid = service_fixture(tmp_path, monkeypatch)
+    original = service.command
+
+    def command(*args, **kwargs):
+        if args[0] == "reset-failed":
+            raise RuntimeError("Unit not loaded")
+        return original(*args, **kwargs)
+
+    service.command = command
+    service.install()
+    assert state["ActiveState"] == "active"
+    assert "start" in events and "reset-failed" not in events
+
+
+def test_failed_unit_resets_failure_before_start(tmp_path, monkeypatch):
+    service, state, events, pid = service_fixture(tmp_path, monkeypatch)
+    service.install()
+    state["ActiveState"] = "failed"
+    events.clear()
+    service.start()
+    assert events[:2] == ["reset-failed", "start"]
+
+
+def test_controller_error_is_shown_even_without_journal(tmp_path, monkeypatch):
+    service, state, events, pid = service_fixture(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        ops.subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(
+            a, 1, "", "fixture controller rejection"
+        ),
+    )
+    with pytest.raises(
+        RuntimeError, match="systemctl start failed.*fixture controller rejection"
+    ):
+        ops.ServiceManager.command(service, "start", ops.SERVICE, changing=True)
+
+
+def test_activation_keeps_original_error_when_cleanup_fails(tmp_path, monkeypatch):
+    service, state, events, pid = service_fixture(tmp_path, monkeypatch)
+    original = service.command
+
+    def command(*args, **kwargs):
+        if args[0] == "start":
+            raise RuntimeError("fixture original start failure")
+        if args[0] == "stop":
+            raise OSError("fixture cleanup failure")
+        return original(*args, **kwargs)
+
+    service.command = command
+    with pytest.raises(
+        RuntimeError,
+        match="fixture original start failure.*stop could not be confirmed",
+    ):
+        service.install()
