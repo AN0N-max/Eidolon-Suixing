@@ -25,8 +25,8 @@
 .message.own .message-column{align-items:flex-end}
 .message-name{font-size:11px;color:#687584;margin:0 0 4px 5px;line-height:1.2}
 .message .bubble{max-width:100%;width:fit-content;border-radius:16px;border-top-left-radius:5px;box-shadow:0 1px 3px #1b35520d}
-.message.own .bubble{font-size:var(--chat-mine-size,17px);max-width:100%;border-radius:16px;border-top-right-radius:5px;background:#d9eafd;color:#203047}
-.message .translation{font-size:var(--chat-chinese-size,18px)}
+.message.own .bubble{font-size:var(--chat-mine-size,16px);max-width:100%;border-radius:16px;border-top-right-radius:5px;background:#d9eafd;color:#203047}
+.message .translation{font-size:var(--chat-chinese-size,16px)}
 .message .japanese{font-size:var(--chat-japanese-size,13px)}
 .gift-event{display:flex;align-items:center;flex-direction:column;gap:10px;color:#767e8b;margin:18px 0 22px;font-size:13px}
 .gift-event-line{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;white-space:nowrap}
@@ -164,3 +164,6 @@ html[data-ime="true"][data-hide-nav="true"] .bottom-nav{display:none}
 .voice-feedback{font-size:12px;white-space:normal;color:#bf5865;max-width:22em;line-height:1.5}.message-tools{flex-wrap:wrap}
 
 html,body{height:100%;overflow:hidden}#app{height:100%;min-height:0}.chat-content{min-height:0;overflow-anchor:none}.composer,.chat-tools-dock,.status-line,.sticker-tray{flex-shrink:0}.bubble>span.translation,.bubble>span.japanese,.bubble>span.dialogue-uncertain,.bubble>span.literal-example{display:inline;white-space:pre-wrap}.bubble>span.translation+.japanese,.bubble>span.japanese+.translation{display:block;margin-top:7px}.voice-text-missing{font-size:11px;color:#8b8d94;max-width:180px}.message-tools{flex-wrap:wrap;gap:4px}
+
+/* One prose size for Chinese, read-compatible mixed text and inline quotations. */
+.message:not(.own) .bubble,.message .bubble.untranslated-japanese{font-size:var(--chat-chinese-size,16px);line-height:1.55}.message .bubble>.translation,.message .bubble>.dialogue-uncertain{font-size:var(--chat-chinese-size,16px);line-height:1.55;margin-top:4px}.message .bubble>.japanese{font-size:var(--chat-japanese-size,13px);line-height:1.5;margin-top:0}.message .bubble>.translation:first-child,.message .bubble>.dialogue-uncertain:first-child{margin-top:0}.message .literal-example{font-size:inherit;line-height:inherit}.message .bubble{padding:10px 13px}.message{margin-bottom:14px}

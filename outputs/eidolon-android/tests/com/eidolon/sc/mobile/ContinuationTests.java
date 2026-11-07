@@ -21,7 +21,7 @@ public class ContinuationTests {
   JSONObject t=TemporalData.build(clock("2026-11-04T01:00:00"),Z,p,new JSONObject().put("state","free"),now,now,0,0,null);
   check(!TimeConsistency.reason("我现在要吃午饭了。",t,clock("2026-11-04T01:00:00").millis()).isEmpty(),"explicit present lunch at night rejected");
   for(String value:new String[]{"晚安，制作人。","我明天准备吃午饭。","你上夜班，午饭要记得吃。","昨天你说晚安。","我现在要午睡了。","`我现在要吃午饭了`","她说：“我现在要吃午饭了。”"})check(TimeConsistency.reason(value,t,clock("2026-11-04T01:00:00").millis()).isEmpty(),"ambiguous/quoted/future topic preserved "+n);
-  check(TimeConsistency.reason("我现在要吃午饭了。",t,clock("2026-11-04T12:00:00").millis()).isEmpty(),"normal lunch preserved at delivery");
+  check(TimeConsistency.reason("我现在要吃午饭了。",new JSONObject(t.toString()).put("planned_activity",new JSONObject().put("name","午餐")),clock("2026-11-04T12:00:00").millis()).isEmpty(),"normal lunch preserved at delivery");
   JSONObject shift=new JSONObject(t.toString()).put("actual_state",new JSONObject().put("confirmed",true).put("name","夜班午餐"));check(TimeConsistency.reason("我现在要吃午饭了。",shift,clock("2026-11-04T01:00:00").millis()).isEmpty(),"confirmed night-shift lunch remains valid");
   check(!TimeConsistency.reason("我现在要吃午饭了。",t,clock("2026-11-05T01:00:00").millis()).isEmpty(),"delivery recheck rejects stale present lunch next night without regeneration");
   CallEpoch dialEpoch=new CallEpoch("dial");long dialToken=dialEpoch.next();dialEpoch.end();check(!dialEpoch.current("dial",dialToken)&&new CallDialWait(1000,0).due(3000),"expired wait after cancellation cannot restart old call identity");

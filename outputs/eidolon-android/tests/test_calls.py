@@ -19,7 +19,7 @@ assert 'remember=!voiceCall' in engine and 'promises=!voiceCall' in engine and '
 assert 'public void completed()' in service and service.index('put("heard",true)')<service.index('store.deliverPending')
 assert 'ConversationEngine.stop' in service and 'player.stop()' in service and 'r.cancel();r.destroy()' in service
 assert 'if(externalFocus)return current(s)' in player and 'getPlaybackHeadPosition()' in player
-assert 'CallStore.recover(s)' in (src/'EidolonApp.java').read_text(encoding='utf-8') and '.put("version",18)' in chat
+assert 'CallStore.recover(s)' in (src/'EidolonApp.java').read_text(encoding='utf-8') and '.put("version",19)' in chat
 assert 'AudioDeviceCallback' in service and 'change<0' in service and 'START_NOT_STICKY' in service
 print('PASS call-table migration preserves messages; unheard audio stays staged; transactional playback ack rolls back; cancellation revision persists across reconnect; shared pipeline, mic/audio cancellation and device-loss source hooks. SQLite/fake contracts only, not Android execution.')
 

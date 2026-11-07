@@ -43,6 +43,7 @@ final class ScheduleData {
         for(int i=0;i<source.length();i++){JSONObject slot=source.getJSONObject(i);String start=clock(slot,"start","第"+(i+1)+"段开始",false,false),end=clock(slot,"end","第"+(i+1)+"段结束",true,false);int from=minute(start,false),to=minute(end,true);
             if(from<previous||from>=to||from<waking||(sleeping>=1200&&to>sleeping))throw new Exception("行程有重叠，或安排在睡眠时段");previous=to;
             JSONObject item=new JSONObject().put("start",start).put("end",end).put("activity",text(slot,"activity",80,true)).put("place",text(slot,"place",60,false));
+            if(slot.optJSONObject("topic")!=null)item.put("topic",ReplyBasis.topic(slot.getJSONObject("topic")));
             if(slot.has("kind")&&!slot.isNull("kind")){String kind=text(slot,"kind",12,true);if(!Arrays.asList("work","school","daily").contains(kind))throw new Exception("行程类型只能是 work、school 或 daily");item.put("kind",kind);}slots.put(item);
         }
         JSONArray input=raw.optJSONArray("twists"),twists=new JSONArray();if(input!=null){if(input.length()>2)throw new Exception("每天最多两个小变数");for(int i=0;i<input.length();i++){Object value=input.get(i);if(!(value instanceof String)||((String)value).trim().isEmpty()||((String)value).length()>120)throw new Exception("行程变数格式无效");twists.put(((String)value).trim());}}

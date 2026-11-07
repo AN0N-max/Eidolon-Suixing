@@ -1,3 +1,13 @@
+# Android安装包 · 1.28.4
+
+[1.28.4原签名升级APK](Eidolon-1.28.4-original-upgrade.apk)，code88，SQLite18/备份19，旧APK保留。
+
+SHA256：c537e394bfb1f010bcf02a97f409fb3c08c3bb7ce22a696e40a22c704f3b8f14
+
+[发布](../outputs/eidolon-android/RELEASE-1.28.4.md) · [验证](../docs/QA-1.28.4.md)
+
+以下保留历史安装包说明。
+
 # Android安装包
 
 [1.28.3原签名升级APK](Eidolon-1.28.3-original-upgrade.apk)，code87，DB18保持。旧APK保留。

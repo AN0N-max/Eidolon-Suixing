@@ -60,7 +60,7 @@ public final class WebActivity extends MainActivity {
             if(!prefs.getBoolean("profile-migrated-v4",false)){JSONObject data=store.personal();if(data.getString("profile").isEmpty())data.put("profile",prefs.getString("profile",""));store.savePersonal(data);prefs.edit().putBoolean("profile-migrated-v4",true).commit();}
         }catch(Exception e){toast("本机资源无法加载");finish();return;}
         web=new WebView(this);
-        WebSettings options=web.getSettings();options.setJavaScriptEnabled(true);
+        WebSettings options=web.getSettings();options.setJavaScriptEnabled(true);options.setTextZoom(100);
         options.setAllowFileAccess(false);options.setAllowContentAccess(false);options.setDomStorageEnabled(false);
         options.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);options.setSupportMultipleWindows(false);
         options.setJavaScriptCanOpenWindowsAutomatically(false);
@@ -482,7 +482,7 @@ public final class WebActivity extends MainActivity {
         if(action.equals("storyDetail"))return store.story(a.getString("storyId"));
         if(action.equals("storyDelete")){store.deleteStory(a.getString("storyId"));return snapshot();}
         if(action.equals("storyRetrievalSettings")){StoryRetrieval policy=new StoryRetrieval(a);if(!prefs.edit().putInt("storyRetrieval.candidates",policy.candidates).putInt("storyRetrieval.terms",policy.terms).putInt("storyRetrieval.passages",policy.passages).putInt("storyRetrieval.chars",policy.chars).commit())throw new IOException("检索设置保存失败");return snapshot();}
-        if(action.equals("features")){String name=a.optString("analysisModel").trim();if(name.length()>200)throw new Exception("模型名称过长");if(!prefs.edit().putBoolean("autoMemory",a.optBoolean("autoMemory")).putBoolean("affinity",a.optBoolean("affinity")).putBoolean("hibiHearts",a.optBoolean("hibiHearts",prefs.getBoolean("hibiHearts",true))).putBoolean("story",a.optBoolean("story")).putString("analysisModel",name).commit())throw new Exception("保存失败");JSONObject sceneData=store.personal();HeartScenes.configure(sceneData,a.optBoolean("heartScenes",HeartScenes.root(sceneData).optBoolean("enabled")),!a.optBoolean("affinity")||!a.optBoolean("hibiHearts",true));store.savePersonal(sceneData);return snapshot();}
+        if(action.equals("features")){String name=a.optString("analysisModel").trim();if(name.length()>200)throw new Exception("模型名称过长");if(!prefs.edit().putBoolean("eventUnderstanding",a.optBoolean("eventUnderstanding",prefs.getBoolean("eventUnderstanding",true))).putBoolean("autoMemory",a.optBoolean("autoMemory")).putBoolean("affinity",a.optBoolean("affinity")).putBoolean("hibiHearts",a.optBoolean("hibiHearts",prefs.getBoolean("hibiHearts",true))).putBoolean("story",a.optBoolean("story")).putString("analysisModel",name).commit())throw new Exception("保存失败");JSONObject sceneData=store.personal();HeartScenes.configure(sceneData,a.optBoolean("heartScenes",HeartScenes.root(sceneData).optBoolean("enabled")),!a.optBoolean("affinity")||!a.optBoolean("hibiHearts",true));store.savePersonal(sceneData);return snapshot();}
         if(action.equals("settings")){synchronized(MediaContext.CONFIG_LOCK){
             String address=a.getString("url").trim(),model=a.getString("model").trim(),key=a.optString("key").trim();ModelClient.endpoint(address);
             if(model.isEmpty()||model.length()>200||key.contains("\n")||key.contains("\r"))throw new Exception("模型或密钥格式不正确");
