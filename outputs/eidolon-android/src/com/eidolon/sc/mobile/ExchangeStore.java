@@ -1,0 +1,26 @@
+package com.eidolon.sc.mobile;
+import android.content.Context;import android.database.Cursor;import android.database.sqlite.SQLiteDatabase;import java.time.*;import java.util.*;import org.json.*;
+
+/** Admission and receipts use character_life and the caller's original delivery transaction. */
+final class ExchangeStore {
+ static long lastUser(ChatStore s,String who){try(Cursor c=s.getReadableDatabase().rawQuery("SELECT coalesce(max(id),0) FROM messages WHERE character=? AND role='user'",new String[]{who})){c.moveToFirst();return c.getLong(0);}}
+ static JSONObject prepare(Context c,ChatStore s,String who,long now,JSONObject occasion)throws Exception{
+  SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{
+   Clock clock=Clock.fixed(Instant.ofEpochMilli(now),ZoneOffset.UTC);JSONObject data=s.personal(),persona=WritingEngine.character(WritingEngine.characters(c),who),temporal=TemporalRuntime.context(c,s,data,who,0,0,0,clock);
+   List<ChatStore.Message> history=s.history(who,40);JSONObject life=LifeStore.snapshot(c,s,data,who,temporal,"",true,clock),basis=ReplyBasis.build(temporal,life,history,"",true,new JSONArray(),null),frame=ContinuityStore.frame(c,s,data,persona,temporal,history,"",true,data.optLong("memoryEpoch")),state=LifeStore.read(s,who);
+   JSONObject exchange=ExchangeIntent.reconcile(state,frame,basis,history,now,state.optBoolean("enabled")&&state.optBoolean("eventOnlyReach"));
+   if(occasion==null){JSONArray plans=LetterPlanStore.all(s);for(int i=0;i<plans.length();i++){JSONObject plan=plans.getJSONObject(i);if(who.equals(plan.optString("character"))&&Arrays.asList("pending","ready").contains(plan.optString("state"))&&!plan.optString("occasion").equals("ordinary")&&plan.optLong("writeAt")<=now&&now<=plan.optLong("deliverAt")+LetterPlanData.HOUR){occasion=plan;break;}}}
+   if(occasion!=null&&!occasion.optString("occasion").equals("ordinary")&&!occasion.optString("occasion").isEmpty()){
+    long due=occasion.getLong("deliverAt");JSONObject item=ExchangeIntent.item("occasion",occasion.getString("date")+"/"+occasion.getString("occasion"),"1",LetterPlanData.reason(occasion),new JSONObject().put("source","stored_calendar").put("date",occasion.getString("date")).put("occasion",occasion.getString("occasion")).put("about",occasion.optString("about")),occasion.optLong("writeAt",now),due+LetterPlanData.HOUR,70);
+    JSONObject desk=ExchangeIntent.desk(state);if(ExchangeIntent.byKey(desk.getJSONArray("receipts"),item.getString("key"))==null){JSONObject prior=ExchangeIntent.byKey(desk.getJSONArray("items"),item.getString("key"));if(prior==null){if(desk.getJSONArray("items").length()>=ExchangeIntent.MAX)desk.getJSONArray("items").remove(ExchangeIntent.MAX-1);desk.getJSONArray("items").put(item);}else item=prior;if(item.optString("status").equals("ready"))exchange.put("selected",item).put("decision","evaluate");}
+   }
+   exchange.put("lastUserId",lastUser(s,who));LifeStore.put(s,state);db.setTransactionSuccessful();return exchange;
+  }finally{db.endTransaction();}
+ }
+ static boolean claim(ChatStore s,JSONObject frame,String channel,long now)throws Exception{SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{JSONObject state=LifeStore.read(s,frame.getString("character"));if(state==null||lastUser(s,frame.getString("character"))!=frame.optLong("lastUserId")||s.personal().optLong("memoryEpoch")!=frame.optLong("memoryEpoch")||!ExchangeIntent.claim(state,frame,channel,now))return false;LifeStore.put(s,state);db.setTransactionSuccessful();return true;}finally{db.endTransaction();}}
+ static void finish(ChatStore s,JSONObject frame,String status,long now)throws Exception{if(frame==null)return;SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{JSONObject state=LifeStore.read(s,frame.optString("character"));if(state!=null){ExchangeIntent.finish(state,frame,status,now);LifeStore.put(s,state);}db.setTransactionSuccessful();}finally{db.endTransaction();}}
+ static String guard(Context c,ChatStore s,JSONObject frame,long now)throws Exception{if(frame==null)return "";String who=frame.getString("character");if(!c.getSharedPreferences("settings",0).getBoolean(frame.optString("channel").equals("letter")?"hibiLetters":"reachEnabled",false))return "原主动入口已关闭";Clock clock=Clock.fixed(Instant.ofEpochMilli(now),ZoneOffset.UTC);JSONObject data=s.personal(),state=LifeStore.advance(c,s,data,who,clock),temporal=TemporalRuntime.context(c,s,data,who,0,0,0,clock);return ExchangeIntent.guard(frame,state,lastUser(s,who),data.optLong("memoryEpoch"),temporal,now);}
+ static void stage(String raw,String answer,JSONObject frame,JSONObject effects)throws Exception{if(frame.optJSONObject("selected")!=null&&answer.contains(frame.getJSONObject("selected").getString("key")))throw new java.io.IOException("回复包含内部交流标识，未投放且不自动重新生成");effects.put("exchangeFrame",frame).put("exchangeCovered",ExchangeIntent.covered(raw,answer,frame));}
+ static void writingDelivered(ChatStore s,JSONObject row,long now)throws Exception{if(!row.optString("kind").equals("letter"))return;JSONObject effects=row.optJSONObject("exchangeEffects");if(effects==null)return;JSONObject state=LifeStore.read(s,row.getString("character"));if(state!=null&&ExchangeIntent.delivered(state,effects,row.getString("text"),0,now))LifeStore.put(s,state);}
+ private ExchangeStore(){}
+}

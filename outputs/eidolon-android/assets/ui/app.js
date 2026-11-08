@@ -171,8 +171,8 @@ function reachSettings(){
  const check=(parent,key,title)=>{const l=el('label','check'),n=el('input');n.type='checkbox';n.checked=!!values[key];l.append(n,document.createTextNode(title));parent.append(l);controls[key]=n;return l;};
  const choose=(parent,key,title,entries)=>{const n=choiceField(parent,title,entries,values[key]);controls[key]=n;return n;};
  const enableLabel=el('label','check'),enabled=el('input');enabled.type='checkbox';enabled.checked=!!state.reachEnabled;enableLabel.append(enabled,document.createTextNode('她们会主动搭话'));area.append(enableLabel);
- area.append(el('p','notice','每次主动搭话会调用已配置的聊天 API。今日已送达 '+(opt.sentToday??0)+' / '+values.dailyLimit+' 条，请求 '+(opt.attemptsToday??0)+' / '+values.attemptLimit+' 次'+(opt.quotaDate?'（'+opt.quotaDate+'，按搭话时区）':'')+'。生成失败或取消也占用一次请求，保存设置不会清空今日计数。'));
- if(opt.lastStatus)area.append(el('p','muted',opt.lastStatus));area.append(btn('查看今日主动搭话计划',()=>navigate('reachPlans'),'pill wide'));
+ area.append(el('p','notice','有新的合适内容时才评估表达；可以等待或放弃，不补满每日上限。生成使用已配置的聊天 API。今日已送达 '+(opt.sentToday??0)+' / '+values.dailyLimit+' 条，请求 '+(opt.attemptsToday??0)+' / '+values.attemptLimit+' 次'+(opt.quotaDate?'（'+opt.quotaDate+'，按搭话时区）':'')+'。生成失败或取消也占用一次请求，保存设置不会清空今日计数。'));
+ if(opt.lastStatus)area.append(el('p','muted',opt.lastStatus));area.append(btn('查看主动交流机会与记录',()=>navigate('reachPlans'),'pill wide'));
  const basic=group('频率与对象',true),mode=choose(basic.body,'mode','触发方式',[['relation','按关系随机间隔'],['interval','至少间隔指定小时'],['daily','每天固定时间']]);
  const hours=number(basic.body,'hours','固定间隔（0.25–720 小时）',.25,720,false),time=text(basic.body,'time','每天固定时间（HH:mm）','time');
  number(basic.body,'dailyLimit','每日搭话总上限（1–30 条）',1,30);

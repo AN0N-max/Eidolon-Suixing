@@ -136,7 +136,7 @@ final class EventContext {
    .put("originalStatus",e.optString("status")).put("conversationStatus",phase).put("basis",basis).put("inferred",inferred).put("userConfirmed",conversation&&declared.equals("completed"))
    .put("eventVersion",e.optLong("eventVersion",1)).put("viewVersion",e.optLong("eventVersion",1)+"/"+phase).put("resultKnown",e.optBoolean("resultKnown",false)).put("evidence",e.optString("evidence"));
   if(start>0){LocalDate day=Instant.ofEpochMilli(start).atZone(zone).toLocalDate(),today=Instant.ofEpochMilli(now).atZone(zone).toLocalDate();long gap=ChronoUnit.DAYS.between(day,today);out.put("eventDate",day.toString()).put("daysBeforeCurrent",gap).put("dateLabel",gap==0?"今天":gap==1?"昨天":gap==-1?"明天":day.toString());}
-  if(e.optJSONObject("topic")!=null)out.put("topic",e.getJSONObject("topic"));if(e.optString("lastAskedVersion").equals(out.getString("viewVersion")))out.put("alreadyAsked",true);
+  if((!conversation&&e.optLong("mentionedAt")>0)||e.optString("lastExpressedView").equals(out.getString("viewVersion")))out.put("alreadyExpressed",true);if(e.has("goalId"))out.put("goalId",e.optString("goalId"));if(e.optJSONObject("topic")!=null)out.put("topic",e.getJSONObject("topic"));if(e.optString("lastAskedVersion").equals(out.getString("viewVersion")))out.put("alreadyAsked",true);
   return out;
  }
  static JSONArray views(JSONObject state,long now,String zone)throws Exception{

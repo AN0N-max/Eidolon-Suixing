@@ -6,7 +6,7 @@ import os,subprocess,tempfile
 S=Path(__file__).resolve().parents[1];B=S.parents[1]
 jdk=Path(os.environ['JAVA_HOME']) if os.environ.get('JAVA_HOME') else next((B/'work/android-tools/jdk').iterdir())
 android=Path(os.environ.get('ANDROID_HOME',str(B/'work/android-tools/sdk')))/'platforms/android-35/android.jar'
-classes=B/'work/android-build-1.28.5/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
+classes=B/'work/android-build-1.28.6/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
 cp=os.pathsep.join(map(str,[Path(os.environ.get('JSON_JAR',str(B/'work/android-test-tools/json.jar'))),classes,android]))
 sources={
 'android/util/Log.java':r"""package android.util;public class Log{public static int i(String a,String b){return 0;}public static int w(String a,String b){return 0;}public static int d(String a,String b){return 0;}}""",

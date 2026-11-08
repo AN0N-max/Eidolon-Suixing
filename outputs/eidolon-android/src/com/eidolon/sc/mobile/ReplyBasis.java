@@ -10,7 +10,7 @@ final class ReplyBasis {
   if(yes(answers,"turn_correction"))return "correct";
   if(yes(answers,"turn_detail"))return "explain";
   if(EventContext.CORRECTION.matcher(user).find())return "correct";
-  if(user.matches("(?s).*(讲什么|什么内容|大概讲|为什么|怎么回事|具体|细节|解释).*"))return "explain";
+  if(user.matches("(?s).*(讲什么|什么内容|大概讲|为什么|怎么回事|具体|细节|解释|是什么|有哪些|多少|哪种|如何|怎么).*"))return "explain";
   return user.matches("(?s).*[?？].*")?"answer":"respond";
  }
  static boolean yes(JSONObject answers,String key){try{return JevClient.probability(answers,key)>=.7;}catch(Exception e){return false;}}
@@ -64,10 +64,10 @@ final class ReplyBasis {
   JSONObject out=new JSONObject().put("schema",1).put("now",now).put("timeZone",zone).put("task",mode).put("events",events).put("selectedTopic",selected)
    .put("planRevision",temporal.optString("planRevision")).put("previousActivity",temporal.opt("previous_planned_activity")).put("currentActivity",temporal.opt("planned_activity"))
    .put("nextActivity",temporal.opt("next_planned_activity")).put("recentExpressions",life.optJSONArray("recentExpressions")==null?new JSONArray():life.getJSONArray("recentExpressions"))
-   .put("additionalJudgeRequests",0).put("inferenceEffects","conversation_only_no_reward_affinity_or_memory_settlement");
+   .put("informationTurn",InformationTurn.project(user,history,retrieved,selected)).put("additionalJudgeRequests",0).put("inferenceEffects","conversation_only_no_reward_affinity_or_memory_settlement");
   return out;
  }
- static String prompt(JSONObject basis){return "\nBEGIN_EIDOLON_REPLY_BASIS\n"+basis+"\nEND_EIDOLON_REPLY_BASIS\n本轮先完成task：解释时先回答内容与细节，纠错时承认记录并采用新状态，分享时只围绕selectedTopic的一件有依据的事。推定完成可自然追问体验，不能说用户已确认；elapsed_result_unknown只问感受，不默认获胜通过。按事件的eventDate/dateLabel引用过去，mentionedAt不是发生时间。缺资料时准确指出缺少什么并提出一个具体澄清问题，不用撒娇、道歉或让用户替你想台词回避问题。虚拟原创必须明确来源，不能冒充原作；仅allowOriginal=true时可在同一请求中准备topic_update。不同角色保留各自口吻；用户未提供的童年、家庭或人格成因不要推断，也不编造角色亲历来套安慰结构。先回应当前问题，再自然表达必要感受，不套固定段落、不强行短句。";}
+ static String prompt(JSONObject basis){return "\nBEGIN_EIDOLON_REPLY_BASIS\n"+basis+"\nEND_EIDOLON_REPLY_BASIS\ninformationTurn.currentUser是本轮实际问题；availableMaterial是已入选的资料，recentConditionUpdates是用户的补充条件，优先改变本轮回答、选择或计划，不只回复明白。missingEvidence不表示原作事实，可说缺少哪一点并只问一个具体问题。receive_feeling只接住感受，可自然结束，不强制建议/建档。natural_close无需再追问。意见保持角色依据，不因一次反对反转。本轮先完成task：解释时先回答内容与细节，纠错时承认记录并采用新状态，分享时只围绕selectedTopic的一件有依据的事。推定完成可自然追问体验，不能说用户已确认；elapsed_result_unknown只问感受，不默认获胜通过。按事件的eventDate/dateLabel引用过去，mentionedAt不是发生时间。缺资料时准确指出缺少什么并提出一个具体澄清问题，不用撒娇、道歉或让用户替你想台词回避问题。虚拟原创必须明确来源，不能冒充原作；仅allowOriginal=true时可在同一请求中准备topic_update。不同角色保留各自口吻；用户未提供的童年、家庭或人格成因不要推断，也不编造角色亲历来套安慰结构。先回应当前问题，再自然表达必要感受，不套固定段落、不强行短句。";}
  static void attach(JSONObject request,JSONObject basis)throws Exception{JSONObject system=request.getJSONArray("messages").getJSONObject(0);system.put("content",system.getString("content")+prompt(basis));}
  static void finish(String raw,String answer,JSONObject basis,JSONObject effects)throws Exception{
   String value=raw.trim();if(value.startsWith("```")){int n=value.indexOf('\n');if(n>0&&value.endsWith("```"))value=value.substring(n+1,value.length()-3).trim();}
@@ -100,7 +100,7 @@ final class ReplyBasis {
  static boolean delivered(JSONObject state,JSONObject effect,String answer,long messageId,long now)throws Exception{
   if(effect==null)return false;boolean changed=false;JSONObject basis=effect.optJSONObject("replyBasis"),selected=basis==null?null:basis.optJSONObject("selectedTopic");
   if(selected!=null&&!selected.optString("eventId").isEmpty()){
-   JSONObject e=EventContext.byId(state,selected.getString("eventId"));if(e!=null&&e.optLong("eventVersion",1)==selected.optLong("eventVersion",1)&&e.optLong("lastAskedMessageId")!=messageId&&answer.matches("(?s).*[?？].*")){e.put("lastAskedAt",now).put("lastAskedVersion",selected.optString("viewVersion")).put("lastAskedMessageId",messageId);changed=true;}
+   JSONObject e=EventContext.byId(state,selected.getString("eventId"));if(e!=null&&e.optLong("eventVersion",1)==selected.optLong("eventVersion",1)&&ExchangeIntent.related(answer,new JSONObject().put("title",e.optString("title")).put("evidence",e))){e.put("lastExpressedView",selected.optString("viewVersion"));changed=true;}if(e!=null&&e.optLong("eventVersion",1)==selected.optLong("eventVersion",1)&&e.optLong("lastAskedMessageId")!=messageId&&answer.matches("(?s).*[?？].*")){e.put("lastAskedAt",now).put("lastAskedVersion",selected.optString("viewVersion")).put("lastAskedMessageId",messageId);changed=true;}
   }
   JSONObject update=effect.optJSONObject("topicUpdate");if(update!=null){JSONObject e=EventContext.byId(state,update.optString("eventId"));if(e!=null&&e.optLong("eventVersion",1)==update.optLong("eventVersion",1)){JSONObject t=new JSONObject(update.toString());t.remove("eventId");t.remove("eventVersion");e.put("topic",t).put("eventVersion",e.optLong("eventVersion",1)+1);changed=true;}}
   JSONArray claims=effect.optJSONArray("claims");if(claims!=null&&claims.length()>0){JSONArray recent=state.optJSONArray("recentExpressions");if(recent==null)recent=new JSONArray();for(int i=0;i<claims.length();i++){JSONObject c=claims.getJSONObject(i);boolean duplicate=false;for(int r=0;r<recent.length();r++)if(recent.getJSONObject(r).optLong("messageId")==messageId&&recent.getJSONObject(r).optString("quote").equals(c.getString("quote")))duplicate=true;if(duplicate)continue;recent.put(new JSONObject().put("messageId",messageId).put("at",now).put("kind",c.getString("kind")).put("tense",c.getString("tense")).put("quote",c.getString("quote")));}while(recent.length()>8)recent.remove(0);state.put("recentExpressions",recent);changed=true;}

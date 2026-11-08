@@ -30,23 +30,25 @@ final class LetterPlanStore {
     static int preparedCount(ChatStore s)throws Exception{int count=0;JSONArray rows=all(s);for(int i=0;i<rows.length();i++)if(rows.getJSONObject(i).optString("state").equals("ready"))count++;return count;}
     static boolean markRequested(ChatStore s,JSONObject plan,long expected)throws Exception{if(plan.optBoolean("requestAttempted"))return false;JSONObject before=new JSONObject(plan.toString()),next=new JSONObject(plan.toString()).put("requestAttempted",true);if(!update(s,before,next,expected))return false;for(java.util.Iterator<String> it=next.keys();it.hasNext();){String key=it.next();plan.put(key,next.get(key));}return true;}
     static boolean ready(ChatStore s,JSONObject old,String text,long epoch)throws Exception{return ready(s,old,text,epoch,null);}
-    static boolean ready(ChatStore s,JSONObject old,String text,long epoch,JSONObject frame)throws Exception{
+    static boolean ready(ChatStore s,JSONObject old,String text,long epoch,JSONObject frame)throws Exception{return ready(s,old,text,epoch,frame,null);}
+    static boolean ready(ChatStore s,JSONObject old,String text,long epoch,JSONObject frame,JSONObject exchange)throws Exception{
         SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{
             if(epoch!=WritingStore.epoch.get()||!old.getString("state").equals("pending")||reserved(s,old.getString("date"))>=3)return false;
-            String conflict=frame==null?"":ContinuityContext.revalidate(frame,LifeStore.read(s,old.getString("character")),s.personal());JSONObject next=new JSONObject(old.toString()).put("state",conflict.isEmpty()?"ready":"skipped").put("text",conflict.isEmpty()?text:"").put("error",conflict.isEmpty()?"":conflict+"；未自动重新生成");if(frame!=null)next.put("continuityFrame",frame);
+            String conflict=frame==null?"":ContinuityContext.revalidate(frame,LifeStore.read(s,old.getString("character")),s.personal());JSONObject next=new JSONObject(old.toString()).put("state",conflict.isEmpty()?"ready":"skipped").put("text",conflict.isEmpty()?text:"").put("error",conflict.isEmpty()?"":conflict+"；未自动重新生成");if(frame!=null)next.put("continuityFrame",frame);if(exchange!=null)next.put("exchangeEffects",exchange);
             boolean saved=update(s,old,next,epoch);db.setTransactionSuccessful();return saved;
         }finally{db.endTransaction();}
     }
-    static int deliver(ChatStore s,long now,long epoch)throws Exception{
+    static int deliver(ChatStore s,long now,long epoch)throws Exception{return deliver(null,s,now,epoch);}
+    static int deliver(android.content.Context context,ChatStore s,long now,long epoch)throws Exception{
         int delivered=0;JSONArray rows=all(s);for(int i=0;i<rows.length();i++){
             JSONObject r=rows.getJSONObject(i);if(!r.getString("state").equals("ready")||r.getLong("deliverAt")>now)continue;
             SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{
                 JSONObject current=get(s,key(r));if(epoch!=WritingStore.epoch.get()||current==null||current.getLong("revision")!=r.getLong("revision"))continue;
-                String who=r.getString("character"),day=r.getString("date");String conflict=r.optJSONObject("continuityFrame")==null?"":ContinuityContext.revalidate(r.getJSONObject("continuityFrame"),LifeStore.read(s,who),s.personal());if(!conflict.isEmpty()){update(s,r,new JSONObject(r.toString()).put("state","skipped").put("text","").put("error",conflict+"；未自动重新生成"),epoch);db.setTransactionSuccessful();continue;}boolean exists=WritingStore.exists(s,"letter",who,day),full=WritingStore.countLetters(s,day)>=3;
+                String who=r.getString("character"),day=r.getString("date");if(context!=null&&r.optJSONObject("exchangeEffects")==null){update(s,r,new JSONObject(r.toString()).put("state","skipped").put("text","").put("error","旧版来信缺少当前交流依据，本次不补投、不重新生成"),epoch);db.setTransactionSuccessful();continue;}String conflict=r.optJSONObject("continuityFrame")==null?"":ContinuityContext.revalidate(r.getJSONObject("continuityFrame"),LifeStore.read(s,who),s.personal());if(conflict.isEmpty()&&r.optJSONObject("exchangeEffects")!=null){JSONObject ef=r.getJSONObject("exchangeEffects").optJSONObject("exchangeFrame");conflict=context==null?ExchangeIntent.guard(ef,LifeStore.read(s,who),ExchangeStore.lastUser(s,who),s.personal().optLong("memoryEpoch"),null,now):ExchangeStore.guard(context,s,ef,now);}if(!conflict.isEmpty()){update(s,r,new JSONObject(r.toString()).put("state","skipped").put("text","").put("error",conflict+"；未自动重新生成"),epoch);db.setTransactionSuccessful();continue;}boolean exists=WritingStore.exists(s,"letter",who,day),full=WritingStore.countLetters(s,day)>=3;
                 try(Cursor capacity=db.rawQuery("SELECT count(*),coalesce(sum(length(body)+length(secret)),0) FROM writings",null)){capacity.moveToFirst();full|=capacity.getInt(0)>=500||capacity.getLong(1)+r.getString("text").length()>2000000;}
                 JSONObject next=new JSONObject(r.toString()).put("state",full&&!exists?"skipped":"delivered").put("text","");
                 if(!update(s,r,next,epoch))continue;
-                if(!exists&&!full){WritingStore.save(s,new JSONObject().put("kind","letter").put("character",who).put("date",day).put("text",r.getString("text")).put("read",false),epoch);delivered++;}
+                if(!exists&&!full){WritingStore.save(s,new JSONObject().put("kind","letter").put("character",who).put("date",day).put("text",r.getString("text")).put("read",false).put("exchangeEffects",r.optJSONObject("exchangeEffects")),epoch);delivered++;}
                 db.setTransactionSuccessful();
             }finally{db.endTransaction();}
         }return delivered;

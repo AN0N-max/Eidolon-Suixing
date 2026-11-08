@@ -18,7 +18,7 @@ final class LettersEngine {
     }
     static int deliverAvailable(Context c,ChatStore store)throws Exception{
         if(!c.getSharedPreferences("settings",0).getBoolean("hibiLetters",false))return 0;
-        synchronized(LOCK){return LetterPlanStore.deliver(store,System.currentTimeMillis(),WritingStore.epoch.get());}
+        synchronized(LOCK){return LetterPlanStore.deliver(c,store,System.currentTimeMillis(),WritingStore.epoch.get());}
     }
     static void refresh(Context c)throws Exception{
         SharedPreferences prefs=c.getSharedPreferences("settings",0);
@@ -27,7 +27,7 @@ final class LettersEngine {
         synchronized(LOCK){try(ChatStore store=new ChatStore(c)){
             long epoch=WritingStore.epoch.get(),stamp=System.currentTimeMillis();JSONObject data=store.personal();Progression.upgrade(data);
             ZonedDateTime now=Instant.ofEpochMilli(stamp).atZone(ScheduleData.zone(data));LocalDate today=now.toLocalDate();
-            arrived=LetterPlanStore.deliver(store,stamp,epoch);
+            arrived=LetterPlanStore.deliver(c,store,stamp,epoch);
             LetterPlanStore.prune(store,today);
             JSONArray rows=LetterPlanStore.all(store);
             for(int i=0;i<rows.length();i++){JSONObject r=rows.getJSONObject(i);if(!r.getString("state").equals("pending")||LetterPlanStore.key(r).equals(inflight))continue;
@@ -39,7 +39,7 @@ final class LettersEngine {
                 for(LocalDate day:Arrays.asList(today,today.plusDays(1))){
                     if(LetterPlanStore.get(store,who+"/"+day)!=null)continue;
                     JSONObject plan=LetterPlanData.plan(who,day,now,calendar,data,data.getJSONObject("affinity").optDouble(who,50),affinity,WritingStore.lastLetter(store,who),random);
-                    if(plan!=null)LetterPlanStore.insert(store,plan,epoch);
+                    if(plan!=null&&plan.optString("occasion").equals("ordinary")&&ExchangeStore.prepare(c,store,who,stamp,null).optJSONObject("selected")==null)plan.put("state","none").put("error","没有新的合适内容，本次正常等待");if(plan!=null)LetterPlanStore.insert(store,plan,epoch);
                 }
             }
         }}

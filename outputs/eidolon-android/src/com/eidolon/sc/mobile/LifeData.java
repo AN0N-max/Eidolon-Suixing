@@ -142,7 +142,7 @@ final class LifeData {
     }
     static double relevance(JSONObject e,String query,long now){return Recall.score(query,e.optString("title"))*100+e.optInt("importance")/10.0+Math.max(0,5-(now-e.optLong("at"))/(double)DAY);}
     static void validate(JSONObject s,Set<String> known)throws Exception{
-        LifeHistory.validate(s);EventContext.validate(s);ContinuityLife.validate(s);if(s.toString().length()>160000||s.getInt("schema")!=1||!known.contains(s.getString("character"))||s.getLong("revision")<0)throw new Exception("生活档案格式无效");
+        LifeHistory.validate(s);EventContext.validate(s);ContinuityLife.validate(s);ExchangeIntent.validate(s);if(s.toString().length()>160000||s.getInt("schema")!=1||!known.contains(s.getString("character"))||s.getLong("revision")<0)throw new Exception("生活档案格式无效");
         if(!(s.get("enabled") instanceof Boolean)||!(s.get("evolution") instanceof Boolean)||!(s.get("eventOnlyReach") instanceof Boolean))throw new Exception("生活开关无效");
         if(s.getLong("observedAt")<0)throw new Exception("生活时间无效");if(!s.getString("zone").isEmpty())ZoneId.of(s.getString("zone"));
         JSONObject mood=s.getJSONObject("emotion"),profile=s.getJSONObject("profile");for(String k:new String[]{"valence","energy"}){double v=mood.getDouble(k);if(!Double.isFinite(v)||v<(k.equals("valence")?-1:0)||v>(k.equals("valence")?1:100))throw new Exception("情绪范围无效");}if(mood.getLong("at")<0||profile.getDouble("confidence")<0||profile.getDouble("confidence")>100||!Double.isFinite(profile.getDouble("confidence")))throw new Exception("人格状态无效");

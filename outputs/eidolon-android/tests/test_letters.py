@@ -89,7 +89,7 @@ receiver=(src/'ReplyRescheduleReceiver.java').read_text(encoding='utf-8')
 web=(src/'WebActivity.java').read_text(encoding='utf-8')
 assert 'null, 18)' in chat and 'if(oldVersion<9)LetterPlanStore.create(db)' in chat
 assert '"letterPlans",LetterPlanStore.all(this)' in chat and 'db.delete("letter_plans",null,null)' in chat
-assert 'LetterPlanStore.ready(store,letterPlan,text,epoch,continuityFrame)' in engine
+assert 'LetterPlanStore.ready(store,letterPlan,text,epoch,continuityFrame,row.optJSONObject("exchangeEffects"))' in engine
 assert 'false,attempt,epoch)' in letters and 'JSONObject letterPlan,long epoch)' in engine
 assert engine.index('if(letterPlan!=null){if(!LetterPlanStore.ready') < engine.index('WritingStore.save(store,row,epoch)')
 ui=(src/'UiSnapshots.java').read_text(encoding='utf-8')

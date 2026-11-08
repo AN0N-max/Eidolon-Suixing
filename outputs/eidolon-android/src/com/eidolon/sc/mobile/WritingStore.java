@@ -34,7 +34,7 @@ final class WritingStore {
             try(Cursor c=db.rawQuery("SELECT count(*),coalesce(sum(length(body)+length(secret)),0) FROM writings",null)){c.moveToFirst();if(c.getInt(0)>=500||c.getLong(1)+row.getString("text").length()+row.optString("secret","").length()>2000000)throw new Exception("信件日记已达到本机存储上限");}
             ContentValues v=new ContentValues();String kind=row.getString("kind"),who=row.getString("character"),day=row.getString("date");v.put("id",WritingData.key(kind,who,day));v.put("kind",kind);v.put("character",who);v.put("date",day);v.put("body",row.getString("text"));v.put("is_read",row.optBoolean("read")?1:0);
             v.put("secret",row.optString("secret",""));v.put("secret_read",row.optBoolean("secretRead")?1:0);
-            if(db.insertWithOnConflict("writings",null,v,SQLiteDatabase.CONFLICT_IGNORE)<0)throw new Exception("这一天已有记录，请刷新查看");db.setTransactionSuccessful();
+            if(db.insertWithOnConflict("writings",null,v,SQLiteDatabase.CONFLICT_IGNORE)<0)throw new Exception("这一天已有记录，请刷新查看");ExchangeStore.writingDelivered(s,row,System.currentTimeMillis());db.setTransactionSuccessful();
         }finally{db.endTransaction();}
     }
     static JSONArray all(ChatStore s)throws Exception{JSONArray a=new JSONArray();try(Cursor c=s.getReadableDatabase().rawQuery("SELECT kind,character,date,body,is_read,secret,secret_read FROM writings ORDER BY date DESC,id",null)){while(c.moveToNext())a.put(new JSONObject().put("kind",c.getString(0)).put("character",c.getString(1)).put("date",c.getString(2)).put("text",c.getString(3)).put("read",c.getInt(4)!=0).put("secret",c.getString(5)).put("secretRead",c.getInt(6)!=0));}return a;}
