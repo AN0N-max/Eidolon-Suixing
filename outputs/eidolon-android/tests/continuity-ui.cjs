@@ -1,0 +1,27 @@
+const fs=require('fs'),path=require('path'),assert=require('assert');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+(async()=>{
+ const root=path.resolve(__dirname,'../assets'),produced=JSON.parse(fs.readFileSync(process.env.CONTINUITY_FIXTURE||path.resolve(__dirname,'../../../work/android-tests/continuity1285.json'),'utf8')),fixture=produced.life;
+ const chars=JSON.parse(fs.readFileSync(path.join(root,'characters.json'),'utf8')).map(c=>({...c,lastActivity:0,preview:''}));
+ const data={characters:chars,personal:produced.personal,stats:{turns:0,characters:0,sessions:0,words:0},features:{conversationContinuity:true},writings:[],config:{bilingual:true},reachOptions:{}};
+ const browser=await chromium.launch({executablePath:process.env.CHROME_EXECUTABLE||undefined,headless:true});
+ try{
+ const page=await browser.newPage({viewport:{width:412,height:860}}),errors=[];page.setDefaultTimeout(8000);page.on('pageerror',e=>errors.push(e.message));
+ await page.route('**/*',async route=>{const url=new URL(route.request().url());assert.equal(url.origin,'https://eidolon.local');await route.fulfill({path:path.join(root,url.pathname)});});
+ await page.addInitScript(({data,fixture})=>{
+  window.calls=[];window.deferLife=false;window.failLife=false;const rows={[fixture.character]:fixture};
+  window.Native={post(raw){const q=JSON.parse(raw);calls.push(q);const send=()=>{let value=data,error=null;if(q.action==='themeGet')value={dark:false};if(q.action==='voiceStatus')value={state:'idle'};if(q.action==='scheduleStatus')value={enabled:false};if(q.action==='lifeGet'||q.action==='lifeEdit'){
+   const id=q.args.character;if(!rows[id])rows[id]={...structuredClone(fixture),character:id,goals:[],events:[],memories:[],evolutionLog:[]};value=rows[id];
+   if(q.action==='lifeGet'&&window.failLife)error='fake read failure';
+   if(q.action==='lifeEdit'){const assertRevision=q.args.revision===value.revision;if(!assertRevision)error='stale revision';else{if(q.args.operation==='settings'){value.enabled=q.args.enabled;value.evolution=q.args.evolution;value.eventOnlyReach=q.args.eventOnlyReach;}if(q.args.operation==='pauseGoal')value.goals.find(g=>g.id===q.args.eventId).status='paused';if(q.args.operation==='resumeGoal')value.goals.find(g=>g.id===q.args.eventId).status='active';if(q.args.operation==='cancel'){const g=value.goals.find(g=>g.id===q.args.eventId);if(g)g.status='cancelled';const e=value.events.find(e=>e.id===q.args.eventId);if(e?.kind==='exchange')e.exchangeStatus='withdrawn';}if(q.args.operation==='correct'){const e=value.events.find(e=>e.id===q.args.eventId);e.title=q.args.title;}value.revision++;}}
+  }window.nativeReply(q.id,structuredClone(value),error);};if(q.action==='lifeGet'&&window.deferLife)window.finishLife=send;else setTimeout(send,0);}};
+ },{data,fixture});
+ await page.goto('https://eidolon.local/ui/index.html');await page.getByRole('button',{name:'设置',exact:true}).click();await page.getByRole('button',{name:/^生活日常/}).click();await page.getByRole('button',{name:/^角色生活状态/}).click();await page.getByRole('button',{name:'保存生活设置',exact:true}).waitFor();
+
+ let checks=0;const check=(v,s)=>{assert(v,s);checks++;};const text=await page.locator('#app').textContent();check(text.includes('前半段顺了一点，后半仍跟不上')&&text.includes('再把后半拆开练'),'actual generated result and next step visible');check(text.includes('试试把前半段放慢一点')&&text.includes('那个片段我总是练不顺'),'real source problem and advice visible');check(!text.includes('exchange/')&&!text.includes('goal/')&&!text.includes('sourceMessageId'),'page shows no internal ids or JSON fields');
+ await page.getByRole('button',{name:'暂时搁置',exact:true}).click();await page.getByRole('button',{name:'继续目标',exact:true}).waitFor();check((await page.evaluate(()=>calls.filter(c=>c.action==='lifeEdit').at(-1))).args.operation==='pauseGoal','pause uses existing lifeEdit with same target');await page.getByRole('button',{name:'继续目标',exact:true}).click();await page.getByRole('button',{name:'暂时搁置',exact:true}).waitFor();check((await page.evaluate(()=>calls.filter(c=>c.action==='lifeEdit').at(-1))).args.operation==='resumeGoal','resume uses same stored goal');
+ await page.evaluate(()=>{page='memories';render();});await page.getByRole('heading',{name:'长期记忆',exact:true}).waitFor();const memory=await page.locator('#app').textContent();check(memory.includes('人多时容易累')&&memory.includes('补充条件')&&memory.includes('原话'),'existing memory page displays conditional understanding and source');check(memory.includes('修订')&&!memory.includes('u-'),'revision is readable without internal id');
+ await page.evaluate(()=>{page='features';render();});await page.getByLabel('延续目标、共同经历与有条件的用户理解').uncheck();await page.getByRole('button',{name:'保存设置',exact:true}).click();check((await page.evaluate(()=>calls.filter(c=>c.action==='features').at(-1))).args.conversationContinuity===false,'continuity switch saves existing settings without a model call');check(await page.getByText(/请求额外增量为0/).count()>0,'request budget explained in settings');
+ check(!await page.evaluate(()=>calls.some(c=>['send','modelList','writingGenerate','voice','give'].includes(c.action))),'view and local controls do not generate or replay paid effects');check(errors.length===0,'no browser errors '+errors.join(';'));console.log(`PASS continuity UI ${checks} checks; production fixture + fake bridge only.`);
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

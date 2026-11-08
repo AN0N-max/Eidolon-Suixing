@@ -48,8 +48,10 @@ final class LetterPlanData {
         String kind=row.optString("occasion");
         return kind.equals("producer_birthday")?"给制作人的生日祝福信。":kind.equals("her_birthday")?"今天是角色自己的生日，可以表达真实感受；没有记录的庆祝活动不要编造。":kind.equals("holiday")?"节日来信："+row.optString("about"):"普通来信，分享最近真实的心情。";
     }
+    static boolean unknownRequest(JSONObject r){return r.optBoolean("requestAttempted")||!r.has("requestAttempted")&&r.optInt("attempts")>0;}
+    static boolean mayRequest(JSONObject r,long now){return r.optString("state").equals("pending")&&!unknownRequest(r)&&r.optLong("nextAttempt")<=now&&!expired(r,now);}
     static void validate(JSONObject r,Set<String> known)throws Exception{
-        String who=r.getString("character"),state=r.getString("state"),occasion=r.getString("occasion");LocalDate day=LocalDate.parse(r.getString("date"));ZoneId zone=ZoneId.of(r.getString("zone"));
+        if(r.has("requestAttempted")&&!(r.opt("requestAttempted") instanceof Boolean))throw new Exception("来信请求状态无效");String who=r.getString("character"),state=r.getString("state"),occasion=r.getString("occasion");LocalDate day=LocalDate.parse(r.getString("date"));ZoneId zone=ZoneId.of(r.getString("zone"));
         if(!known.contains(who)||!Arrays.asList("none","pending","ready","delivered","skipped").contains(state)||!Arrays.asList("","producer_birthday","her_birthday","holiday","ordinary").contains(occasion))throw new Exception("来信计划类型或角色无效");
         String text=r.getString("text");if(r.getString("about").length()>1500||r.getString("error").length()>500||text.length()>12000||r.getInt("attempts")<0||r.getInt("attempts")>3||r.getLong("revision")<0)throw new Exception("来信计划内容无效");
         long write=r.getLong("writeAt"),due=r.getLong("deliverAt"),retry=r.getLong("nextAttempt");

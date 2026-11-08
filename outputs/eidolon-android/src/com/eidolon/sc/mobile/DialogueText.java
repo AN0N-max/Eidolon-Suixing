@@ -12,28 +12,30 @@ final class DialogueText {
  // Narrow evidence for known field contamination. Ambiguous prose remains visible.
  static final Pattern CHINESE=Pattern.compile("[这说吗么没们让别给觉还样呢呀啦哦呜咱您]|你好|今天|明天|昨天|中文|翻译|译文|准备|睡觉|因为|已经|现在|有点|辛苦|不用|一起|但是|所以|什么|怎么|可以|喜欢");
  static final Pattern JAPANESE=Pattern.compile("こんにちは|こんばんは|おはよう|おやすみ|ありがとう|ごめん|です|でした|ます|ました|ません|だよ|だね|だろ|だっ|して|から|けど|じゃ|って|よね|かな[。！？!?]?$");
- static final class Part {final String lang,text;final boolean literal;Part(String l,String t,boolean q){lang=l;text=t;literal=q;}}
+ static final class Part {final String lang,text;final boolean literal;final int paragraph;Part(String l,String t,boolean q){this(l,t,q,0);}Part(String l,String t,boolean q,int p){lang=l;text=t;literal=q;paragraph=p;}}
  static List<Part> parse(String value){return parse(value,"");}
  static List<Part> parse(String value,String base){
-  String text=value==null?"":value;List<Part> out=new ArrayList<>();ArrayList<String> stack=new ArrayList<>();Matcher m=TOKEN.matcher(text);int at=0;
+  String text=value==null?"":value;List<Part> out=new ArrayList<>();ArrayList<String> stack=new ArrayList<>();Matcher m=TOKEN.matcher(text);int at=0,paragraph=0;boolean seenZh=false;
   while(m.find()){
-   add(out,stack.isEmpty()?base:stack.get(stack.size()-1),text.substring(at,m.start()),false);
-   String token=m.group();if(!token.startsWith("<")&&!token.toLowerCase(Locale.ROOT).startsWith("&lt;"))add(out,stack.isEmpty()?base:stack.get(stack.size()-1),token,true);
+   add(out,stack.isEmpty()?base:stack.get(stack.size()-1),text.substring(at,m.start()),false,paragraph);
+   String token=m.group();if(!token.startsWith("<")&&!token.toLowerCase(Locale.ROOT).startsWith("&lt;"))add(out,stack.isEmpty()?base:stack.get(stack.size()-1),token,true,paragraph);
    else {String t=token.toLowerCase(Locale.ROOT).replace("&lt;","<").replace("&gt;",">");String lang=t.contains("ja")?"ja":"zh";
     if(t.startsWith("</")){int i=stack.lastIndexOf(lang);if(i>=0)while(stack.size()>i)stack.remove(stack.size()-1);}
-    else if(stack.size()<64)stack.add(lang);
+    else if(stack.size()<64){boolean root=stack.isEmpty(),underJapanese=!root&&stack.get(0).equals("ja"),topChinese=!root&&stack.get(stack.size()-1).equals("zh");if(lang.equals("ja")&&seenZh&&(root||underJapanese&&topChinese&&sentenceAhead(text,m.end()))){paragraph++;seenZh=false;}if(lang.equals("zh")&&(root||underJapanese&&!topChinese)){if(seenZh)paragraph++;seenZh=true;}stack.add(lang);}
    }at=m.end();
   }
-  add(out,stack.isEmpty()?base:stack.get(stack.size()-1),text.substring(at),false);return out;
+  add(out,stack.isEmpty()?base:stack.get(stack.size()-1),text.substring(at),false,paragraph);return out;
  }
- static void add(List<Part> out,String lang,String value,boolean literal){
-  if(value.isEmpty())return;if(literal){if(!out.isEmpty()&&CHINESE.matcher(out.get(out.size()-1).text).find()&&lang.equals("ja"))lang=out.get(out.size()-1).lang;out.add(new Part(lang,value,true));return;}
+ static boolean sentenceAhead(String text,int at){int end=text.indexOf('<',at);String next=text.substring(at,end<0?text.length():end).trim();return next.length()>2&&next.matches("(?s).*[。！？!?].*");}
+ static void add(List<Part> out,String lang,String value,boolean literal){add(out,lang,value,literal,0);}
+ static void add(List<Part> out,String lang,String value,boolean literal,int paragraph){
+  if(value.isEmpty())return;if(literal){if(!out.isEmpty()&&CHINESE.matcher(out.get(out.size()-1).text).find()&&lang.equals("ja"))lang=out.get(out.size()-1).lang;out.add(new Part(lang,value,true,paragraph));return;}
   // Recover clauses at sentence boundaries, never split names/quotes by the presence of kana.
   for(String clause:value.split("(?<=[。！？!?\\n])",-1)){
    if(clause.isEmpty())continue;boolean zh=CHINESE.matcher(clause).find(),ja=KANA.matcher(clause).find()&&JAPANESE.matcher(clause).find();String l=lang;
    if(zh&&ja)l="";else if(zh&&lang.equals("ja"))l="zh";else if(ja&&!lang.equals("ja"))l="ja";
-   if(!out.isEmpty()){Part prior=out.get(out.size()-1);if(!prior.literal&&prior.lang.equals(l)){out.set(out.size()-1,new Part(l,prior.text+clause,false));continue;}}
-   out.add(new Part(l,clause,false));
+   if(!out.isEmpty()){Part prior=out.get(out.size()-1);if(!prior.literal&&prior.lang.equals(l)&&prior.paragraph==paragraph){out.set(out.size()-1,new Part(l,prior.text+clause,false,paragraph));continue;}}
+   out.add(new Part(l,clause,false,paragraph));
   }
  }
  static String canonical(String text){return encode(parse(text));}
@@ -47,6 +49,6 @@ final class DialogueText {
  }return b.toString().trim();}
  static boolean needsChinese(String text){return !language(text,"ja",false).isEmpty()&&language(text,"zh",false).isEmpty();}
  static String spoken(String text){String ja=language(text,"ja",false);StringBuilder plain=new StringBuilder();if(ja.isEmpty()&&!Pattern.compile("(?i)<(?:ja|zh)(?:\\s*>|$)|&lt;(?:ja|zh)\\s*&gt;").matcher(text).find())for(Part p:parse(text))if(speakable(p)&&p.lang.isEmpty()&&!(CHINESE.matcher(p.text).find()&&JAPANESE.matcher(p.text).find()))plain.append(p.text);String value=ja.isEmpty()?plain.toString():ja;return ReplyMarkup.speech(value.replace(ChatEnvelope.BREAK,"\n\n")).replaceAll("(?i)\\[(?:softly|whisper|whispering|laughing|sighing)\\]", "").replaceAll("(?i)</?(?:ja|zh|eidolon-bubble)\\s*/?>","").replaceAll("<[^>]*>","").trim();}
- static JSONObject presentation(String text)throws Exception{JSONArray parts=new JSONArray();for(Part p:parse(text))parts.put(new JSONObject().put("lang",p.lang).put("text",p.text).put("literal",p.literal));String speech=spoken(text);boolean ambiguous=false;for(Part p:parse(text))if(!p.literal&&p.lang.isEmpty()&&CHINESE.matcher(p.text).find()&&JAPANESE.matcher(p.text).find()&&KANA.matcher(p.text).find())ambiguous=true;return new JSONObject().put("parts",parts).put("needsChinese",needsChinese(text)).put("japaneseSpeech",speech).put("speechState",speech.isEmpty()?"missing_japanese":ambiguous?"partial_japanese":"ready");}
+ static JSONObject presentation(String text)throws Exception{JSONArray parts=new JSONArray();for(Part p:parse(text))parts.put(new JSONObject().put("lang",p.lang).put("text",p.text).put("literal",p.literal).put("paragraph",p.paragraph));String speech=spoken(text);boolean ambiguous=false;for(Part p:parse(text))if(!p.literal&&p.lang.isEmpty()&&CHINESE.matcher(p.text).find()&&JAPANESE.matcher(p.text).find()&&KANA.matcher(p.text).find())ambiguous=true;JSONObject result=new JSONObject().put("parts",parts).put("needsChinese",needsChinese(text)).put("japaneseSpeech",speech).put("speechState",speech.isEmpty()?"missing_japanese":ambiguous?"partial_japanese":"ready");if(text.contains(ChatEnvelope.BREAK)){JSONArray bubbles=new JSONArray();for(String piece:text.split(Pattern.quote(ChatEnvelope.BREAK),-1))bubbles.put(presentation(piece));result.put("bubbles",bubbles);}return result;}
  private DialogueText(){}
 }

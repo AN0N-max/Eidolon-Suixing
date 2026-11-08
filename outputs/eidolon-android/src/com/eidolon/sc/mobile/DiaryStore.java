@@ -18,7 +18,7 @@ final class DiaryStore {
             while(c.moveToNext())out.put(new JSONObject().put("character",c.getString(0)).put("date",c.getString(1)).put("tries",c.getInt(2)).put("at",c.getLong(3)).put("error",c.getString(4)));}return out;
     }
     static JSONObject attempt(ChatStore s,String who,String day)throws Exception{
-        try(Cursor c=s.getReadableDatabase().rawQuery("SELECT tries,at FROM diary_attempts WHERE id=?",new String[]{who+"/"+day})){return c.moveToFirst()?new JSONObject().put("tries",c.getInt(0)).put("at",c.getLong(1)):null;}
+        try(Cursor c=s.getReadableDatabase().rawQuery("SELECT tries,at,error FROM diary_attempts WHERE id=?",new String[]{who+"/"+day})){return c.moveToFirst()?new JSONObject().put("tries",c.getInt(0)).put("at",c.getLong(1)).put("requestUnknown",!c.getString(2).isEmpty()):null;}
     }
     static void restoreAttempt(ChatStore s,JSONObject r)throws Exception{
         ContentValues v=new ContentValues();v.put("id",r.getString("character")+"/"+r.getString("date"));for(String key:new String[]{"character","date","error"})v.put(key,r.getString(key));v.put("tries",r.getInt("tries"));v.put("at",r.getLong("at"));s.getWritableDatabase().insertOrThrow("diary_attempts",null,v);
@@ -31,9 +31,12 @@ final class DiaryStore {
             db.execSQL("DELETE FROM diary_attempts WHERE id IN (SELECT id FROM diary_attempts ORDER BY date DESC,id LIMIT -1 OFFSET 1000)");db.setTransactionSuccessful();return true;
         }finally{db.endTransaction();}
     }
-    static void failed(ChatStore s,String who,String day,String error,long epoch){
-        SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{if(epoch!=WritingStore.epoch.get())return;ContentValues v=new ContentValues();v.put("error",error.substring(0,Math.min(500,error.length())));db.update("diary_attempts",v,"id=?",new String[]{who+"/"+day});db.setTransactionSuccessful();}finally{db.endTransaction();}
+    static void failed(ChatStore s,String who,String day,String error,long epoch)throws Exception{
+        SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{if(epoch!=WritingStore.epoch.get())return;ContentValues v=new ContentValues();JSONObject prior=attempt(s,who,day);String message=prior!=null&&prior.optBoolean("requestUnknown")?"本次已尝试请求；不会自动重发。"+error:error;v.put("error",MediaData.cut(message,500));db.update("diary_attempts",v,"id=?",new String[]{who+"/"+day});db.setTransactionSuccessful();}finally{db.endTransaction();}
     }
+    static boolean markRequested(ChatStore s,String who,String day,long expected){SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{if(expected!=WritingStore.epoch.get())return false;ContentValues v=new ContentValues();v.put("error","本次已尝试请求，结果待确认；不会自动重发");boolean changed=db.update("diary_attempts",v,"id=?",new String[]{who+"/"+day})==1;db.setTransactionSuccessful();return changed;}finally{db.endTransaction();}}
+    static void resolved(ChatStore s,String who,String day,long expected){SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{if(expected!=WritingStore.epoch.get())return;ContentValues v=new ContentValues();v.put("error","");db.update("diary_attempts",v,"id=?",new String[]{who+"/"+day});db.setTransactionSuccessful();}finally{db.endTransaction();}}
+    static void stopAutomatic(ChatStore s,String who,String day,String error,long expected){SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{if(expected!=WritingStore.epoch.get())return;ContentValues v=new ContentValues();v.put("error",MediaData.cut("本次已尝试请求；不会自动重发。"+error,500));db.update("diary_attempts",v,"id=?",new String[]{who+"/"+day});db.setTransactionSuccessful();}finally{db.endTransaction();}}
     static String secret(ChatStore s,String who,String day,boolean affinity)throws Exception{
         SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{
             JSONObject personal=s.personal();boolean cooling=Progression.relation(personal,who,System.currentTimeMillis()).optBoolean("cooling");
@@ -43,3 +46,4 @@ final class DiaryStore {
         }finally{db.endTransaction();}
     }
 }
+

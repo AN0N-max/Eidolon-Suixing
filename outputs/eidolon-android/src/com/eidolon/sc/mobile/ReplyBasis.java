@@ -74,7 +74,7 @@ final class ReplyBasis {
   effects.put("replyBasis",basis);if(value.startsWith("{")){JSONObject data=new JSONObject(value);effects.put("claims",claims(data,answer));JSONObject topic=topicUpdate(data,basis,answer);if(topic!=null)effects.put("topicUpdate",topic);}else effects.put("claims",new JSONArray());
  }
  static JSONArray projectedEvents(JSONObject state,String user,long now)throws Exception{
-  List<JSONObject> all=new ArrayList<>();JSONArray events=state.getJSONArray("events");for(int i=0;i<events.length();i++){JSONObject e=events.getJSONObject(i);if(!state.optBoolean("enabled")&&!e.optString("kind").equals("conversation"))continue;all.add(e);}
+  List<JSONObject> all=new ArrayList<>();JSONArray events=state.getJSONArray("events");for(int i=0;i<events.length();i++){JSONObject e=events.getJSONObject(i);if(e.optString("kind").equals("exchange"))continue;if(!state.optBoolean("enabled")&&!e.optString("kind").equals("conversation"))continue;all.add(e);}
   all.sort((a,b)->Double.compare(rawScore(b,user,now),rawScore(a,user,now)));JSONArray out=new JSONArray();for(int i=0;i<Math.min(12,all.size());i++)out.put(new JSONObject(all.get(i).toString()));return out;
  }
  static double rawScore(JSONObject e,String user,long now){return Recall.score(user,e.optString("title"))*100+(e.optLong("start")<=now&&now<e.optLong("end")?20:0)+(e.optString("kind").equals("conversation")?5:0)+Math.max(0,5-(now-Math.max(e.optLong("sourceMentionedAt"),e.optLong("start")))/(double)EventContext.DAY);}

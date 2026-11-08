@@ -167,3 +167,6 @@ html,body{height:100%;overflow:hidden}#app{height:100%;min-height:0}.chat-conten
 
 /* One prose size for Chinese, read-compatible mixed text and inline quotations. */
 .message:not(.own) .bubble,.message .bubble.untranslated-japanese{font-size:var(--chat-chinese-size,16px);line-height:1.55}.message .bubble>.translation,.message .bubble>.dialogue-uncertain{font-size:var(--chat-chinese-size,16px);line-height:1.55;margin-top:4px}.message .bubble>.japanese{font-size:var(--chat-japanese-size,13px);line-height:1.5;margin-top:0}.message .bubble>.translation:first-child,.message .bubble>.dialogue-uncertain:first-child{margin-top:0}.message .literal-example{font-size:inherit;line-height:inherit}.message .bubble{padding:10px 13px}.message{margin-bottom:14px}
+
+/* Semantic paragraph spacing survives removing the Japanese display track. */
+.message .bubble>.dialogue-paragraph-start{margin-top:8px}.message .bubble>.dialogue-paragraph-start:first-child{margin-top:0}

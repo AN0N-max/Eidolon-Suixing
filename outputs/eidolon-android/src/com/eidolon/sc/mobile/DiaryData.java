@@ -32,7 +32,7 @@ final class DiaryData {
         return new JSONObject().put("date",Instant.ofEpochMilli(sentAt).atZone(ScheduleData.zone(personal)).toLocalDate().toString())
             .put("text","聊天中值得记下的一刻（模型摘要，原话为准）："+what+"\n制作人原话："+evidence);
     }
-    static boolean mayTry(String date,LocalDate today,long now,JSONObject attempt){
+    static boolean mayTry(String date,LocalDate today,long now,JSONObject attempt){if(attempt!=null&&attempt.optBoolean("requestUnknown"))return false;
         LocalDate day=LocalDate.parse(date);if(!day.isBefore(today)||day.isBefore(today.minusDays(3)))return false;
         if(attempt==null)return true;long at=attempt.optLong("at");return attempt.optInt("tries")<2&&now>=at&&now-at>=RETRY;
     }

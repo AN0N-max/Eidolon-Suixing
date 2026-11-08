@@ -28,10 +28,12 @@ final class LetterPlanStore {
         int count=WritingStore.countLetters(s,day);JSONArray rows=all(s);for(int i=0;i<rows.length();i++){JSONObject r=rows.getJSONObject(i);if(day.equals(r.optString("date"))&&r.optString("state").equals("ready")&&!WritingStore.exists(s,"letter",r.getString("character"),day))count++;}return count;
     }
     static int preparedCount(ChatStore s)throws Exception{int count=0;JSONArray rows=all(s);for(int i=0;i<rows.length();i++)if(rows.getJSONObject(i).optString("state").equals("ready"))count++;return count;}
-    static boolean ready(ChatStore s,JSONObject old,String text,long epoch)throws Exception{
+    static boolean markRequested(ChatStore s,JSONObject plan,long expected)throws Exception{if(plan.optBoolean("requestAttempted"))return false;JSONObject before=new JSONObject(plan.toString()),next=new JSONObject(plan.toString()).put("requestAttempted",true);if(!update(s,before,next,expected))return false;for(java.util.Iterator<String> it=next.keys();it.hasNext();){String key=it.next();plan.put(key,next.get(key));}return true;}
+    static boolean ready(ChatStore s,JSONObject old,String text,long epoch)throws Exception{return ready(s,old,text,epoch,null);}
+    static boolean ready(ChatStore s,JSONObject old,String text,long epoch,JSONObject frame)throws Exception{
         SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{
             if(epoch!=WritingStore.epoch.get()||!old.getString("state").equals("pending")||reserved(s,old.getString("date"))>=3)return false;
-            JSONObject next=new JSONObject(old.toString()).put("state","ready").put("text",text).put("error","");
+            String conflict=frame==null?"":ContinuityContext.revalidate(frame,LifeStore.read(s,old.getString("character")),s.personal());JSONObject next=new JSONObject(old.toString()).put("state",conflict.isEmpty()?"ready":"skipped").put("text",conflict.isEmpty()?text:"").put("error",conflict.isEmpty()?"":conflict+"；未自动重新生成");if(frame!=null)next.put("continuityFrame",frame);
             boolean saved=update(s,old,next,epoch);db.setTransactionSuccessful();return saved;
         }finally{db.endTransaction();}
     }
@@ -40,7 +42,7 @@ final class LetterPlanStore {
             JSONObject r=rows.getJSONObject(i);if(!r.getString("state").equals("ready")||r.getLong("deliverAt")>now)continue;
             SQLiteDatabase db=s.getWritableDatabase();db.beginTransaction();try{
                 JSONObject current=get(s,key(r));if(epoch!=WritingStore.epoch.get()||current==null||current.getLong("revision")!=r.getLong("revision"))continue;
-                String who=r.getString("character"),day=r.getString("date");boolean exists=WritingStore.exists(s,"letter",who,day),full=WritingStore.countLetters(s,day)>=3;
+                String who=r.getString("character"),day=r.getString("date");String conflict=r.optJSONObject("continuityFrame")==null?"":ContinuityContext.revalidate(r.getJSONObject("continuityFrame"),LifeStore.read(s,who),s.personal());if(!conflict.isEmpty()){update(s,r,new JSONObject(r.toString()).put("state","skipped").put("text","").put("error",conflict+"；未自动重新生成"),epoch);db.setTransactionSuccessful();continue;}boolean exists=WritingStore.exists(s,"letter",who,day),full=WritingStore.countLetters(s,day)>=3;
                 try(Cursor capacity=db.rawQuery("SELECT count(*),coalesce(sum(length(body)+length(secret)),0) FROM writings",null)){capacity.moveToFirst();full|=capacity.getInt(0)>=500||capacity.getLong(1)+r.getString("text").length()>2000000;}
                 JSONObject next=new JSONObject(r.toString()).put("state",full&&!exists?"skipped":"delivered").put("text","");
                 if(!update(s,r,next,epoch))continue;

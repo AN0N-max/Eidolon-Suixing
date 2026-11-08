@@ -6,7 +6,7 @@ import java.util.Set;
 final class BackupValidator {
     static boolean sequence(boolean awaiting,JSONObject row)throws Exception{String role=row.getString("role");boolean reach=row.optBoolean("reachOut");if(reach&&!role.equals("assistant"))throw new Exception("主动消息角色无效");if(role.equals("gift"))return awaiting;if(role.equals("user"))return true;if(!role.equals("assistant"))throw new Exception("聊天角色无效");if(reach)return awaiting;if(!awaiting)throw new Exception("角色回复缺少用户消息来源");return false;}
     static void validate(JSONObject data, Set<String> characters) throws Exception {
-        if(!"eidolon-android-chats".equals(data.optString("format")) || data.optInt("version")<1||data.optInt("version")>19)throw new Exception("不支持的备份格式或版本");
+        if(!"eidolon-android-chats".equals(data.optString("format")) || data.optInt("version")<1||data.optInt("version")>20)throw new Exception("不支持的备份格式或版本");
         if(data.optInt("version")>=18){SocialStore.validate(data,characters);ScheduleAttempts.validate(data,characters);}
         java.util.Set<String> mediaIds=data.optInt("version")>=17?MediaStore.validateBackup(data,characters):null;
         if(data.optInt("version")>=16)CallStore.validateBackup(data,characters);

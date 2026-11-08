@@ -31,6 +31,7 @@ final class LettersEngine {
             LetterPlanStore.prune(store,today);
             JSONArray rows=LetterPlanStore.all(store);
             for(int i=0;i<rows.length();i++){JSONObject r=rows.getJSONObject(i);if(!r.getString("state").equals("pending")||LetterPlanStore.key(r).equals(inflight))continue;
+                if(r.optString("state").equals("pending")&&LetterPlanData.unknownRequest(r)&&!LetterPlanStore.key(r).equals(inflight)){LetterPlanStore.update(store,r,new JSONObject(r.toString()).put("state","skipped").put("error","来信请求结果未确认；为避免重复计费未自动重发"),epoch);continue;}
                 if(WritingStore.exists(store,"letter",r.getString("character"),r.getString("date"))||LetterPlanData.expired(r,stamp))LetterPlanStore.update(store,r,new JSONObject(r.toString()).put("state","skipped"),epoch);
             }
             JSONObject calendar=WritingEngine.asset(c,"calendar.json");JSONArray chars=WritingEngine.characters(c);Random random=new java.security.SecureRandom();boolean affinity=prefs.getBoolean("affinity",true);
@@ -52,17 +53,17 @@ final class LettersEngine {
         long stamp=System.currentTimeMillis();List<JSONObject> rows=new ArrayList<>();JSONArray all=LetterPlanStore.all(store);
         for(int i=0;i<all.length();i++)rows.add(all.getJSONObject(i));rows.sort(Comparator.comparingLong(r->r.optLong("deliverAt")));
         for(JSONObject r:rows){
-            if(!r.getString("state").equals("pending")||r.getLong("nextAttempt")>stamp||LetterPlanData.expired(r,stamp)||!eligible(store,data,r.getString("character"),stamp,prefs.getBoolean("affinity",true)))continue;
+            if(!LetterPlanData.mayRequest(r,stamp)||!eligible(store,data,r.getString("character"),stamp,prefs.getBoolean("affinity",true)))continue;
             if(LetterPlanStore.reserved(store,r.getString("date"))>=3){LetterPlanStore.update(store,r,new JSONObject(r.toString()).put("state","skipped"),epoch);continue;}
             inflight=LetterPlanStore.key(r);
-            JSONObject attempt=new JSONObject(r.toString()).put("attempts",r.getInt("attempts")+1).put("nextAttempt",Math.min(stamp+LetterPlanData.RETRY,r.getLong("deliverAt")+LetterPlanData.HOUR));
+            JSONObject attempt=new JSONObject(r.toString()).put("requestAttempted",false).put("attempts",r.getInt("attempts")+1).put("nextAttempt",Math.min(stamp+LetterPlanData.RETRY,r.getLong("deliverAt")+LetterPlanData.HOUR));
             try{
                 if(Thread.currentThread().isInterrupted()||!LetterPlanStore.update(store,r,attempt,epoch))return null;
                 WritingEngine.generate(c,store,WritingEngine.character(characters,r.getString("character")),"letter",r.getString("date"),LetterPlanData.reason(r),false,attempt,epoch);
             }catch(Exception e){
                 if(epoch==WritingStore.epoch.get()&&!Thread.currentThread().isInterrupted()&&(WritingEngine.active==null||!WritingEngine.active.cancelled)){
                     String error=e.getMessage()==null?"来信未写完，请检查后台模型":e.getMessage();if(error.length()>500)error=error.substring(0,500);
-                    LetterPlanStore.update(store,attempt,new JSONObject(attempt.toString()).put("error",error),epoch);
+                    LetterPlanStore.update(store,attempt,new JSONObject(attempt.toString()).put("state",attempt.optBoolean("requestAttempted")?"skipped":"pending").put("error",attempt.optBoolean("requestAttempted")?"本次已尝试请求；为避免重复计费不自动重发。"+error:error),epoch);
                     prefs.edit().putString("letterError",error).apply();
                 }
             }finally{inflight="";reschedule(c);}
@@ -78,7 +79,7 @@ final class LettersEngine {
             boolean affinity=c.getSharedPreferences("settings",0).getBoolean("affinity",true);
             for(int i=0;i<rows.length();i++){JSONObject r=rows.getJSONObject(i);String state=r.getString("state");
                 if(state.equals("ready"))delivery=Math.min(delivery,r.getLong("deliverAt"));
-                if(state.equals("pending")&&!LetterPlanData.expired(r,now)&&!LetterPlanStore.key(r).equals(inflight)&&eligible(store,data,r.getString("character"),now,affinity))write=Math.min(write,r.getLong("nextAttempt"));
+                if(state.equals("pending")&&!LetterPlanData.unknownRequest(r)&&!LetterPlanData.expired(r,now)&&!LetterPlanStore.key(r).equals(inflight)&&eligible(store,data,r.getString("character"),now,affinity))write=Math.min(write,r.getLong("nextAttempt"));
             }
             if(Vault.read(c).isEmpty()&&Vault.read(c,"backgroundKey").isEmpty())write=Long.MAX_VALUE;
             if(write!=Long.MAX_VALUE&&(WritingEngine.chatting()||WritingEngine.running.get()))write=Math.max(write,now+LetterPlanData.RETRY);

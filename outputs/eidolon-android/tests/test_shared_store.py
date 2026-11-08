@@ -5,7 +5,7 @@ base=Path(__file__).resolve().parents[1];root=base.parents[1]
 jdk=Path(os.environ['JAVA_HOME']) if os.environ.get('JAVA_HOME') else next((root/'work/android-tools/jdk').iterdir())
 android=Path(os.environ['ANDROID_HOME'])/'platforms/android-35/android.jar' if os.environ.get('ANDROID_HOME') else root/'work/android-tools/platform/android-35/android.jar'
 json=Path(os.environ.get('JSON_JAR',str(root/'work/android-test-tools/json.jar')))
-classes=root/'work/android-build-1.28.4/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
+classes=root/'work/android-build-1.28.5/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
 sources={
 'android/content/Context.java':'package android.content;public class Context {public Context getApplicationContext(){return this;}}',
 'android/database/sqlite/SQLiteDatabase.java':'package android.database.sqlite;public class SQLiteDatabase {public interface CursorFactory{}}',

@@ -22,7 +22,7 @@ final class PersonalData {
         JSONObject inventory=d.getJSONObject("inventory"),affinity=d.getJSONObject("affinity");
         for(Iterator<String> it=inventory.keys();it.hasNext();){String k=it.next();if(!k.matches("[a-z0-9_-]{1,80}")||inventory.getInt(k)<0||inventory.getInt(k)>100000)throw new Exception("背包无效");}
         for(Iterator<String> it=affinity.keys();it.hasNext();){String k=it.next();if(!k.matches("[a-z0-9_-]{1,80}")||!Double.isFinite(affinity.getDouble(k))||affinity.getDouble(k)<0||affinity.getDouble(k)>100)throw new Exception("好感数据无效");}
-        JSONArray memories=d.getJSONArray("memories");if(memories.length()>2000)throw new Exception("最多 2000 条记忆");
+        UserUnderstanding.validate(d);JSONArray memories=d.getJSONArray("memories");if(memories.length()>2000)throw new Exception("最多 2000 条记忆");
         CharacterPrompts.validate(d,null);AppealData.validate(d);HeartScenes.validate(d);Progression.validate(d);PromiseData.validate(d,null);Anniversaries.validate(d,null);
         Set<String> ids=new HashSet<>();
         for(int i=0;i<memories.length();i++){JSONObject m=memories.getJSONObject(i);if(!ids.add(m.getString("id"))||m.getString("id").length()>80||m.getString("text").trim().isEmpty()||m.getString("text").length()>500)throw new Exception("记忆格式无效");}

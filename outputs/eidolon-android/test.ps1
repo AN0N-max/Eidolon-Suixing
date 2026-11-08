@@ -5,7 +5,7 @@ if(!$jdk){throw 'Set JAVA_HOME to JDK17'}
 $python=if($env:EIDOLON_PYTHON){$env:EIDOLON_PYTHON}else{'python'}
 $android=Join-Path $env:ANDROID_HOME 'platforms/android-35/android.jar'
 $json=if($env:JSON_JAR){$env:JSON_JAR}else{Join-Path $workspace 'work/android-test-tools/json.jar'}
-$classes=Join-Path $workspace 'work/android-build-1.28.4/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
+$classes=Join-Path $workspace 'work/android-build-1.28.5/gradle/intermediates/javac/release/compileReleaseJavaWithJavac/classes'
 $testClasses=Join-Path $workspace 'work/android-tests/classes'
 New-Item -ItemType Directory -Force $testClasses | Out-Null
 $bc=if($env:BC_JAR){$env:BC_JAR}else{Join-Path $workspace 'work/android-test-tools/bcprov-jdk18on-1.86.jar'}
@@ -184,3 +184,16 @@ if($LASTEXITCODE -ne 0){throw "Canonical event/request regression failed"}
 
 & $python (Join-Path $PSScriptRoot "tests/test_event_context.py")
 if($LASTEXITCODE -ne 0){throw "Production event transaction/HTTP regression failed"}
+
+& (Join-Path $jdk "bin/java.exe") -cp "$testClasses;$cp" com.eidolon.sc.mobile.ContinuityTests (Join-Path $workspace "work/android-tests/continuity1285.json")
+if($LASTEXITCODE -ne 0){throw "Continuity state/request regression failed"}
+& (Join-Path $jdk "bin/java.exe") -cp "$testClasses;$cp" com.eidolon.sc.mobile.DialogueParagraphTests (Join-Path $workspace "work/android-tests/paragraphs1285.json")
+if($LASTEXITCODE -ne 0){throw "Dialogue paragraph regression failed"}
+
+& $python (Join-Path $PSScriptRoot 'tests/test_continuity_delivery.py')
+if($LASTEXITCODE -ne 0){throw 'Continuity production delivery adapters failed'}
+
+
+& $python (Join-Path $PSScriptRoot 'tests/test_writing_admission.py')
+if($LASTEXITCODE -ne 0){throw 'Writing no-replay admission failed'}
+
